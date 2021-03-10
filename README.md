@@ -1,0 +1,2 @@
+# AreaInventory
+main area inventory
