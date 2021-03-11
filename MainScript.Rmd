@@ -38,7 +38,7 @@ target_ids <- NULL
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 #knitr::opts_knit$set(root.dir = 'U:/PLAN/michaelallen/main_workbook')
-knitr::opts_knit$set(root.dir = 'M:/My Drive/U_drive/main_workbook')
+knitr::opts_knit$set(root.dir = './')
 ```
 
 
@@ -52,15 +52,15 @@ library(tidyr)
 #digits get cut off
 options(scipen = 999)
 
-setwd('M:/My Drive/U_drive/main_workbook')
-#setwd('U:/PLAN/michaelallen/main_workbook')
+#maybe don't need to set this wd below. It happens in the knitr:opts
+#setwd('./')
 #step 1
-source('basecodes.R')
+source('Basecodes.R')
 start_year <- 2017
 end_year <- 2020
 #step 2
-source('baseTables.R')
-source('base_inputs.R')
+source('BaseTables.R')
+source('BaseInputs.R')
 #we will fill in this final table with our data
 final_table <- vector()
 ```
