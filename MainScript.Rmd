@@ -338,6 +338,36 @@ final_table <- rbind(final_table, temp_table)
 
 ```
 
+```{r}
+#solvent use - fuel tank/drum cleaning
+#used to be 2461160000, but in 2016, was mapped to 2461100000 (see 'sccref' source)
+#Uses AP42 4.8 for tank truck cleaning. Largest EF in the document 
+#  is 0.686 lb/truck, so that's what we used. (4.8-2)
+#Federal Highway Administration Department of Motor Carriers, Bruce Holmes, 
+#  estimated that 400 cargo tanks are cleaned and purged annually in Salt Lake
+#  and Davis Counties. (No date given or citation on this number)
+#So 400 tanks with a population of 1,127,117 and 348,281, respectively, is
+#  400 tank cleanings/1,475,398 people, or:
+#    2.711E-4 tank cleanings/person.
+#with 0.686 lb/cleaning, we have 
+#    2.711E-4 * 0.686 / 2000 = 
+#    9.299E-8 Ton/person/year
+#We then extrapolate that to the rest of the state
+scc <- 2461100000
+pollutants <- c('VOC')
+TPPPY <-(9.299E-8)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+#no pt source
+#assumed rule 307-304 for solvent cleaning applies to this SCC.
+# ends up with 28% reduction over 2017-2022
+counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
+temp_table <- add_controls(temp_table,scc,counties,2017,2022,0.72)
+final_table <- rbind(final_table, temp_table)
+```
+
+
+
 ## Casey Trout
 
 NOTE: We always do pt source subtractions AFTER adding controls to the emissions estimates. We assume that our pt source emissions are already using the controls before they get phased in.
