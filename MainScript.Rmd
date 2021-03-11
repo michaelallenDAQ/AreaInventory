@@ -336,7 +336,6 @@ temp_table <- make_baseline(efs_table,LUST,project_to = end_year)
 #no pt subs?
 final_table <- rbind(final_table, temp_table)
 
-```
 
 #solvent use - fuel tank/drum cleaning
 #used to be 2461160000, but in 2016, was mapped to 2461100000 (see 'sccref' source)
