@@ -338,7 +338,6 @@ final_table <- rbind(final_table, temp_table)
 
 ```
 
-```{r}
 #solvent use - fuel tank/drum cleaning
 #used to be 2461160000, but in 2016, was mapped to 2461100000 (see 'sccref' source)
 #Uses AP42 4.8 for tank truck cleaning. Largest EF in the document 
@@ -364,7 +363,6 @@ temp_table <- make_baseline(efs_table,pp,project_to = end_year)
 counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
 temp_table <- add_controls(temp_table,scc,counties,2017,2022,0.72)
 final_table <- rbind(final_table, temp_table)
-```
 
 
 
