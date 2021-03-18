@@ -1,6 +1,7 @@
 #2) Base tables:
 #This generates the fundamental tables we will work with:
 #Wagon wheel
+#NEI
 #population data
 #manufacturing employment (need to update method)
 #old_model_data (the most up-to-date version of the area inventory)
@@ -48,6 +49,10 @@ wide_sleis <- tidy_sleis %>%
 #ww, for pulling TPY values and getting up-to-date emission factors
 read_path <- 'ref_workbooks/Wagon Wheel Output.csv'
 ww <- pull_ww(read_path)
+
+# NEI, for pulling TPY values
+nei_path_2017 <- 'ref_workbooks/2017neiApr_nonpoint/esg_cty_scc_12961.csv'
+nei <- pull_nei(nei_path_2017, "2017")
 
 #statewide_compiled, for pulling emissions for pt source subtraction
 #read_path <- 'U:/PLAN/CWILLIAMS/Inventory Database/2017 Statewide Inventory/Compiled statewide data.xlsx'

@@ -57,6 +57,7 @@ end_year <- 2020
 naa_counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
 #step 2
 source(paste0(Sys.getenv('GitDir'),'BaseTables.R'))
+## Note - I can't figure out how to suppress the "parsing failure" message from the read_csv for the 2017 nei file
 source(paste0(Sys.getenv('GitDir'),'BaseInputs.R'))
 #we will fill in this final table with our data
 final_table <- vector()
@@ -1335,74 +1336,6 @@ rm(scc, throughput, efs_table, temp_table, vmt, temp_table_project, temp_table_f
 I wrote this function to pull data from the 2014 and 2017 NEI; it sounds like we don't need to use 2014 NEI data anymore, so I may want to revert this back to just acommodating 2017 data.
 
 ```{r}
-# NEI, for pulling TPY values
-nei_path_2017 <- 'ref_workbooks/2017neiApr_nonpoint/esg_cty_scc_12961.csv'
-
-nei_path_2014 <- 'ref_workbooks/2014NEIv2_Nonpoint_Utah.xlsx'
-
-# function to pull NEI data from the NEI csv in ref_workbooks
-pull_nei <- function(nei_path_17 = nei_path_2017, nei_path_14 = nei_path_2014) {
-  
-  suppressMessages(nei_17 <- read_csv(nei_path_17))
-  
-  suppressMessages(nei_14 <- read_xlsx(nei_path_14))
-  
-  # filter 2017 NEI to only have UT data
-  nei_17 <- nei_17 %>%
-    filter(`fips state code` == "49") 
-  
-  # Clean up both data sets, match column names to prep for rbinding them
-  nei_14 <- nei_14 %>%
-    # Select only these variables
-    select(fips, county, scc, `pollutant code`, `pollutant desc`, `total emissions`, `emissions uom`) %>%
-    # Rename the variables to match the naming convention of the WW
-    rename("StateAndCountyFIPSCode" = fips,
-           "County" = county,
-           "SourceClassificationCode" = scc,
-           "PollutantCode" = `pollutant code`,
-           "Pollutant" = `pollutant desc`,
-           "TotalEmissions" = `total emissions`,
-           "EmissionsUnitofMeasureCode" = `emissions uom`)
-  
-  nei_17 <- nei_17 %>%
-    # Select only these variables
-    select(`fips code`, county, scc, `pollutant code`, `pollutant desc`, `total emissions`, `emissions uom`) %>%
-    # Rename the variables to match the naming convention of the WW
-    rename("StateAndCountyFIPSCode" = `fips code`,
-           "County" = county,
-           "SourceClassificationCode" = scc,
-           "PollutantCode" = `pollutant code`,
-           "Pollutant" = `pollutant desc`,
-           "TotalEmissions" = `total emissions`,
-           "EmissionsUnitofMeasureCode" = `emissions uom`)
-  
-    # add a year column onto both nei data sets to identify the year that the estimate is from
-  nei_14$year <- "2014"
-  
-  nei_17$year <- "2017"
-  
-  # rbind these data sets
-  nei <- rbind(nei_14, nei_17)
-  
-  #go through each row. If I find LB in the emissions unit of measure code, divide the emissions by 2,000 and change to TPY
-  nei <- nei %>%
-    mutate(TotalEmissions = ifelse(EmissionsUnitofMeasureCode == 'LB',
-                                   TotalEmissions/2000,
-                                   TotalEmissions )) %>%
-    mutate(EmissionsUnitofMeasureCode = ifelse(EmissionsUnitofMeasureCode == 'LB',
-                                               'TON',
-                                               EmissionsUnitofMeasureCode))
-  
-  
-  return(nei)
-}
-
-# create an nei object using the pull_nei function
-# it takes a long time to pull the NEI data since the csv file is so large
-start <- proc.time()
-nei <- pull_nei(nei_path_17 = nei_path_2017, nei_path_14 = nei_path_2014)
-proc.time() - start # takes 25 secs
-
 # This is for when we take the total emissions from the NEI, but then we project the data ourselves, or add controls or anything. Input an SCC and a start year. If there is not data for the start year, we will return data for the other year if it is available.
 pull_baseline_from_nei <- function(scc, nei_table = nei, st_year = start_year){
   
