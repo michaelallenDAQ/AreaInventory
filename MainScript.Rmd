@@ -57,7 +57,6 @@ end_year <- 2020
 naa_counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
 #step 2
 source(paste0(Sys.getenv('GitDir'),'BaseTables.R'))
-## CT Note - I can't figure out how to suppress the "parsing failure" message from the read_csv for the 2017 nei file
 source(paste0(Sys.getenv('GitDir'),'BaseInputs.R'))
 #we will fill in this final table with our data
 final_table <- vector()
