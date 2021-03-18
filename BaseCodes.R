@@ -49,6 +49,10 @@ pull_nei <- function(nei_path, year) {
   # Suppress messages
   suppressMessages(nei <- read_csv(nei_path))
   
+  # Delete the "problems" and "spec" attributes. These don't matter.
+  attr(nei, 'problems') <- NULL
+  attr(nei, 'spec') <- NULL
+  
   # filter 2017 NEI to only have UT data
   nei <- nei %>%
     filter(`fips state code` == "49") 
@@ -724,6 +728,67 @@ pull_baseline_from_ww <- function(scc,ww_table = ww, st_year = start_year){
   temp_table <- temp_table %>%
     select(StateAndCountyFIPSCode,SourceClassificationCode,year,PollutantCode,TotalEmissions)
   colnames(temp_table) <- c('FIPS','SCC','year','pollutant','TPY')
+  return(temp_table)
+}
+
+# This is for when we take the total emissions from the NEI, but then we project
+# the data ourselves, or add controls or anything. Input an SCC or the first few
+# characters in an scc if you want the sum of different sccs. If you do that, 
+# enter the scc code in this format, for example: "^2805030".
+pull_baseline_from_nei <- function(scc, nei_table = nei){
+  
+  # save only the observations from the nei_table for our scc of interest
+  # if we are using a "parent" scc, it will be in character format.
+  # IE, we want all sccs that fall under "2805030", then we would have put into
+  # the function "^2805030"
+  # Let's check if it is a character. If it is, we'll run it through str_detect
+  if(is.character(scc)) {
+    temp_table <- nei_table %>% filter(str_detect(SourceClassificationCode, scc)) 
+    
+    # if not, we want an exact match. We are looking for only one scc.
+  } else {
+    temp_table <- nei_table %>% filter(SourceClassificationCode == scc) 
+  }
+  
+  # if there are no observations in the nei_table for our scc of interest, stop 
+  # the function and print a message to notify
+  if(dim(temp_table)[1] == 0){
+    stop('we did not pull any data from the NEI for ', scc)
+  }
+  
+  #we already modified nei to only have TONS as throughput UOM, but let's double
+  # check
+  not_tons <- temp_table %>% filter(EmissionsUnitofMeasureCode != 'TON')
+  if(dim(not_tons)[1] != 0){
+    stop('we are pulling non-ton baseline throughputs from NEI')
+  }
+  
+  # check if we pulled more than one scc (if we put in a parent scc)
+  # if we did, notify & sum over all of them
+  if(length(unique(temp_table$SourceClassificationCode)) > 1) {
+    print(paste0("We pulled data for the following SCCs: ", 
+                 paste(unique(temp_table$SourceClassificationCode), collapse = ", "), 
+                 ". We are summing TPY over all of them in the resulting output table. Make sure to overwrite the 'scc' column with the scc of interest in the resulting output table."))
+    
+    temp_table <- temp_table %>%
+      group_by(StateAndCountyFIPSCode, County, PollutantCode, Pollutant, 
+               EmissionsUnitofMeasureCode, year) %>%
+      summarize(TotalEmissions = sum(TotalEmissions),
+                .groups = "keep") %>%
+      ungroup()
+    
+    temp_table$SourceClassificationCode <- scc
+  }
+  
+  # return the data in this format
+  temp_table <- temp_table %>%
+    select(StateAndCountyFIPSCode,SourceClassificationCode,year,PollutantCode,
+           TotalEmissions)
+  colnames(temp_table) <- c('FIPS','SCC','year','pollutant','TPY')
+  
+  # note that the "year" will be the year that the NEI data is from, so we need 
+  # to make sure to update the NEI data every time new NEI data is available.
+  
   return(temp_table)
 }
 
