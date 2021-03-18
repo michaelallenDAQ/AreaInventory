@@ -47,7 +47,7 @@ pull_nei <- function(nei_path, year) {
   
   # Read in the NEI data
   # Suppress messages
-  suppressMessages(nei <- read_csv(nei_path))
+  suppressWarnings(suppressMessages(nei <- read_csv(nei_path)))
   
   # Delete the "problems" and "spec" attributes. These don't matter.
   attr(nei, 'problems') <- NULL
