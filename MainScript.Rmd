@@ -368,7 +368,7 @@ temp_table <- make_baseline(efs_table,pp,project_to = end_year)
 # ends up with 28% reduction over 2017-2022
 temp_table <- add_controls(temp_table,scc,naa_counties,2017,2022,0.72)
 final_table <- rbind(final_table, temp_table)
-
+```
 
 
 ## Casey Trout
@@ -376,13 +376,6 @@ final_table <- rbind(final_table, temp_table)
 NOTE: We always do pt source subtractions AFTER adding controls to the emissions estimates. We assume that our pt source emissions are already using the controls before they get phased in.
 
 To Do: Check if emissions factors changed from 2014 to 2017 NEI; if they changed, we should no longer be adding controls to the emissions estimates. The controls are dependent on the assumptions made when calculating the emissions factors.
-
-```{r}
-# define NAA counties
-# Box Elder, Cache, Davis, Salt Lake, Tooele, Utah, and Weber
-naa_counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
-```
-
 
 Here's the code that I'm adding to work with SCCs:
 
