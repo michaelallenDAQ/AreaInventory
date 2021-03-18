@@ -3,8 +3,6 @@ title: "AreaInventory"
 output: html_document
 ---
 
-test
-
 ```{r optional SIP stuff, or Website/NEI filters}
 #for the ozone SIP. This is the list of all pt sources to filter for the 2017 inventory
 #SIP_compiled <- read_xlsx(
