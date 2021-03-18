@@ -8,6 +8,9 @@
 #  (pull_ww)
 #  Pull filtered Wagon Wheel data, which only has TPY emissions for SCCs
 #
+#  (pull_nei)
+#  Pull nei data, format it to match formatting of ww data
+#
 #  (add_controls)
 #  Add control factors to any specific year/SCC/County combination. Right now, you can not single out specific pollutants
 #
@@ -37,6 +40,49 @@ pull_ww <- function(ww_path) {
                                                EmissionsUnitofMeasureCode))
   return(ww)
 }
+
+# function to pull NEI data from the NEI csv in ref_workbooks
+# put in the nei path and the year the data is from
+pull_nei <- function(nei_path, year) {
+  
+  # Read in the NEI data
+  # Suppress messages
+  suppressMessages(nei <- read_csv(nei_path))
+  
+  # filter 2017 NEI to only have UT data
+  nei <- nei %>%
+    filter(`fips state code` == "49") 
+  
+  # Clean up
+  nei <- nei %>%
+    # Select only these variables
+    select(`fips code`, county, scc, `pollutant code`, `pollutant desc`, 
+           `total emissions`, `emissions uom`) %>%
+    # Rename the variables to match the naming convention of the WW
+    rename("StateAndCountyFIPSCode" = `fips code`,
+           "County" = county,
+           "SourceClassificationCode" = scc,
+           "PollutantCode" = `pollutant code`,
+           "Pollutant" = `pollutant desc`,
+           "TotalEmissions" = `total emissions`,
+           "EmissionsUnitofMeasureCode" = `emissions uom`)
+
+  nei$year <- year
+
+  #go through each row. If I find LB in the emissions unit of measure code, 
+  # divide the emissions by 2,000 and change to TPY
+  nei <- nei %>%
+    mutate(TotalEmissions = ifelse(EmissionsUnitofMeasureCode == 'LB',
+                                   TotalEmissions/2000,
+                                   TotalEmissions )) %>%
+    mutate(EmissionsUnitofMeasureCode = ifelse(EmissionsUnitofMeasureCode == 'LB',
+                                               'TON',
+                                               EmissionsUnitofMeasureCode))
+  
+  
+  return(nei)
+}
+
 
 #EPA data often give PM in many forms. PM-PRI (primary)is the sum
 #of CON (condensible) and FIL (filterable). All condensible PM is 2.5
