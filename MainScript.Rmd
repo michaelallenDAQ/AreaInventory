@@ -3,8 +3,6 @@ title: "AreaInventory"
 output: html_document
 ---
 
-Hey
-
 ```{r optional SIP stuff, or Website/NEI filters}
 #for the ozone SIP. This is the list of all pt sources to filter for the 2017 inventory
 #SIP_compiled <- read_xlsx(
@@ -39,8 +37,7 @@ target_ids <- NULL
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#knitr::opts_knit$set(root.dir = 'U:/PLAN/michaelallen/main_workbook')
-knitr::opts_knit$set(root.dir = './')
+knitr::opts_knit$set(root.dir = Sys.getenv('HomeDir'))
 ```
 
 
@@ -48,21 +45,19 @@ knitr::opts_knit$set(root.dir = './')
 library(readxl)
 library(tidyverse)
 library(tidyr)
-#library(tidycensus)
-#library(censusapi)
 #turn off scientific notation. Scientific notation is bad when listing SCCs, as often the end
 #digits get cut off
 options(scipen = 999)
 
-#maybe don't need to set this wd below. It happens in the knitr:opts
-#setwd('./')
 #step 1
-source('Basecodes.R')
+source(paste0(Sys.getenv('GitDir'),'BaseCodes.R'))
 start_year <- 2017
 end_year <- 2020
+#when we add controls to an SCC, these are the default FIPS we add controls to.
+naa_counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
 #step 2
-source('BaseTables.R')
-source('BaseInputs.R')
+source(paste0(Sys.getenv('GitDir'),'BaseTables.R'))
+source(paste0(Sys.getenv('GitDir'),'BaseInputs.R'))
 #we will fill in this final table with our data
 final_table <- vector()
 ```
@@ -127,6 +122,16 @@ project baseline
   if controls
     apply controls
 add to final table
+```{r}
+scc <- 2501055120
+test <- pull_baseline_from_ww(scc)
+scc <- 2505040120
+test <- pull_baseline_from_ww(scc)
+
+
+
+
+```
 
 
 2810010000 - perspiration - report? find citation?
@@ -361,8 +366,7 @@ temp_table <- make_baseline(efs_table,pp,project_to = end_year)
 #no pt source
 #assumed rule 307-304 for solvent cleaning applies to this SCC.
 # ends up with 28% reduction over 2017-2022
-counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
-temp_table <- add_controls(temp_table,scc,counties,2017,2022,0.72)
+temp_table <- add_controls(temp_table,scc,naa_counties,2017,2022,0.72)
 final_table <- rbind(final_table, temp_table)
 
 
@@ -1669,12 +1673,11 @@ scc <- 2460100000
 efs_table <- pull_efs_from_ww(scc,throughput_unit = 'EACH',all_primaries = FALSE)
 temp_table <- make_baseline(efs_table,pp,project_to = end_year)
 #no pt sources
-counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # "assume first product hit shelf in 2016"
 # it is not clear from rule 357 what the control efficiency is, you have to
 # look at our 2017 TSD. This applies for all 357-controlled SCCs
-temp_table <- add_controls(temp_table,scc,counties,2015,2016,0.916)
+temp_table <- add_controls(temp_table,scc,naa_counties,2015,2016,0.916)
 final_table <- rbind(final_table, temp_table)
 
 #solvent, household products
@@ -1685,10 +1688,9 @@ scc <- 2460200000
 efs_table <- pull_efs_from_ww(scc,throughput_unit = 'EACH',all_primaries = FALSE)
 temp_table <- make_baseline(efs_table,pp,project_to = end_year)
 #no pt sources
-counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # see 2460100000
-temp_table <- add_controls(temp_table,scc,counties,2015,2016,0.755)
+temp_table <- add_controls(temp_table,scc,naa_counties,2015,2016,0.755)
 final_table <- rbind(final_table, temp_table)
 
 #solvent, auto aftermarket products
@@ -1699,10 +1701,9 @@ scc <- 2460400000
 efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
 temp_table <- make_baseline(efs_table,pp,project_to = end_year)
 #no pt sources?
-counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # see 2460100000
-temp_table <- add_controls(temp_table,scc,counties,2015,2016,0.936)
+temp_table <- add_controls(temp_table,scc,naa_counties,2015,2016,0.936)
 final_table <- rbind(final_table, temp_table)
 
 #solvent, coatings & related products
@@ -1713,10 +1714,9 @@ scc <- 2460500000
 efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
 temp_table <- make_baseline(efs_table,pp,project_to = end_year)
 #no pt sources?
-counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # see 2460100000
-temp_table <- add_controls(temp_table,scc,counties,2015,2016,0.913)
+temp_table <- add_controls(temp_table,scc,naa_counties,2015,2016,0.913)
 final_table <- rbind(final_table, temp_table)
 
 #solvents, adhesives and sealants
@@ -1727,10 +1727,9 @@ scc <- 2460600000
 efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
 temp_table <- make_baseline(efs_table,pp,project_to = end_year)
 #no pt sources
-counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # see 2460100000
-temp_table <- add_controls(temp_table,scc,counties,2013,2018,0.49)
+temp_table <- add_controls(temp_table,scc,naa_counties,2013,2018,0.49)
 final_table <- rbind(final_table, temp_table)
 
 #solvents, consumer use, miscellaneous 
@@ -1764,8 +1763,7 @@ temp_table <- make_baseline(efs_table, input_table)
 temp_table <- project_baseline(temp_table,pp)
 #Controls: R307-309 is about fugitive dust control plans. Has an assumed 32% 
 #reduction that started in 2014.
-counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
-temp_table <- add_controls(temp_table,scc,counties,2013,2014,0.68)
+temp_table <- add_controls(temp_table,scc,naa_counties,2013,2014,0.68)
 final_table <- rbind(final_table,temp_table)
 
 #surface coatings, architectural
@@ -1776,8 +1774,7 @@ scc <- 2401001000
 efs_table <- pull_efs_from_ww(scc,'EACH',all_primaries = FALSE)
 temp_table <- make_baseline(efs_table, pp, project_to = end_year)
 #controls are based on R307-361: "architectural coatings"
-counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
-temp_table <- add_controls(temp_table,scc,counties,2015,2016,0.45)
+temp_table <- add_controls(temp_table,scc,naa_counties,2015,2016,0.45)
 #pt subs? Maybe used to be but is no longer supported in EPA crosswalk.
 final_table <- rbind(final_table,temp_table)
 
@@ -1843,11 +1840,10 @@ temp_table <- project_baseline(temp_table,pp)
 #  that is an approximation though.
 #The workbook only controlled VOC/HAPS, but I added PM because the rule language
 #  suggests PM is being controlled.
-counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
 #for this SCC, the only pollutant we do not target is CO
 target_pollutants <- sort(unique(temp_table$pollutant))
 target_pollutants <- target_pollutants[!target_pollutants %in% 'CO']
-temp_table <- add_controls(temp_table,scc,counties,2015,2016,0.24,pollutants = target_pollutants )
+temp_table <- add_controls(temp_table,scc,naa_counties,2015,2016,0.24,pollutants = target_pollutants )
 #no pt subs?
 final_table <- rbind(final_table, temp_table)
 
