@@ -45,6 +45,7 @@ knitr::opts_knit$set(root.dir = Sys.getenv('HomeDir'))
 library(readxl)
 library(tidyverse)
 library(tidyr)
+
 #turn off scientific notation. Scientific notation is bad when listing SCCs, as often the end
 #digits get cut off
 options(scipen = 999)
@@ -910,6 +911,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # Apply controls
 ## Apply to NAA Counties
 ## Two applicable rules based on the two NAICS employment categories used for the throughput (3369// and 339//)
+## Greg Mortensen (previous Area Source Inventory Environmental Scientist) and Joel Karmazyn (Rule making) worked together to allocate NAICS codes under 3369// and 339// to plastic parts surface coating and fabric/vinyl coating by researching the NAICS codes. We still use the NAICS allocations they created. There is room for improvement in this scc; a rule that encompassed the entirety of the NAICS codes under this scc (instead of two rules that apply to different industries that both fall under this scc) would be more accurate. We may want to revisit these rules in the future.
 
 ### R307-353 Plastic Parts Surface Coating
 ### The following NAICS were considered for the plastic coating employment subset: 336991, 336992, 336999, 339113, 339910, 339920, 339930, 339940, 339950, 339992.
@@ -1123,6 +1125,9 @@ rm(scc, temp_table, ww_ef, ww_ef_VOC, temp_table_project, temp_table_controlled,
 
 # Solvent Utilization > Graphic Arts > All Processes > Total: All Processes
 # DONE
+
+# NOTE!! With the 2020 NEI, we need to use the emissions factor that EPA provides; we will no longer use our own emissions factor. EPA is updating the methodology to calculate emissions from graphic arts, and the emissions factor that we use is 10 years old, from an outdated survey UDAQ carried out. We can't justify using our outdated emissions factor once EPA revamps the calculation methods in 2020.
+
 ## Workbook Note: VOC emissions factor was changed to 201 lbs/employee on 3/7/2012 as a result of ERTAC/Utah/Industry collaboration. Old EF was 1482 lbs/employee. New EF accounts for advances made in low-VOC content inks and solvents now in use.
 ### Therefore, we use our own EF, not the WW one.
 ## Workbook Note: We assume that businesses within each county fill the graphic arts needs of their own county. (While this may not be absolutely accurate, any error will cancel between adjacent counties.)
