@@ -1329,7 +1329,7 @@ final_table <- rbind(final_table, temp_table_final)
 rm(scc, throughput, efs_table, temp_table, vmt, temp_table_project, temp_table_final)
 ```
 
-## Agriculture
+## Miscellaneous Area Sources - Animal Agriculture
 
 ### Get emissions for agriculture sccs
 
@@ -1491,6 +1491,17 @@ final_table <- rbind(final_table, temp_table_final)
 rm(scc, temp_table, temp_table_project, temp_table_final)
 ```
 
+## Other Miscellaneous Area Sources
+
+```{r}
+# Miscellaneous Area Sources > Agriculture Production - Crops - as nonpoint > Agricultural Field Buring - whole field set on fire > Unspecified crop type and Burn Method
+scc <- 2801500000
+
+# Miscellaneous Area Sources > Agriculture Production - Crops > Fertilizer Application > Miscellaneous Fertilizers
+scc <- 2801700099
+```
+
+
 ## Storage and Transport
 
 ```{r}
@@ -1524,6 +1535,7 @@ scc <- 2501012014
 # Storage and Transport > Petroleum and Petroleum Product Storage > Commercial Portable Gas Cans > Refilling at the Pump - Spillage
 scc <- 2501012015
 ```
+
 
 
 ## End Casey Trout
