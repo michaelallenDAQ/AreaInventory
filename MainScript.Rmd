@@ -1494,8 +1494,28 @@ rm(scc, temp_table, temp_table_project, temp_table_final)
 ## Other Miscellaneous Area Sources
 
 ```{r}
-# Miscellaneous Area Sources > Agriculture Production - Crops - as nonpoint > Agricultural Field Buring - whole field set on fire > Unspecified crop type and Burn Method
+# Miscellaneous Area Sources > Agriculture Production - Crops - as nonpoint > Agricultural Field Burning - whole field set on fire > Unspecified crop type and Burn Method
+## This scc covers the burning of crop chaff, stock, and stubble from farming fields, whether piled or in situ.
 scc <- 2801500000
+
+# Total emissions - we just get emissions estimates from the NEI.
+temp_table <- pull_baseline_from_nei(scc = scc)
+
+# Project on agricultural employment
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = AgJobs)
+
+# No controls
+
+# No pt source subtractions
+
+# temp_table_project is our final temp_table
+temp_table_final <- temp_table_project
+
+# add to final table
+final_table <- rbind(final_table, temp_table_final)
+
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
 
 # Miscellaneous Area Sources > Agriculture Production - Crops > Fertilizer Application > Miscellaneous Fertilizers
 scc <- 2801700099
