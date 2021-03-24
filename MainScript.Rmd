@@ -1491,6 +1491,41 @@ final_table <- rbind(final_table, temp_table_final)
 rm(scc, temp_table, temp_table_project, temp_table_final)
 ```
 
+## Storage and Transport
+
+```{r}
+# Storage & Transport > Petroleum and Petroleum Product Storage > Residential Portable Gas Cans > Permeation
+scc <- 2501011011
+
+# Storage and Transport > Petroleum and Petroleum Product Storage > Residential Portable Gas Cans > Evaporation (includes Diurnal losses)
+scc <- 2501011012
+
+# Storage and Transport > Petroleum and Petroleum Product Storage > Residential Portable Gas Cans > Spillage During Transport
+scc <- 2501011013
+
+# Storage and Transport > Petroleum and Petroleum Product Storage > Residential Portable Gas Cans > Refilling at the Pump - Vapor Displacement
+scc <- 2501011014
+
+# Storage and Transport > Petroleum and Petroleum Product Storage > Residential Portable Gas Cans > Refilling at the Pump - Spillage
+scc <- 2501011015
+
+# Storage and Transport > Petroleum and Petroleum Product Storage > Commercial Portable Gas Cans > Permeation
+scc <- 2501012011
+
+# Storage and Transport > Petroleum and Petroleum Product Storage > Commercial Portable Gas Cans > Evaporation (includes Diurnal losses)
+scc <- 2501012012
+
+# Storage and Transport > Petroleum and Petroleum Product Storage > Commercial Portable Gas Cans > Spillage During Transport
+scc <- 2501012013
+
+# Storage and Transport > Petroleum and Petroleum Product Storage > Commercial Portable Gas Cans > Refilling at the Pump - Vapor Displacement
+scc <- 2501012014
+
+# Storage and Transport > Petroleum and Petroleum Product Storage > Commercial Portable Gas Cans > Refilling at the Pump - Spillage
+scc <- 2501012015
+```
+
+
 ## End Casey Trout
 
 
