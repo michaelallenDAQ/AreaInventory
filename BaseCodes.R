@@ -20,6 +20,9 @@
 #  (code_to_pol, pol_to_code)
 #  that converts a county name into a FIP, or converts a pollutant code into plain language
 #
+#  (pull_input_tables)
+#  pull tables from the input tables excel document into a list
+#
 #  and more. This section should not pull any variables. It should only generate functions.
 #
 #
@@ -85,6 +88,36 @@ pull_nei <- function(nei_path, year) {
   
   
   return(nei)
+}
+
+#' Pull input tables
+#' 
+#' Pull all of the input tables from the input excel file into a list with
+#' each list element representing the data on a specific sheet
+#' 
+#' @param file_path Pathway to the excel file with input tables
+#' @return list with each element the data stored on an input table sheet
+#' @export
+pull_input_tables <- function(file_path) {
+  
+  # first get the name of all of the sheets in the input file
+  sheets <- readxl::excel_sheets(file_path)
+  
+  # now, for each of the sheets, read in the data on that particular sheet and
+  # assign to a new element in the list
+  input_list = lapply(sheets, function(sheet_name) {
+    
+    # Skip the first 10 rows in each sheet; this is where the table
+    # documentation is stored. The data starts on row 11.
+    readxl::read_excel(file_path, sheet = sheet_name, skip = 10)
+  }
+  )
+  
+  # Name each element in the list the name of the sheet that the data comes from
+  names(input_list) <- sheets
+  
+  # return the list
+  return(input_list)
 }
 
 

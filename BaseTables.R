@@ -54,6 +54,10 @@ ww <- pull_ww(read_path)
 nei_path_2017 <- 'ref_workbooks/2017neiApr_nonpoint/esg_cty_scc_12961.csv'
 nei <- pull_nei(nei_path_2017, "2017")
 
+# Input tables maintained in excel
+input_table_path <- 'ref_workbooks/new_input_tables20210305.xlsx'
+input_tables <- pull_input_tables(file_path = input_table_path)
+
 #statewide_compiled, for pulling emissions for pt source subtraction
 #read_path <- 'U:/PLAN/CWILLIAMS/Inventory Database/2017 Statewide Inventory/Compiled statewide data.xlsx'
 read_path <- 'ref_workbooks/Compiled statewide data.xlsx'
