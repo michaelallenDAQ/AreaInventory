@@ -124,10 +124,6 @@ project baseline
     apply controls
 add to final table
 ```{r}
-scc <- 2501055120
-test <- pull_baseline_from_ww(scc)
-scc <- 2505040120
-test <- pull_baseline_from_ww(scc)
 
 
 
@@ -376,44 +372,46 @@ final_table <- rbind(final_table, temp_table)
 
 NOTE: We always do pt source subtractions AFTER adding controls to the emissions estimates. We assume that our pt source emissions are already using the controls before they get phased in.
 
-To Do: Check if emissions factors changed from 2014 to 2017 NEI; if they changed, we should no longer be adding controls to the emissions estimates. The controls are dependent on the assumptions made when calculating the emissions factors.
-
-Here's the code that I'm adding to work with SCCs:
-
 ```{r}
 # Solvent Utilization > Surface Coating > Auto Refinishing: SIC 7532 > Total: All Solvent 
-# DONE
-## Note: The EF listed in the Workbook is from the 2014 NEI and is 87 lbs/employee; the new WW EF is 75.58 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
 
 # We assume that businesses within each county fill the autobody refinishing needs of their own county; while this may not be absolutely accurate, any error will cancel between adjacent counties.
 
 # Pull the baseline from WW, project based on population from the pp table, add controls, no pt source subtractions. 
 scc <- 2401005000
 
-# pull baseline from ww
 ## WW uses autobody refinishing employees (NAICS 4411, 4412, 81112) for the throughput
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project the baseline based on population
+#projects with population
 temp_table_project <- project_baseline(base_table = temp_table, projection_table = pp)
 
 # add controls
 ## R307-354 Autobody Refinishing
 ## Assume 5-year phase-in period starting in 2016 based on UCAIR grant program initiation to support the industry; 73% reduction
 ## Controls apply to NAA counties
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2015, e_year = 2020, end_val = 0.27)
+#Control factor was based on 2014 which assumed 87 lbs/employee.
+# 73% reduction on 87 lbs would end with 23.49 lb/employee.
+old_control <- 0.27
+old_end_ef <- 23.49
+#let's see what the new EF is, and adjust our controls to reach the right end EF.
 
-# compare emissions with and without controls
-test <- compare_inventories(oinv = temp_table_project, ninv = temp_table_controlled, hide_pct = FALSE)
-
-# no pt subtractions
-pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
+#Pull the VOC EF from WW
+new_ef <- pull_efs_from_ww(scc, throughput_unit = "EACH") %>% filter(pollutant == "VOC") %>% select(TPUPY) %>% unique() %>% head() %>% as.double()*2000
+#get a new end control value. It is simply the different between our old final value and our new EF.
+new_control <- (old_end_ef/new_ef)
+#if the new control value has INCREASED from the old value, that means the EF has gone up since
+#it was last updated. If that's the case, we will assume the increased EF is real, and we will
+#not add more aggressive controls. So if the new control value has become larger/more aggressive,
+#reset it to the old value.
+if(new_control< old_control) {
+  new_control <- old_control
+}
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2015, e_year = 2020, end_val = new_control)
 
 temp_table_final <- temp_table_controlled
 
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
-
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, temp_table_final)
 
@@ -428,27 +426,19 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, temp_table_final)
 # Total 'lane miles' (as defined by UDOT and FHWA) includes all the lanes in every county (road length * number of lanes), including paved and unpaved roads
 # Casey Trout contacted UDOT on Feb 9, 2021 to inquire about updated lane miles data; Austin Baysinger (abaysinger@utah.gov, 801-965-4846) responded to her inquiry and sent lane miles data for 2019; the excel file Austin sent has a tab for paved and unpaved roads, each row includes the total length of a road as well as the "through lanes" (the number of lanes on each of those road segments); lane miles is calculated by multiplying the length of the road segment by the through lanes. This resulted in calculating 102,030.4 total lane miles in Utah in 2019 (very similar to the FHWA estimate for Utah for 2017)
 # EPA's NEMO method for calculating the through lanes in counties involved apportioning the total through lanes in the entire state (i.e. 102,030.4 in 2019) using the population in each county; this resulted in drastically overestimating the number of through lanes in more populous counties - i.e., in Salt Lake County, EPA estimated ~38000 lane miles, whereas the UDOT data identifies ~9000 lane miles; it is worth using UDOT data because it is more accurate than apportioning lane miles by population. My understanding is that UDOT reports total lane miles in the state to the FHWA; so EPA uses the FHWA data for total lane miles in each state & apportions back to counties using population, but UDOT has the ACTUAL numbers of lane miles in counties. (Therefore, using the actual number of lane miles in each county (UDOT data) to calculate emissions from traffic markings is more accurate than using the estimated number of lane miles by apportioning the Utah total lane miles to counties based on population).
+#
+#for now, just use WW, as at least the throughput and EF are synced up. 
 scc <- 2401008000
+temp_table <- pull_baseline_from_ww(scc)
+#projects with population
+temp_table <- project_baseline(temp_table, pp)
+#no controls, no pt subs
+final_table <- rbind(final_table,temp_table)
 
-# pull EF from WW
-# EF for Traffic Markings is 9.80 LB/EACH
-efs_table <- pull_efs_from_ww(scc = scc, throughput_unit = 'EACH', all_primaries = FALSE)
-
-# Throughput: lane miles
-
-# project - UDAQ projects using Input Table 141B (percent change of vehicle miles traveled daily)
-# this scales with population, so we can just project on population
-
-# no pt source subtractions
-
-# remove the objects we created for this scc
-rm(scc, efs_table)
 
 # Solvent Utilization > Surface Coating > Factory Finished Wood: SIC 2426 thru 242 > Total: All Solvent Types
 ## Note: The EF listed in the Workbook is from the 2014 NEI and is 48 lbs/employee; the new WW EF is 44.71 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
-# DONE
 
-# Get total emissions from WW, project based on manufacturing employment growth, apply controls, pt source subtractions using pull_pt_removal_table.
 scc <- 2401015000
 
 # WW EF is 44.71 LB/EACH
@@ -457,6 +447,7 @@ temp_table <- pull_baseline_from_ww(scc = scc)
 
 # project - UDAQ projects by manufacturing employment growth
 temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+
 
 # Apply controls
 ## Note in workbook: "*These categories have a different control factor for Salt Lake and Davis counties. Salt Lake and Davis factors are listed first, with other counties listed second." 
@@ -482,6 +473,11 @@ final_table <- rbind(final_table, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
+
+
+
+
+
 
 # Solvent Utilization > Surface Coating > Wood Furniture: SIC 25 > Total: All Solvent Types
 # DONE
@@ -1878,7 +1874,19 @@ temp_table  <- add_controls(temp_table,scc,49035,st_year = 2014,e_year = 2015,0.
 final_table <- rbind(final_table,temp_table)
 
 
+#storage and transport of petroleum and petroleum products
+#bulk plants, all evaporative losses - gasoline
+#
+#EPA has noted that there is a potential for overlap with point sources for 
+#SCCs: 2501055120 (likely with Bulk Terminals) and 2505040120
 
+scc <- 2501055120
+temp_table <- pull_baseline_from_ww(scc)
+
+#EPA has noted that there is a potential for overlap with point sources for 
+#SCCs: 2501055120 (likely with Bulk Terminals) and 2505040120
+scc <- 2505040120
+test <- pull_baseline_from_ww(scc)
 
 ```
 
