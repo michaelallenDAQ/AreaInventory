@@ -120,6 +120,34 @@ pull_input_tables <- function(file_path) {
   return(input_list)
 }
 
+#' Create projection tables
+#' 
+#' Pull projection tables from the input_tables, pivot longer to prepare them
+#' for the project function, return a list of projection_tables
+#' 
+#' @param table_names Vector of sheet names from input_tables that we want to 
+#' convert to projection tables
+#' @return list with each element the data stored on an input table sheet
+#' @export
+pull_projection_tables <- function(table_names, input_list = input_tables) {
+  
+  projection_tables <- input_tables[table_names]
+
+  # now, for each of the sheets, read in the data on that particular sheet and
+  # assign to a new element in the list
+  projection_tables = lapply(projection_tables, function(table) {
+    
+    # Skip the first 10 rows in each sheet; this is where the table
+    # documentation is stored. The data starts on row 11.
+    longer_table <- pivot_longer(table, cols = colnames(table)[-1],
+                                 names_to = "year",
+                                 values_to = "unit")
+  }
+  )
+  
+  return(projection_tables)
+}
+
 
 #EPA data often give PM in many forms. PM-PRI (primary)is the sum
 #of CON (condensible) and FIL (filterable). All condensible PM is 2.5
