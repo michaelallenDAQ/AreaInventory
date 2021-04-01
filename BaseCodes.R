@@ -44,6 +44,43 @@ pull_ww <- function(ww_path) {
   return(ww)
 }
 
+#This converts a FIPS code to a county name
+fip_to_county <-
+  function(FIP){
+    ref_counties <- strsplit(c('Beaver, Box Elder, Cache, Carbon, Daggett, Davis, Duchesne, Emery, Garfield, Grand, Iron, Juab, Kane, Millard, Morgan, Piute, Rich, Salt Lake, San Juan, Sanpete, Sevier, Summit, Tooele, Uintah, Utah, Wasatch, Washington, Wayne, Weber'),', ')
+    ref_fips <- seq.int(49001,49057,2)
+    df <- data.frame(ref_counties,ref_fips)
+    names(df) <- c('county', 'fip')
+    
+    out_ct <- filter(df,fip==FIP)[[1]]
+    return(out_ct)
+  }
+
+#this converts a county name to a FIPS code
+county_to_fip <-
+  function(ct_name){
+    #produce conversion table to draw from
+    ref_counties <- strsplit(c('Beaver, Box Elder, Cache, Carbon, Daggett, Davis, Duchesne, Emery, Garfield, Grand, Iron, Juab, Kane, Millard, Morgan, Piute, Rich, Salt Lake, San Juan, Sanpete, Sevier, Summit, Tooele, Uintah, Utah, Wasatch, Washington, Wayne, Weber'),', ')
+    ref_fips <- seq.int(49001,49057,2)
+    df <- data.frame(ref_counties,ref_fips)
+    names(df) <- c('county', 'fip')
+    
+    #make it lowercase just to be sure
+    ct_name <- tolower(ct_name)
+    ct_name <- str_remove(ct_name,' county')
+    ct_name <- .simpleCap(ct_name)
+    out_fip <- filter(df,county==ct_name)[[2]]
+    
+    return(out_fip)
+  }
+
+#capitalize first letter of every word in a sentence
+.simpleCap <- function(x) {
+  s <- strsplit(x, " ")[[1]]
+  paste(toupper(substring(s, 1, 1)), substring(s, 2),
+        sep = "", collapse = " ")
+}
+
 # Function to pull NEI data from the NEI csv in ref_workbooks
 # Put in the nei path and the year the data is from
 pull_nei <- function(nei_path, year) {
@@ -137,9 +174,16 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
   # assign to a new element in the list
   projection_tables = lapply(projection_tables, function(table) {
     
-    # Skip the first 10 rows in each sheet; this is where the table
-    # documentation is stored. The data starts on row 11.
-    longer_table <- pivot_longer(table, cols = colnames(table)[-1],
+    #rename the first column to switch the county names to their fips codes
+    renamed_table <- table
+    ncounties <- dim(table)[1]
+    for (i in 1:ncounties) {
+      renamed_table[i, 1] <-
+        as.factor(county_to_fip(table[[i, 1]]))
+    }
+    
+    #now pivot_longer
+    longer_table <- pivot_longer(renamed_table, cols = colnames(table)[-1],
                                  names_to = "year",
                                  values_to = "unit")
   }
@@ -227,42 +271,6 @@ pull_excel_model_data <- function(model_path, base_year = start_year) {
   return(model_pols)
 }
 
-#This converts a FIPS code to a county name
-fip_to_county <-
-  function(FIP){
-    ref_counties <- strsplit(c('Beaver, Box Elder, Cache, Carbon, Daggett, Davis, Duchesne, Emery, Garfield, Grand, Iron, Juab, Kane, Millard, Morgan, Piute, Rich, Salt Lake, San Juan, Sanpete, Sevier, Summit, Tooele, Uintah, Utah, Wasatch, Washington, Wayne, Weber'),', ')
-    ref_fips <- seq.int(49001,49057,2)
-    df <- data.frame(ref_counties,ref_fips)
-    names(df) <- c('county', 'fip')
-    
-    out_ct <- filter(df,fip==FIP)[[1]]
-    return(out_ct)
-  }
-
-#this converts a county name to a FIPS code
-county_to_fip <-
-  function(ct_name){
-    #produce conversion table to draw from
-    ref_counties <- strsplit(c('Beaver, Box Elder, Cache, Carbon, Daggett, Davis, Duchesne, Emery, Garfield, Grand, Iron, Juab, Kane, Millard, Morgan, Piute, Rich, Salt Lake, San Juan, Sanpete, Sevier, Summit, Tooele, Uintah, Utah, Wasatch, Washington, Wayne, Weber'),', ')
-    ref_fips <- seq.int(49001,49057,2)
-    df <- data.frame(ref_counties,ref_fips)
-    names(df) <- c('county', 'fip')
-    
-    #make it lowercase just to be sure
-    ct_name <- tolower(ct_name)
-    ct_name <- str_remove(ct_name,' county')
-    ct_name <- .simpleCap(ct_name)
-    out_fip <- filter(df,county==ct_name)[[2]]
-    
-    return(out_fip)
-  }
-
-#capitalize first letter of every word in a sentence
-.simpleCap <- function(x) {
-  s <- strsplit(x, " ")[[1]]
-  paste(toupper(substring(s, 1, 1)), substring(s, 2),
-        sep = "", collapse = " ")
-}
 
 # give each layer description of an SCC, as well as its status
 #(active or retired)

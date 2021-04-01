@@ -58,10 +58,25 @@ end_year <- 2020
 naa_counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
 #step 2
 source(paste0(Sys.getenv('GitDir'),'BaseTables.R'))
-source(paste0(Sys.getenv('GitDir'),'BaseInputs.R'))
+#this one I am phasing out, so I will comment it
+#source(paste0(Sys.getenv('GitDir'),'BaseInputs.R'))
+
 #we will fill in this final table with our data
 final_table <- vector()
 ```
+
+
+```{r}
+input_tables <- pull_input_tables(paste0(Sys.getenv("HomeDir"),"/",input_table_path))
+
+pp <- projection_tables[["Population"]]
+AgJobs <- projection_tables[["AgJobs"]]
+ManEmp <- projection_tables[["ManEmp"]]
+
+
+```
+
+
 This is going to produce a fresh inventory for Utah's Area Source.
 This code has 5 main sections:
   1) Base Codes
@@ -164,7 +179,7 @@ pt_sccs <- seq.int(30203201,30203299)
 pt_pols <- c('VOC')
 pt_table <- pull_pt_removal_table(pt_sccs,scc,raw_scc_pull_return = FALSE)
 #pt_table <- pull_pt_removal_table(pt_sccs,pt_pols,scc,raw_scc_pull_return = TRUE)
-pt_table <- project_baseline(pt_table,pp)
+pt_table <- project_baseline(pt_table,pp,has_pt = TRUE)
 temp_table <- subtract_pt_sources(pt_table,temp_table)
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -372,7 +387,7 @@ final_table <- rbind(final_table, temp_table)
 
 NOTE: We always do pt source subtractions AFTER adding controls to the emissions estimates. We assume that our pt source emissions are already using the controls before they get phased in.
 
-```{r}
+```{r solvents (24-xx-xxx-xxx)}
 # Solvent Utilization > Surface Coating > Traffic Markings > Total: All Solvent Types
 # INCOMPLETE - WE DO NOT HAVE 2017 UDOT DATA. 
 # TO DO - GET 2017 DATA FROM UDOT; DECIDE IF WE SHOULD CREATE A LANE MILES PROJECTION, SEPARATE FROM POPULATION PROJECTION, SINCE LANE MILES DO NOT SCALE PROPORTIONALLY WTIH POPULATION.
@@ -393,11 +408,9 @@ temp_table <- project_baseline(temp_table, pp)
 #no controls, no pt subs
 final_table <- rbind(final_table,temp_table)
 
+
 # Solvent Utilization > Surface Coating > Auto Refinishing: SIC 7532 > Total: All Solvent 
-
 # We assume that businesses within each county fill the autobody refinishing needs of their own county; while this may not be absolutely accurate, any error will cancel between adjacent counties.
-
-# Pull the baseline from WW, project based on population from the pp table, add controls, no pt source subtractions. 
 scc <- 2401005000
 
 ## WW uses autobody refinishing employees (NAICS 4411, 4412, 81112) for the throughput
@@ -445,7 +458,7 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, temp_table_final)
 scc <- 2401015000
 # Make baseline - WW uses NAICS 321 employees for the throughput
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 # Apply controls
 ## R307-349 Flat Wood Surface Coating
 ## Assume 5-yr phase in period starting in 2018; 30% reduction from the 2014 EF of 48 lbs/employee
@@ -469,7 +482,7 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 ## EPA crosswalk lists a lot of potential point to nonpoint, and then project it
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = manufacturing_employment, has_pt = TRUE)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
 
 # Subtract uncontrolled point source emissions from our temp_table
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
@@ -482,14 +495,13 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs,
 
 # Solvent Utilization > Surface Coating > Wood Furniture: SIC 25 > Total: All Solvent Types
 ## Note: The EF listed in the Workbook is from the 2014 NEI and is 437 lbs/employee; the new WW EF is 282.87 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
-
 # Get total emissions from ww, project based on manufacturing employment, apply controls, pt source subtractions using pull_pt_removal_table.
 scc <- 2401020000
 
 # Throughput is employees in NAICS 337110, 337121, 337122, 337127*, 337211, 337212, 337215*
 # *Employment data is split equally between wood furniture and metal furniture source categories
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # Apply controls
 ## R307-343 Wood Furniture Manufacturing
@@ -513,7 +525,7 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = manufacturing_employment, has_pt = TRUE)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
@@ -522,13 +534,11 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs,
 
 
 # Solvent Utilization > Surface Coating > Metal Furniture: SIC 25 > Total: All Solvent Types
-
 scc <- 2401025000
-
 # Throughput is employees in NAICS 337124, 337127*, 337214, 337215*
 # *Employment data is split equally between wood furniture and metal furniture source categories
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # Apply controls
 ## R307-346 Metal Furniture Surface Coating
@@ -553,16 +563,15 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) # No pt subtractions from crosswalk.
-#the code will break if we try to project a blank table
+#the code will break if we try to project a blank table, so I will not project it, but if the table
+#is ever not blank, throw up a message
 if(dim(pt_subs)[1]!=0){
   cat('update pt subs code for 2401025000\n')
 }
-#pt_subs <- project_baseline(base_table = pt_subs, projection_table = manufacturing_employment, has_pt = TRUE)
+#pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
 #temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 temp_table_final <- temp_table_controlled
-
-# add to final table
 final_table <- rbind(final_table, temp_table_final)
 
 # remove the objects we created for this scc
@@ -571,11 +580,9 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs,
 
 # Solvent Utilization > Surface Coating > Paper: SIC 26 > Total: All Solvent Types
 scc <- 2401030000
-
-# EPA EF: 398.22 lb/each
 # Throughput is employees in NAICS 322220
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # Apply controls
 ## R307-344 Paper, Film and Foil Surface Coating
@@ -600,30 +607,21 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = manufacturing_employment, has_pt = TRUE)
-
-# Subtract uncontrolled point source emissions from our temp_table
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
-
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
 
+
 # Solvent Utilization > Surface Coating > Metal Cans: SIC 341 > Total: All Solvent Types
-# DONE
 ## Note: The EF listed in the Workbook is from the 2014 NEI and is 2493 lbs/employee; the new WW EF is 2239.43 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
-
-# We get total emissions by county from WW here, then project based on manufacturing employment, apply controls, do pt source subtractions using pull_pt_removal_table.
 scc <- 2401040000
-
-# EPA EF: 2,239.43 lb/each
 # Throughput is employees in NAICS 33243
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project - UDAQ projects by manufacturing employment growth
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # Apply controls
 ## R307-352 Sheet, Strip, Coil and Container Surface Coating
@@ -631,19 +629,11 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## NAA counties
 temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.67)
 
-# compare emissions with and without controls
-test <- compare_inventories(oinv = temp_table_project, ninv = temp_table_controlled, hide_pct = FALSE)
-
 # Pt source subtractions
 ## EPA crosswalk lists a lot of potential related point sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
-## we find that Davis County has relevant pt source subtractions
-pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) # In Davis County, 2.36 TPY
-
-## Project uncontrolled point source emissions
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = manufacturing_employment, has_pt = TRUE)
-
-# Subtract uncontrolled point source emissions from our temp_table
+pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
@@ -652,19 +642,13 @@ final_table <- rbind(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
 
+
 # Solvent Utilization > Surface Coating > Machinery and Equipment: SIC 35 > Total: All Solvent Types
-# DONE
 ## Note: The EF listed in the Workbook is from the 2014 NEI and is 44 lbs/employee; the new WW EF is 34.28 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
-
-# Get total emissions from EPA; project based on manufacturing employment; apply controls; pull pt source subtractions from pull_pt_removal_table.
 scc <- 2401055000
-
-# EPA EF: 34.28 lb/each
 # Throughput is employees in NAICS 3331, 3332, 3333, 33341
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project - UDAQ projects by manufacturing employment growth
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # Apply controls
 ## R307-350 Miscellaneous Metal Surface Coating
@@ -672,22 +656,11 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## Assume 5-yr phase in period starting in 2018; 31% reduction
 temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.69)
 
-# compare emissions with and without controls
-test <- compare_inventories(oinv = temp_table_project, ninv = temp_table_controlled, hide_pct = FALSE)
-
 # Pt source subtractions
 ## EPA crosswalk lists a lot of potential related point sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
-## counties with pt source subtractions: 49011 (Davis), 49035 (Salt Lake), 49049 (Utah), 49057 (Weber), 49003 (Box Elder)
-pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) # total pt source subtractions for Davis, Utah, Weber, and Box Elder are all a lot larger than the total area emissions for those counties.
-
-## we can check out the sleis sites that are getting lumped into our pt source subtractions if we use the raw_scc_pull_return here
-test <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc, raw_scc_pull_return = TRUE)
-
-## Project uncontrolled point source emissions
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = manufacturing_employment, has_pt = TRUE)
-
-# Subtract uncontrolled point source emissions from our temp_table
+pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
@@ -702,13 +675,9 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs,
 
 # Get ww emissions estimates; apply controls; there are no pt source subtractions.
 scc <- 2401060000
-
-# EPA EF: 168.96 lb/each
 # Throughput is employees in NAICS 3352
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project - UDAQ projects by manufacturing employment growth
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # Apply controls
 ## R307-347 Large Appliance Surface Coating
@@ -716,36 +685,29 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## Assume 5-yr phase in period starting in 2018; 24% reduction
 temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.76)
 
-# compare emissions with and without controls
-test <- compare_inventories(oinv = temp_table_project, ninv = temp_table_controlled, hide_pct = FALSE)
-
 # Pt source subtractions
-## EPA crosswalk lists a lot of potential related point sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 ## there are not any counties with pt subs
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc)
+#the code will break if we try to project a blank table, so I will not project it, but if the table
+#is ever not blank, throw up a message
+if(dim(pt_subs)[1]!=0){
+  cat('update pt subs code for 2401060000\n')
+}
+#project pt subs in that case, probs with ManEmp
 
 temp_table_final <- temp_table_controlled
-
-# add to final table
 final_table <- rbind(final_table, temp_table_final)
-
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
 
+
 # Solvent Utilization > Surface Coating > Electronic and Other Electrical: SIC 36 - 363 > Total: All Solvent Types
-# DONE
 ## Note: The EF listed in the Workbook is from the 2014 NEI and is 30 lbs/employee; the new WW EF is 15.58 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
-
-# Pull emissions from ww, project based on manufacturing employment, apply controls, there are no pt source subtractions from the crosswalk.
 scc <- 2401065000
-
-# EPA EF: 15.58 lb/each
 # Throughput is employees in NAICS 331318, 331420, 331491, 335921, 335929, 335311
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project - UDAQ projects by manufacturing employment growth
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # Apply controls
 ## R307-348
@@ -753,36 +715,30 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## Starts in 2018; 28% reduction
 temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2018, end_val = 0.72)
 
-# compare emissions with and without controls
-test <- compare_inventories(oinv = temp_table_project, ninv = temp_table_controlled, hide_pct = FALSE)
-
 # Pt source subtractions
-# EPA crosswalk lists 9 potential related point sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 # there are no pt source subtractions
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
+#the code will break if we try to project a blank table, so I will not project it, but if the table
+#is ever not blank, throw up a message
+if(dim(pt_subs)[1]!=0){
+  cat('update pt subs code for 2401065000\n')
+}
+#project pt subs in that case, probs with ManEmp
 
 temp_table_final <- temp_table_controlled
-
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
-
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
 
+
 # Solvent Utilization > Surface Coating > Motor Vehicles: SIC 371 > Total: All Solvent Types
-# DONE
 ## Note: The EF listed in the Workbook is from the 2014 NEI and is 168 lbs/employee; the new WW EF is 160.31 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
-
-# Get total emissions by county from WW; project on manufacturing employment growth; add controls; do pt source subtractions; add to final table.
 scc <- 2401070000
-
-# EPA EF: 160.31 lb/each
 # Throughput is employees in NAICS 3361, 3362, 3363
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project - UDAQ projects by manufacturing employment growth
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # Apply controls
 ## R307-350
@@ -790,19 +746,10 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## Assume 5-year phase-in period starting in 2018 based on industry input; 31% reduction
 temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.69)
 
-# compare emissions with and without controls
-test <- compare_inventories(oinv = temp_table_project, ninv = temp_table_controlled, hide_pct = FALSE)
-
 # Pt source subtractions
-## EPA crosswalk lists a lot of potential related point sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
-## there are 20 pt subs across Tooele, Davis, and Salt Lake County
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-
-## Project uncontrolled point source emissions
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = manufacturing_employment, has_pt = TRUE)
-
-# Subtract uncontrolled point source emissions from our temp_table
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
@@ -812,18 +759,11 @@ final_table <- rbind(final_table, temp_table_final)
 rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
 
 # Solvent Utilization > Surface Coating > Aircraft: SIC 372 > Total: All Solvent Types
-# DONE
 ## Note: The EF listed in the Workbook is from the 2014 NEI and is 14 lbs/employee; the new WW EF is 15.40 lbs/employee. The EF increased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
-
-# Get total emissions by county from ww; project on manufacturing employment growth; apply controls; check for pt source subtractions (there are none); add to final table.
 scc <- 2401075000
-
-# EPA EF: 15.40 lb/each
 # Throughput is employees in NAICS 3364
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project - UDAQ projects by manufacturing employment growth
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # Apply controls
 ## R307-350 Miscellaneous Metal Surface Coating
@@ -831,95 +771,79 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## Assume 5-year phase-in period starting in 2018 based on major source inspection; 46% reduction
 temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.54)
 
-# compare emissions with and without controls
-test <- compare_inventories(oinv = temp_table_project, ninv = temp_table_controlled, hide_pct = FALSE)
-
 # Pt source subtractions
 ## EPA crosswalk lists 7 potential related point sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 ## there are no pt subtractions
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
+#the code will break if we try to project a blank table, so I will not project it, but if the table
+#is ever not blank, throw up a message
+if(dim(pt_subs)[1]!=0){
+  cat('update pt subs code for 2401075000\n')
+}
+#project pt subs in that case, probs with ManEmp
 
 temp_table_final <- temp_table_controlled
-
-# add to final table
 final_table <- rbind(final_table, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
 
+
 # Solvent Utilization > Surface Coating > Marine: SIC 373 > Total: All Solvent Types
-# DONE
 ## Note: The EF listed in the Workbook is from the 2014 NEI and is 200 lbs/employee; the new WW EF is 176.75 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
-
-# Get emissions per county from WW, project on manufacturing employment, no pt source subtractions, no controls.
 scc <- 2401080000
-
-# EPA EF: 176.75 lb/each
 # Throughput is employees in NAICS 3366, 488390
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project - UDAQ projects by manufacturing employment growth
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # No controls
 
-# Pt source subtractions
 # EPA crosswalk lists 7 potential related point sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 # there are no pt subtractions
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
+#the code will break if we try to project a blank table, so I will not project it, but if the table
+#is ever not blank, throw up a message
+if(dim(pt_subs)[1]!=0){
+  cat('update pt subs code for 2401080000\n')
+}
+#project pt subs in that case, probs with ManEmp
 
 temp_table_final <- temp_table_project
-
-# add to final table
 final_table <- rbind(final_table, temp_table_final)
-
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, pt_sccs, pt_subs, temp_table_final)
 
+
 # Solvent Utilization > Surface Coating > Railroad: SIC 374 > Total: All Solvent Types
-# DONE
 ## Note: The EF listed in the Workbook is from the 2014 NEI and is 180 lbs/employee; the new WW EF is 212.90 lbs/employee. The EF increased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
-
-# Get total emissions for each county from WW; project based on manufacturing employment; no controls; no pt source subtractions; add to final table.
 scc <- 2401085000
-
-# EPA EF: 212.90 lb/each
 # Throughput is employees in NAICS 3365
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project - UDAQ projects by manufacturing employment growth
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # No controls
-
 # Pt source subtractions
 ## No pt sccs
-pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
+#pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 
 temp_table_final <- temp_table_project
-
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
+
 # Solvent Utilization > Surface Coating > Miscellaneous Manufacturing > Total: All Solvent Types
-# DONE
 ## Note: The EF listed in the Workbook is from the 2014 NEI and is 78 lbs/employee; the new WW EF is 69.99 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
 ## Note - controls are complicated here; this scc encompasses two different industries, and different rules apply to the industries, so we have to account for two control emission reduction rates.
 
-# Get total emissions by county from ww; project based on manufacturing employment; apply controls; pt source subtractions; add to final table.
 scc <- 2401090000
-
-# EPA EF: 69.99 lb/each
 # Throughput is employees in NAICS 339, 3369
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project - UDAQ projects by manufacturing employment growth
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # Apply controls
 ## Apply to NAA Counties
@@ -948,19 +872,11 @@ temp_table_controlled_fv <- add_controls(raw_proj_data = temp_table_fv, sccs = s
 temp_table_controlled <- temp_table_project
 temp_table_controlled$TPY <- temp_table_controlled_p$TPY + temp_table_controlled_fv$TPY
 
-# compare emissions with and without controls
-test <- compare_inventories(oinv = temp_table_project, ninv = temp_table_controlled, hide_pct = FALSE)
-
 # Pt source subtractions
 ## EPA crosswalk lists a lot of potential related point sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
-## there are 76 pt subs across Box Elder, Davis, Salt Lake, Tooele, Utah, Washington, and Weber counties
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-
-## Project uncontrolled point source emissions
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = manufacturing_employment, has_pt = TRUE)
-
-# Subtract uncontrolled point source emissions from our temp_table
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
@@ -969,46 +885,30 @@ final_table <- rbind(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_p, temp_table_fv, temp_table_controlled_p, temp_table_controlled_fv, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
 
+
 # Solvent Utilization > Surface Coating > Industrial Maintenance Coatings > Total: All Solvent Types
-# DONE
-
-# WW total emissions line up with throughput * EF / 2000.
-# Pull baseline from WW, project based on population growth, no controls, no pt source subtractions.
 scc <- 2401100000
-
-# EPA EF: 0.3645 lb/each
 # Throughput is population
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project - UDAQ projects by population growth from Kem Gardner
 temp_table_project <- project_baseline(base_table = temp_table, projection_table = pp)
 
 # No controls
 
 # Pt source subtractions
 ## No potential related point sccs in the crosswalk
-pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
-
+#pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 temp_table_final <- temp_table_project
-
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
-
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
-# Solvent Utilization > Surface coating > Other Special Purpose Coatings > Total: All Solvent Types
-# DONE
 
-# Ww total emissions line up with WW throughput * EF / 2000.
+# Solvent Utilization > Surface coating > Other Special Purpose Coatings > Total: All Solvent Types
 # Pull baseline emissions from WW, project based on population, add controls, no pt source subtractions.
 scc <- 2401200000
-
-# EPA EF: 0.0059 lb/each
 # Throughput is population
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project - UDAQ projects by population growth from Kem Gardner
 temp_table_project <- project_baseline(base_table = temp_table, projection_table = pp)
 
 # Apply controls
@@ -1017,34 +917,22 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## Assume 5-year phase-in period starting in 2018 based on major source inspection; 31% reduction
 temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.69)
 
-# compare emissions with and without controls
-test <- compare_inventories(oinv = temp_table_project, ninv = temp_table_controlled, hide_pct = FALSE)
-
 # Pt source subtractions
 ## No potential related point sccs in the crosswalk
-pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
+#pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 
 temp_table_final <- temp_table_controlled
-
-# add to final table
 final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, test, temp_table_final)
 
-# Solvent Utilization > Degreasing > All Processes/All Industries > Total: All Solvent Types
-# DONE
-## Note: The EF listed in the Workbook is from the 2014 NEI and is 37 lbs/employee; the new WW EF is 32.36 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
 
+# Solvent Utilization > Degreasing > All Processes/All Industries > Total: All Solvent Types
+## Note: The EF listed in the Workbook is from the 2014 NEI and is 37 lbs/employee; the new WW EF is 32.36 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
 # Pull baseline from WW, project based on manufacturing employment growth, add controls, point source subtractions.
 scc <- 2415000000
-
-# EPA EF: 32.36 lb/each
 # Throughput is employees in NAICS codes 331, 332, 333, 334, 335, 336, 337, 339, 441, 483, 484, 485, 488, 8111, 8112
 temp_table <- pull_baseline_from_ww(scc = scc)
-
-# project - UDAQ projects by manufacturing employment growth
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # Apply controls
 ## NAA Counties
@@ -1053,32 +941,22 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## Note: Workbook states "controls apply to residential only" - not sure what is meant by this.
 temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.72)
 
-# compare emissions with and without controls
-test <- compare_inventories(oinv = temp_table_project, ninv = temp_table_controlled, hide_pct = FALSE)
-
 # Pt source subtractions
-## EPA lists 118 potential point-related sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
-
-## there are 33 pt subs across Box Elder (49003), Salt Lake (49035), Tooele (49045), Utah (49049), and Weber counties (49057)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-
-## Project uncontrolled point source emissions
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = manufacturing_employment, has_pt = TRUE)
-
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
 # Subtract uncontrolled point source emissions from our temp_table
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
-
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
+
 
 # Solvent Utilization > Dry Cleaning > All Processes > Total: All Solvent Types
 # Workbook Note: On 3/7/12 - VOC Emission Factor was changed to 10 lb/employee as per ERTAC/UDAQ/Industry collaboration.
 # DONE, BUT NEEDS DOCUMENTATION. WHAT IS THE JUSTIFICATION FOR THE MODIFIED EMISSION FACTOR?
-
 # Get baseline from WW; adjust total emissions to be reflective of what they would be if we were using the Utah EF; project based on population; apply controls to ALL counties in the scc for PERC only; pt source subtractions.
 scc <- 2420000000
 
@@ -1104,7 +982,6 @@ ww_ef_VOC <- ww_ef_VOC[[1,1]] * 2000
 ## this will give us emissions using our EF, not the WW EF
 temp_table$TPY <- ifelse(temp_table$pollutant == "VOC", temp_table$TPY*(10/ww_ef_VOC), temp_table$TPY)
 
-# project - UDAQ projects by population growth
 temp_table_project <- project_baseline(base_table = temp_table, projection_table = pp)
 
 # Apply controls
@@ -1114,42 +991,29 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## Assume 15-year phase-in period starting in 2011; 100% reduction; only applies to 127184
 temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, pollutants = "127184", counties = unique(temp_table$FIPS), st_year = 2011, e_year = 2026, end_val = 0.0)
 
-# compare emissions with and without controls
-test <- compare_inventories(oinv = temp_table_project, ninv = temp_table_controlled, hide_pct = FALSE)
-
 # Pt source subtractions
-## EPA lists 63 potentially point-related sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
-
-# there is 1 pt subtraction for VOCS in SL county
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-
-## Project uncontrolled point source emissions based on population
 pt_subs <- project_baseline(base_table = pt_subs, projection_table = pp, has_pt = TRUE)
 
 # Subtract uncontrolled point source emissions from our temp_table
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
-
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, ww_ef, ww_ef_VOC, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
 
+
 # Solvent Utilization > Graphic Arts > All Processes > Total: All Processes
-# DONE
-
 # NOTE!! With the 2020 NEI, we need to use the emissions factor that EPA provides; we will no longer use our own emissions factor. EPA is updating the methodology to calculate emissions from graphic arts, and the emissions factor that we use is 10 years old, from an outdated survey UDAQ carried out. We can't justify using our outdated emissions factor once EPA revamps the calculation methods in 2020.
-
 ## Workbook Note: VOC emissions factor was changed to 201 lbs/employee on 3/7/2012 as a result of ERTAC/Utah/Industry collaboration. Old EF was 1482 lbs/employee. New EF accounts for advances made in low-VOC content inks and solvents now in use.
 ### Therefore, we use our own EF, not the WW one.
 ## Workbook Note: We assume that businesses within each county fill the graphic arts needs of their own county. (While this may not be absolutely accurate, any error will cancel between adjacent counties.)
 ## Workbook Note: Employee numbers from paper, foil, and film (SCC 2401030000) are deducted from graphic arts to avoid a double count due to NAICS overlap.
 ### Michael and I decided not to do this, because sccs should reflect a specific process that is emitting. EPA decided to include NAICS 322230 in this scc, as well as 2401030000, so we assume that this scc is accounting for a different process than the process in 2401030000 and we should not be subtracting the throughput from 2401030000 from the throughput for this SCC.
-
 # Get baseline emissions from WW, pull EFs from WW, divide our Utah EF by the WW ef and multiply the TPY in baseline emissions to convert the total emissions to what they would be if we were using our EF, project based on manufacturing employment, add controls, find pt source subtractions, project pt source subtractions, subtract them, add to final table.
 scc <- 2425000000
-
 # EPA EF VOC: 1583.65 lb/each
 # Utah EF VOC: 201 lb/each
 # Throughput is employees in NAICS code 32311, 322211, 322212, 322219, 322220, 322230, 322291, 322299
@@ -1173,7 +1037,7 @@ ww_ef <- ww_ef[[1,1]] * 2000
 temp_table$TPY <- temp_table$TPY*(201/ww_ef)
 
 # project - UDAQ projects by manufacturing employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = manufacturing_employment)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
 
 # Apply controls
 ## R307-351 Graphic Arts Surface Coating
@@ -1181,40 +1045,22 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## Assume 3 year phase-in starting in 2018; 61% reduction
 temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2020, end_val = 0.39)
 
-# compare emissions with and without controls
-test <- compare_inventories(oinv = temp_table_project, ninv = temp_table_controlled, hide_pct = FALSE)
-
 # Pt source subtractions
-## EPA lists 38 potentially point-related sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
-
-## there is  are pt source subtractions for VOCs and some of the secondaries in SL County and pt source subtractions for VOC in Utah county
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-
-## Project uncontrolled point source emissions based on manufacturing employment
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = manufacturing_employment, has_pt = TRUE)
-
-# Subtract uncontrolled point source emissions from our temp_table
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
-
 # remove the objects we created for this scc
 rm(scc, temp_table, ww_ef, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
 
+
 # Solvent Utilization > Miscellaneous Non-industrial: Commercial > Cutback Asphalt > Total: All Processes
-# DONE
 ## We use UDOT data for this scc; calculate throughput by multiplying % of VMT traveled in each county relative to the entire state by the sum of throughput from WW (which is tons emulsified asphalt used in the state), then multiply by EFs from WW, project based on population growth, no controls, no pt source subtractions.
 scc <- 2461021000
 
-# EPA EF VOC: 813.96 lb/ton asphalt
-## Benzene (71432): 3.6 lb/ton asphalt
-## Ethylbenzene (100414): 9.3 lbs/ton asphalt
-## Naphthalene (91203): 11.0 lbs/ton asphalt
-## Toluene (108883): 11.2 lbs/ton asphalt
-## Xylenes (mixed isomers) (1330207): 18.8 lbs/ton asphalt
-## Hydrogen Sulfide (7783064): 1.7 lbs/ton asphalt
 ### Note: The NEMO includes an EF for hydrogen sulfide, but the WW does not include hydrogen sulfide.
 
 # Throughput is % of total vehicle miles traveled daily (VMT) from UDOT in each county relative to the state total, multiplied by the tons of state-level asphalt usage in the entire state from EPA.
@@ -1226,22 +1072,18 @@ scc <- 2461021000
 # throughput is the same for all of the pollutants, so I'm just going to only filter for VOC and then sum throughput.
 # this is the total tons of cutback asphalt usage in the entire state (EPA gets this from a 2008 report, and then adjusts to the baseline year)
 throughput <-
-      ww %>% filter(SourceClassificationCode == scc, PollutantCode == 'VOC')
-
-throughput <- sum(throughput$Throughput)
+  ww %>% filter(SourceClassificationCode == scc, PollutantCode == 'VOC') %>%
+  select(Throughput) %>% sum()
 
 # Now to get the tons/county in each Utah county, I need to multiply the statewide total tons by the % of total VMTs traveled in the county as compared to the entire state total VMTs.
 # So we got the statewide number of tons of cutback asphalt used above, and instead of using MOVES data (what EPA uses to estimate cutback asphalt usage in each county), we're going to use vehicle-miles traveled, available from UDOT.
 # In the NEMO, it appears that EPA uses state-level VMT data from the FHWA and then estimates county-level VMT data by apportioning based on MOVES data, but UDOT provides the state-level VMT data to FHWA by summing over all of the county VMT data in the state, so using the original county VMT data is more accurate than attempting to re-allocate it to counties based on MOVES data
 
 # read in the VMT table from the References folder
-vmt <- read_xlsx("./References/VMT_02242021.xlsx", sheet = "Data")
-
-# Save only the observations from the year of interest
-vmt <- vmt %>% filter(Year == start_year)
+vmt <- projection_tables[["VMT"]] %>% filter(year == start_year)
 
 # add a column that identifies the percent of the VMT in each county relative to the sum of all counties
-vmt$VMT_pct <- vmt$VMT_daily/sum(vmt$VMT_daily)
+vmt$VMT_pct <- vmt$unit/sum(vmt$unit)
 
 # now we need to multiply that VMT_pct column by the total throughput for Utah (tons asphalt used) calculated above
 vmt$Throughput <- vmt$VMT_pct * throughput
@@ -1250,12 +1092,8 @@ vmt$Throughput <- vmt$VMT_pct * throughput
 ## first get the EFs
 efs_table <- pull_efs_from_ww(scc = scc, throughput_unit = 'TON', all_primaries = TRUE)
 
-## Rename the county column to FIPS
-efs_table <- efs_table %>%
-  rename(FIPS = county)
-
 ## merge the efs_table and vmt
-temp_table <- merge(efs_table, vmt, by = "FIPS")
+temp_table <- merge(efs_table, vmt, by = "county")
 
 ## add a column for TPY
 temp_table$TPY <- temp_table$TPUPY * temp_table$Throughput
@@ -1263,34 +1101,27 @@ temp_table$TPY <- temp_table$TPUPY * temp_table$Throughput
 # now match formatting of the final_table
 ## with FIPS, SCC, year, pollutant, and TPY columns
 temp_table <- temp_table %>%
-  select(FIPS, SCC, Year, pollutant, TPY) %>%
-  rename(year = Year)
+  select(county, SCC, year, pollutant, TPY) %>%
+  rename(FIPS = county)
 
 # project by population growth
 # Note: the workbook notes that projections are based on a regression by Peter Verschoor, but really they are just projecting based on population growth.
 temp_table_project <- project_baseline(base_table = temp_table, projection_table = pp)
 
 # No controls
-
 # No pt source subtractions
 
 temp_table_final <- temp_table_project
-
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
-
 # remove the objects we created for this scc, except vmt because we use it below
 rm(scc, throughput, efs_table, temp_table, temp_table_project, temp_table_final)
 
-# Solvent Utilization > Miscellaneous Non-industrial: Commercial > Emulsified Asphalt > Total: All Processes
-# DONE
 
+# Solvent Utilization > Miscellaneous Non-industrial: Commercial > Emulsified Asphalt > Total: All Processes
 # Use UDOT data for VMT in each county; to get throughput, multiply % of VMT in each county relative to total VMT across the state by the sum of all throughput from WW (which is the total tons of emulsified asphalt used in the state), multiply by the EFs from the WW, project based on population growth, and add to the final table
 scc <- 2461022000
 
-# EPA EF VOC: 195.51 lb/ton asphalt
-## Naphthalene (91203): 5.5 lbs/ton asphalt
-## Hydrogen Sulfide (7783064): 1.7 lbs/ton asphalt
 ### Note: the NEMO includes the EF for Hydrogen Sulfide, but the WW does not include an estimate for it.
 # Throughput is % of total vehicle miles traveled daily (VMT) from UDOT in each county relative to the state total, multiplied by the tons of state-level asphalt usage in the entire state from EPA.
 
@@ -1298,9 +1129,7 @@ scc <- 2461022000
 # throughput is the same for all of the pollutants, so I'm just going to only filter for VOC and then sum throughput.
 # this is the total tons of emulsified asphalt usage in the entire state (EPA gets this from a 2008 report, and then adjusts to the baseline year)
 throughput <-
-      ww %>% filter(SourceClassificationCode == scc, PollutantCode == 'VOC')
-
-throughput <- sum(throughput$Throughput)
+  ww %>% filter(SourceClassificationCode == scc, PollutantCode == 'VOC') %>% select(Throughput) %>% sum()
 
 # Now to get the tons/county in each Utah county, I need to multiply the statewide total tons for emulsified asphalt (the sum of throughput above) by the % of total VMTs traveled in the county as compared to the entire state total VMTs.
 # So we got the statewide number of tons of emulsified asphalt used above, and instead of using MOVES data (what EPA uses to estimate emulsified asphalt usage in each county), we're going to use vehicle-miles traveled, available from UDOT.
@@ -1313,12 +1142,8 @@ vmt$Throughput <- vmt$VMT_pct * throughput
 # first get the EFs
 efs_table <- pull_efs_from_ww(scc = scc, throughput_unit = 'TON', all_primaries = TRUE)
 
-# Rename the county column to FIPS
-efs_table <- efs_table %>%
-  rename(FIPS = county)
-
 # merge the efs_table and vmt
-temp_table <- merge(efs_table, vmt, by = "FIPS")
+temp_table <- merge(efs_table, vmt, by = "county")
 
 # add a column for TPY
 temp_table$TPY <- temp_table$TPUPY * temp_table$Throughput
@@ -1326,22 +1151,19 @@ temp_table$TPY <- temp_table$TPUPY * temp_table$Throughput
 # now match formatting of the final_table
 ## with FIPS, SCC, year, pollutant, and TPY columns
 temp_table <- temp_table %>%
-  select(FIPS, SCC, Year, pollutant, TPY) %>%
-  rename(year = Year)
+  select(county, SCC, year, pollutant, TPY) %>%
+  rename(FIPS = county)
 
 # project by population growth
 # Note: the workbook notes that projections are based on a regression by Peter Verschoor, but really they are just projecting based on population growth.
 temp_table_project <- project_baseline(base_table = temp_table, projection_table = pp)
 
 # No controls
-
 # No pt source subtractions
 
 temp_table_final <- temp_table_project
-
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
-
 # remove the objects we created for this scc
 rm(scc, throughput, efs_table, temp_table, vmt, temp_table_project, temp_table_final)
 ```
