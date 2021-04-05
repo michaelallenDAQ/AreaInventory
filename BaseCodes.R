@@ -819,10 +819,11 @@ pull_baseline_from_nei <- function(scc, nei_table = nei) {
     temp_table <- nei_table %>% 
       filter(str_detect(SourceClassificationCode, scc)) 
     
-    # If not, we want an exact match. We are looking for only one scc.
+    # If not, we want an exact match. 
   } else {
     temp_table <- nei_table %>% 
-      filter(SourceClassificationCode == scc) 
+      # use %in% so we can input a vector of SCCs or just one.
+      filter(SourceClassificationCode %in% scc) 
   }
   
   # If there are no observations in the nei_table for our scc of interest, stop 
@@ -839,32 +840,31 @@ pull_baseline_from_nei <- function(scc, nei_table = nei) {
     stop("We are pulling non-ton baseline throughputs from NEI")
   }
   
-  # If a string character was input, notify which SCCs we pulled.
-  if (is.character(scc)) {
-    # Check if we pulled more than one scc (if we put in a parent scc)
-    # If we did, notify & sum over all of them
-    if (length(unique(temp_table$SourceClassificationCode)) > 1) {
-      print(paste0("We pulled data for the following SCCs: ", 
-                   paste(unique(temp_table$SourceClassificationCode), 
-                         collapse = ", "), 
-                   ". We are summing TPY over all of them in the resulting output table. Make sure to overwrite the 'scc' column with the scc of interest in the resulting output table."
-            )
-      )
+  # If more than one SCC was pulled, notify which SCCs we pulled.
+  if (length(unique(temp_table$SourceClassificationCode)) > 1) {
+    # Notify & sum over all of them
+    print(paste0("We pulled data for the following SCCs: ", 
+                  paste(unique(temp_table$SourceClassificationCode), 
+                        collapse = ", "), 
+                  ". We are summing TPY over all of them in the resulting output table."
+          )
+    )
       
-      temp_table <- temp_table %>%
-        group_by(StateAndCountyFIPSCode, County, PollutantCode, Pollutant, 
-                 EmissionsUnitofMeasureCode, year) %>%
-        summarize(TotalEmissions = sum(TotalEmissions),
-                  .groups = "keep") %>%
-        ungroup()
+    temp_table <- temp_table %>%
+      group_by(StateAndCountyFIPSCode, County, PollutantCode, Pollutant, 
+                EmissionsUnitofMeasureCode, year) %>%
+      summarize(TotalEmissions = sum(TotalEmissions),
+                .groups = "keep") %>%
+      ungroup()
       
-      temp_table$SourceClassificationCode <- scc
-    } else {
-      # Notify the SCC we found data for
-      print(paste0("We only found data for this SCC: ",
-                   paste(unique(temp_table$SourceClassificationCode))))
-    }
-  }
+    temp_table$SourceClassificationCode <- paste(scc, collapse = ", ")
+      
+  # if we input a character string, but we only got one SCC, do this
+} else if (is.character(scc)) {
+  # Notify the SCC we found data for
+  print(paste0("We only found data for this SCC: ",
+               paste(unique(temp_table$SourceClassificationCode))))
+}
   
   # return the data in this format
   temp_table <- temp_table %>%
