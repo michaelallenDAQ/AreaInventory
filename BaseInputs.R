@@ -46,9 +46,6 @@ input_st <- 2014
 input_end <- 2030
 #pull some projection tables that will be used often
 
-pp <- shame_pull_input_table_from_workbook('populationprojection')
-manufacturing_employment <- shame_pull_input_table_from_workbook('ManEmp')
-AgJobs <- shame_pull_input_table_from_workbook('AgJobs')
 LUST <- shame_pull_input_table_from_workbook('LUST')
 NonresidentialConstruction <- shame_pull_input_table_from_workbook('NonresidentialConstruction')
 wood <- shame_pull_input_table_from_workbook('wood')
