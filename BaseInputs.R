@@ -49,7 +49,6 @@ input_end <- 2030
 LUST <- shame_pull_input_table_from_workbook('LUST')
 NonresidentialConstruction <- shame_pull_input_table_from_workbook('NonresidentialConstruction')
 wood <- shame_pull_input_table_from_workbook('wood')
-#OTHER EMPLOYMENT/OTHER GENERAL TABLES - TBD
 
 
 

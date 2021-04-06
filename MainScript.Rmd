@@ -67,12 +67,10 @@ final_table <- vector()
 
 
 ```{r}
-input_tables <- pull_input_tables(paste0(Sys.getenv("HomeDir"),"/",input_table_path))
+#run this line if I'm tinkering with input tables
+#input_tables <- pull_input_tables(paste0(Sys.getenv("HomeDir"),"/",input_table_path))
 
-pp <- projection_tables[["Population"]]
-AgJobs <- projection_tables[["AgJobs"]]
-ManEmp <- projection_tables[["ManEmp"]]
-
+#then go to BaseTables and run the 2 project_tables lines
 
 ```
 
@@ -173,13 +171,13 @@ scc <- 2302050000
 pollutants <- c('VOC')
 TPPPY <-(1.75E-4)
 efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,pp, project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]], project_to = end_year)
 #every SCC with 302032XX. Manually inputting this one
 pt_sccs <- seq.int(30203201,30203299)
 pt_pols <- c('VOC')
 pt_table <- pull_pt_removal_table(pt_sccs,scc,raw_scc_pull_return = FALSE)
 #pt_table <- pull_pt_removal_table(pt_sccs,pt_pols,scc,raw_scc_pull_return = TRUE)
-pt_table <- project_baseline(pt_table,pp,has_pt = TRUE)
+pt_table <- project_baseline(pt_table,projection_tables[["Population"]],has_pt = TRUE)
 temp_table <- subtract_pt_sources(pt_table,temp_table)
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -209,7 +207,7 @@ scc <- 2806010000
 pollutants <- c('NH3')
 TPPPY <-(1.35E-5)
 efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt source
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -237,7 +235,7 @@ scc <- 2806015000
 pollutants <- c('NH3')
 TPPPY <-(1.23E-4)
 efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt source
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -258,7 +256,7 @@ scc <- 2810010000
 pollutants <- c('NH3')
 TPPPY <-(2.88E-4)
 efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt subtraction
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -296,7 +294,7 @@ scc <- 2810030000
 pollutants <- c('VOC','PM10','PM25','CO','NOX','107028','74908','7647010','50000')
 TPPPY <-c(1.52E-5,1.49E-5,1.49E-5,8.28E-5,1.93E-6,6.09E-6,4.90E-5,2.09E-5,1.41E-6)
 efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt subtract
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -331,7 +329,7 @@ scc <- 2810050000
 pollutants <- c('PM10','PM25','VOC','CO','NOX')
 TPPPY <- c(2.91E-6,2.91E-6,9.32E-7,3.64E-6,1.16E-7)
 efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt subtract
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -374,7 +372,7 @@ scc <- 2461100000
 pollutants <- c('VOC')
 TPPPY <-(9.299E-8)
 efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt source
 #assumed rule 307-304 for solvent cleaning applies to this SCC.
 # ends up with 28% reduction over 2017-2022
@@ -404,7 +402,7 @@ NOTE: We always do pt source subtractions AFTER adding controls to the emissions
 scc <- 2401008000
 temp_table <- pull_baseline_from_ww(scc)
 #projects with population
-temp_table <- project_baseline(temp_table, pp)
+temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
 #no controls, no pt subs
 final_table <- rbind(final_table,temp_table)
 
@@ -415,7 +413,7 @@ scc <- 2401005000
 
 ## WW uses autobody refinishing employees (NAICS 4411, 4412, 81112) for the throughput
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = pp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["Population"]])
 
 # add controls
 ## R307-354 Autobody Refinishing
@@ -458,7 +456,7 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, temp_table_final)
 scc <- 2401015000
 # Make baseline - WW uses NAICS 321 employees for the throughput
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 # Apply controls
 ## R307-349 Flat Wood Surface Coating
 ## Assume 5-yr phase in period starting in 2018; 30% reduction from the 2014 EF of 48 lbs/employee
@@ -482,7 +480,7 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 ## EPA crosswalk lists a lot of potential point to nonpoint, and then project it
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_tables[["ManEmp"]], has_pt = TRUE)
 
 # Subtract uncontrolled point source emissions from our temp_table
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
@@ -501,7 +499,7 @@ scc <- 2401020000
 # Throughput is employees in NAICS 337110, 337121, 337122, 337127*, 337211, 337212, 337215*
 # *Employment data is split equally between wood furniture and metal furniture source categories
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # Apply controls
 ## R307-343 Wood Furniture Manufacturing
@@ -525,7 +523,7 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_tables[["ManEmp"]], has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
@@ -538,7 +536,7 @@ scc <- 2401025000
 # Throughput is employees in NAICS 337124, 337127*, 337214, 337215*
 # *Employment data is split equally between wood furniture and metal furniture source categories
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # Apply controls
 ## R307-346 Metal Furniture Surface Coating
@@ -582,7 +580,7 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs,
 scc <- 2401030000
 # Throughput is employees in NAICS 322220
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # Apply controls
 ## R307-344 Paper, Film and Foil Surface Coating
@@ -607,7 +605,7 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_tables[["ManEmp"]], has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
@@ -621,7 +619,7 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt
 scc <- 2401040000
 # Throughput is employees in NAICS 33243
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # Apply controls
 ## R307-352 Sheet, Strip, Coil and Container Surface Coating
@@ -633,7 +631,7 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 ## EPA crosswalk lists a lot of potential related point sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc)
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_tables[["ManEmp"]], has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
@@ -648,7 +646,7 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt
 scc <- 2401055000
 # Throughput is employees in NAICS 3331, 3332, 3333, 33341
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # Apply controls
 ## R307-350 Miscellaneous Metal Surface Coating
@@ -660,7 +658,7 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 ## EPA crosswalk lists a lot of potential related point sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc)
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_tables[["ManEmp"]], has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
@@ -677,7 +675,7 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs,
 scc <- 2401060000
 # Throughput is employees in NAICS 3352
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # Apply controls
 ## R307-347 Large Appliance Surface Coating
@@ -707,7 +705,7 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt
 scc <- 2401065000
 # Throughput is employees in NAICS 331318, 331420, 331491, 335921, 335929, 335311
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # Apply controls
 ## R307-348
@@ -738,7 +736,7 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt
 scc <- 2401070000
 # Throughput is employees in NAICS 3361, 3362, 3363
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # Apply controls
 ## R307-350
@@ -749,7 +747,7 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_tables[["ManEmp"]], has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
@@ -763,7 +761,7 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt
 scc <- 2401075000
 # Throughput is employees in NAICS 3364
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # Apply controls
 ## R307-350 Miscellaneous Metal Surface Coating
@@ -795,7 +793,7 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt
 scc <- 2401080000
 # Throughput is employees in NAICS 3366, 488390
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # No controls
 
@@ -821,7 +819,7 @@ rm(scc, temp_table, temp_table_project, pt_sccs, pt_subs, temp_table_final)
 scc <- 2401085000
 # Throughput is employees in NAICS 3365
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # No controls
 # Pt source subtractions
@@ -843,7 +841,7 @@ rm(scc, temp_table, temp_table_project, temp_table_final)
 scc <- 2401090000
 # Throughput is employees in NAICS 339, 3369
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # Apply controls
 ## Apply to NAA Counties
@@ -876,7 +874,7 @@ temp_table_controlled$TPY <- temp_table_controlled_p$TPY + temp_table_controlled
 ## EPA crosswalk lists a lot of potential related point sccs
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_tables[["ManEmp"]], has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
@@ -890,7 +888,7 @@ rm(scc, temp_table, temp_table_project, temp_table_p, temp_table_fv, temp_table_
 scc <- 2401100000
 # Throughput is population
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = pp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["Population"]])
 
 # No controls
 
@@ -909,7 +907,7 @@ rm(scc, temp_table, temp_table_project, temp_table_final)
 scc <- 2401200000
 # Throughput is population
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = pp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["Population"]])
 
 # Apply controls
 ## NAA counties
@@ -932,7 +930,7 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, test, temp_table_
 scc <- 2415000000
 # Throughput is employees in NAICS codes 331, 332, 333, 334, 335, 336, 337, 339, 441, 483, 484, 485, 488, 8111, 8112
 temp_table <- pull_baseline_from_ww(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # Apply controls
 ## NAA Counties
@@ -944,7 +942,7 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_tables[["ManEmp"]], has_pt = TRUE)
 # Subtract uncontrolled point source emissions from our temp_table
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
@@ -982,7 +980,7 @@ ww_ef_VOC <- ww_ef_VOC[[1,1]] * 2000
 ## this will give us emissions using our EF, not the WW EF
 temp_table$TPY <- ifelse(temp_table$pollutant == "VOC", temp_table$TPY*(10/ww_ef_VOC), temp_table$TPY)
 
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = pp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["Population"]])
 
 # Apply controls
 ## All counties in the scc are affected
@@ -994,7 +992,7 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = pp, has_pt = TRUE)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_tables[["Population"]], has_pt = TRUE)
 
 # Subtract uncontrolled point source emissions from our temp_table
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
@@ -1037,7 +1035,7 @@ ww_ef <- ww_ef[[1,1]] * 2000
 temp_table$TPY <- temp_table$TPY*(201/ww_ef)
 
 # project - UDAQ projects by manufacturing employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = ManEmp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
 
 # Apply controls
 ## R307-351 Graphic Arts Surface Coating
@@ -1048,7 +1046,7 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 pt_subs <- pull_pt_removal_table(pt_sccs = pt_sccs, area_scc = scc) 
-pt_subs <- project_baseline(base_table = pt_subs, projection_table = ManEmp, has_pt = TRUE)
+pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_tables[["ManEmp"]], has_pt = TRUE)
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
@@ -1106,7 +1104,7 @@ temp_table <- temp_table %>%
 
 # project by population growth
 # Note: the workbook notes that projections are based on a regression by Peter Verschoor, but really they are just projecting based on population growth.
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = pp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["Population"]])
 
 # No controls
 # No pt source subtractions
@@ -1156,7 +1154,7 @@ temp_table <- temp_table %>%
 
 # project by population growth
 # Note: the workbook notes that projections are based on a regression by Peter Verschoor, but really they are just projecting based on population growth.
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = pp)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["Population"]])
 
 # No controls
 # No pt source subtractions
@@ -1549,8 +1547,8 @@ scc <- 2501012015
 #2) projects based on agJobs
 scc <- 2460800000
 efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH',all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,pp)
-temp_table <- project_baseline(temp_table , AgJobs)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]])
+temp_table <- project_baseline(temp_table , projection_tables[["AgJobs"]])
 #no pt subtract
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -1561,7 +1559,7 @@ final_table <- rbind(final_table, temp_table)
 #1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
 scc <- 2460100000
 efs_table <- pull_efs_from_ww(scc,throughput_unit = 'EACH',all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt sources
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # "assume first product hit shelf in 2016"
@@ -1576,7 +1574,7 @@ final_table <- rbind(final_table, temp_table)
 #1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
 scc <- 2460200000
 efs_table <- pull_efs_from_ww(scc,throughput_unit = 'EACH',all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt sources
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # see 2460100000
@@ -1589,7 +1587,7 @@ final_table <- rbind(final_table, temp_table)
 #1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
 scc <- 2460400000
 efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt sources?
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # see 2460100000
@@ -1602,7 +1600,7 @@ final_table <- rbind(final_table, temp_table)
 #1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
 scc <- 2460500000
 efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt sources?
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # see 2460100000
@@ -1615,7 +1613,7 @@ final_table <- rbind(final_table, temp_table)
 #1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
 scc <- 2460600000
 efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt sources
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # see 2460100000
@@ -1627,7 +1625,7 @@ final_table <- rbind(final_table, temp_table)
 #baseline and projection on population
 scc <- 2460900000
 efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,pp,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt subtract
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -1650,7 +1648,7 @@ input_table <- NonresidentialConstruction %>% mutate(unit = unit*1.00885/1E6*11)
 efs_table <- pull_efs_from_ww(scc,throughput_unit = 'ACRE-MONTH', all_primaries = TRUE)
 temp_table <- make_baseline(efs_table, input_table)
 #project
-temp_table <- project_baseline(temp_table,pp)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #Controls: R307-309 is about fugitive dust control plans. Has an assumed 32% 
 #reduction that started in 2014.
 temp_table <- add_controls(temp_table,scc,naa_counties,2013,2014,0.68)
@@ -1662,7 +1660,7 @@ final_table <- rbind(final_table,temp_table)
 #projects with population
 scc <- 2401001000
 efs_table <- pull_efs_from_ww(scc,'EACH',all_primaries = FALSE)
-temp_table <- make_baseline(efs_table, pp, project_to = end_year)
+temp_table <- make_baseline(efs_table, projection_tables[["Population"]], project_to = end_year)
 #controls are based on R307-361: "architectural coatings"
 temp_table <- add_controls(temp_table,scc,naa_counties,2015,2016,0.45)
 #pt subs? Maybe used to be but is no longer supported in EPA crosswalk.
@@ -1680,7 +1678,7 @@ final_table <- rbind(final_table,temp_table)
 #3) projects based on agjobs
 scc <- 2461850000
 temp_table <- pull_baseline_from_ww(scc) 
-temp_table <- project_baseline(temp_table, AgJobs)
+temp_table <- project_baseline(temp_table, projection_tables[["AgJobs"]])
 #no pt subtraction
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -1692,7 +1690,7 @@ final_table <- rbind(final_table, temp_table)
 # EPA estimates emissions from this SCC on the order of 12,000 TPY of CO, so zeroing it is kind of a big deal. Do we have any methods to track illegal burning?
 scc <- 2610000500
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,pp)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 counties <- seq.int(49001,49057,2)
 #here is where we turn everything into zeros
 temp_table <- add_controls(temp_table,scc,counties,1900,1901,0)
@@ -1706,7 +1704,7 @@ final_table <- rbind(final_table, temp_table)
 #This SCC is huge
 scc <- 2296000000
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,AgJobs)
+temp_table <- project_baseline(temp_table,projection_tables[["AgJobs"]])
 #no controls
 #there is probably some pt source subtraction I could do here, but none for now
 #prioritize pt subs for this because this is a large scc
@@ -1722,7 +1720,7 @@ final_table <- rbind(final_table, temp_table)
 #projects with population
 scc <- 2302002100 
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,pp)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #add controls
 #Controls began in 2016 and are provided by Utah DAQ's Joel Karmazyn based on existing rules.
 #Rule 370-303 has a 76% reduction in emissions for VOC and PM25. For This 
@@ -1747,7 +1745,7 @@ final_table <- rbind(final_table, temp_table)
 #projects with population
 scc <- 2302002200 
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,pp)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no controls?
 #no pt subs?
 final_table <- rbind(final_table, temp_table)
@@ -1762,7 +1760,7 @@ final_table <- rbind(final_table, temp_table)
 #projects with population
 scc <- 2302003000
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,pp)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no controls?
 #no pt subs?
 final_table <- rbind(final_table, temp_table)
@@ -1777,7 +1775,7 @@ final_table <- rbind(final_table, temp_table)
 #projects with population
 scc <- 2302003100
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,pp)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no controls?
 #no pt subs?
 final_table <- rbind(final_table, temp_table)
@@ -1792,7 +1790,7 @@ final_table <- rbind(final_table, temp_table)
 #projects with population
 scc <- 2302003200
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,pp)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no controls
 #no pt subs?
 final_table <- rbind(final_table, temp_table)
@@ -1802,7 +1800,7 @@ final_table <- rbind(final_table, temp_table)
 #projects with Agricultural employment
 scc <-2801000003
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,AgJobs)
+temp_table <- project_baseline(temp_table,projection_tables[["AgJobs"]])
 #no pt subs
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -1812,7 +1810,7 @@ final_table <- rbind(final_table, temp_table)
 #scales with population
 scc <- 2810025000
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,pp)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no pt subs
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -1826,7 +1824,7 @@ final_table <- rbind(final_table, temp_table)
 #scales with population, haha.
 scc <- 2810060100
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,pp)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no pt subs
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -1836,7 +1834,7 @@ final_table <- rbind(final_table, temp_table)
 #scales with population
 scc <- 2810060200
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,pp)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no pt subs
 #no controls
 final_table <- rbind(final_table, temp_table)
@@ -1847,7 +1845,7 @@ final_table <- rbind(final_table, temp_table)
 #projects with population
 scc <- 2610030000
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, pp)
+temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
 #Rule R307-202 bans this kind of open burning. We assume 80% compliance with the rule
 #  except for Salt Lake, which we assume 100% compliance.
 #from our rule website, it looks like the rule was implemented late 2014. 
@@ -1869,7 +1867,7 @@ final_table <- rbind(final_table,temp_table)
 #If you want seasonal activity, look at EPA's Emissions Inventory Improvement Plan Table 1.4-3.
 scc <- 2610000100
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,pp)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #controls:
 #there are 17 counties (16 + SLC) that participate in the DAQ open burning permit program (established in 
 #  Utah Administrative Code  R307-202) and were, therefore, allocated a control 
@@ -1899,7 +1897,7 @@ final_table <- rbind(final_table,temp_table)
 #If you want seasonal activity, look at EPA's Emissions Inventory Improvement Plan Table 1.4-3.
 scc <- 2610000400
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,pp)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #controls:
 #there are 17 counties (16 + SLC) that participate in the DAQ open burning permit program (established in 
 #  Utah Administrative Code  R307-202) and were, therefore, allocated a control 
