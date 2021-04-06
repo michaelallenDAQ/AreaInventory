@@ -804,9 +804,13 @@ pull_baseline_from_ww <- function(scc,ww_table = ww, st_year = start_year){
 #' 
 #' Use this function to pull total baseline emissions from the NEI.
 #' 
-#' @param scc Input an SCC in a numeric format or the first few characters of an
-#' scc if you want the sum of all sccs that begin with those characters. 
-#' If you do that, enter the scc code in this format, for example: "^2805030".
+#' @param scc Input a single SCC in a numeric format, a vector of numeric SCCs,
+#' or the first few characters of an scc if you want the sum of all sccs that 
+#' begin with those characters. 
+#' If you use a character, you may want to enter the code in this format:
+#' "^20", so that it returns only those that match with the first 2 digits,
+#' not matching with those digits anywhere (i.e. 2285002008 would return in your
+#' inquiry if you didn't use the ^).
 #' @param nei_table Input the NEI table you want to use. By default we use 'nei'
 pull_baseline_from_nei <- function(scc, nei_table = nei) {
   
