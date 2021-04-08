@@ -144,10 +144,301 @@ add to final table
 ```
 
 
+This section is for SCCs that Utah does not generate numbers for. This section includes a lot of agricultural emissions, some crop burning, and some others. EPA will generate these numbers for us and our NEI. Once EPA gives us these numbers, we can use the data for our website inventory, and also use it for SIP projections, but we should NOT use these SCCs for NEI reporting. We want EPA to take precedence on these numbers for NEI reporting, and if we report these in the NEI, we will over-write whatever EPA comes up with.
+
+To calculate emissions for animal agriculture, EPA uses a complicated model. We can send them custom throughput (# of animals in each county) to go into the model if we choose to do so before each NEI inventory. However, we do not get emissions factors from the WW, etc., we just get the final resulting total emissions per county from the NEI workbook when it is released. We're just going to pull total emissions from the NEI for these agriculture sccs, and then we can project based on agricultural employment. 
+
+There are no rules (and therefore, no controls) or pt source subtractions for these sccs.
+
+
+```{r Pull from NEI, for SIP/Website, NOT for NEI reporting}
+
+# Miscellaneous Area Sources > Agriculture Production - Livestock > Poultry production - turkeys > Confinement
+# Get total emissions from NEI; project based on agricultural employment.
+scc <- 2805010100
+
+# Total emissions come from a model
+temp_table <- pull_baseline_from_nei(scc = scc)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls & no pt source subtractions for agricultural livestock sccs
+temp_table_final <- temp_table_project
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agriculture Production - Livestock > Swine production composite > Not Elsewhere Classified (see also 28-05-039, -047, -053)
+# Get total emissions from NEI; project based on agricultural employment
+scc <- 2805025000
+# Total emissions come from a model
+temp_table <- pull_baseline_from_nei(scc = scc)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+# No controls & no pt source subtractions for agricultural livestock sccs
+temp_table_final <- temp_table_project
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agriculture Production - Livestock > Poultry Waste Emissions > Not Elsewhere Classified (see also 28-05-007, -008, -009)
+## Note: This scc was in the workbook as 2805030000, but all that it was was the emissions from 2805007100, so we are going to stop using 2805030000 and replace it with 2805007100.
+
+# Get total emissions from NEI; project based on agricultural employment.
+scc <- 2805007100
+# Total emissions come from a model
+temp_table <- pull_baseline_from_nei(scc = scc)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+# No controls & no pt source subtractions for agricultural livestock sccs
+temp_table_final <- temp_table_project
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agriculture Production - Livestock > Horses and Ponies Waste Emissions > Not Elsewhere Classified
+# Get total emissions from NEI; project based on agricultural employment.
+scc <- 2805035000
+# Total emissions come from a model
+temp_table <- pull_baseline_from_nei(scc = scc)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+# No controls & no pt source subtractions for agricultural livestock sccs
+temp_table_final <- temp_table_project
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agriculture Production - Livestock > Sheep and Lambs Waste Emissions > Total
+# Get total emissions from NEI; project based on agricultural employment.
+scc <- 2805040000
+# Total emissions come from a model
+temp_table <- pull_baseline_from_nei(scc = scc)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+# No controls & no pt source subtractions for agricultural livestock sccs
+temp_table_final <- temp_table_project
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agriculture Production - Livestock > Goats Waste Emissions > Not Elsewhere Classified
+# Get total emissions from NEI; project based on agricultural employment.
+scc <- 2805045000
+# Total emissions come from a model
+temp_table <- pull_baseline_from_nei(scc = scc)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls & no pt source subtractions for agricultural livestock sccs
+temp_table_final <- temp_table_project
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agriculture Production - Livestock > Beef cattle production composite > Not Elsewhere Classified
+# Get total emissions from the NEI; project based on agricultural employment
+scc <- 2805002000
+temp_table <- pull_baseline_from_nei(scc = scc)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls & no pt source subtractions
+temp_table_final <- temp_table_project
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this SCC
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agriculture Production - Livestock > Dairy cattle composite > Not Elsewhere Classified
+# Get total emissions from NEI; project based on agricultural employment
+scc <- 2805018000
+temp_table <- pull_baseline_from_nei(scc = scc)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls & no pt source subtractions
+temp_table_final <- temp_table_project
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this SCC
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agriculture Production - Livestock > Dairy Cattle > Dust Kicked-up by Hooves
+# Get total emissions from NEI; project based on agricultural employment
+scc <- 2805001010
+temp_table <- pull_baseline_from_nei(scc = scc)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls & no pt source subtractions
+temp_table_final <- temp_table_project
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this SCC
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agriculture Production - Livestock > Broilers > Dust Kicked-up by Feet
+# Get total emissions from the NEI; project based on agricultural employment
+scc <- 2805001020
+temp_table <- pull_baseline_from_nei(scc = scc)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls & no pt source subtractions
+temp_table_final <- temp_table_project
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this SCC
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agriculture Production - Livestock > Swine > Dust Kicked-up by Hooves
+# Get total emissions from the NEI; project based on agricultural employment
+scc <- 2805001040
+temp_table <- pull_baseline_from_nei(scc = scc)
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls & no pt source subtractions
+temp_table_final <- temp_table_project
+# add to final table
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this SCC
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agricultural Production - Livestock > Layers > Dust Kicked-up by Feet
+# Get total emissions from the NEI; project based on agricultural employment
+scc <- 2805001030
+temp_table <- pull_baseline_from_nei(scc = scc)
+
+# project on ag employment
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls & no pt source subtractions
+# Set temp_table_final equal to temp_table_project
+temp_table_final <- temp_table_project
+
+# add to final table
+final_table <- rbind(final_table, temp_table_final)
+
+# remove the objects we created for this SCC
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+# Miscellaneous Area Sources > Agricultral Production - Livestock > Turkeys > Dust Kicked-up by Feet
+# Get total emissions from the NEI; project based on agricultural employment
+scc <- 2805001050
+
+temp_table <- pull_baseline_from_nei(scc = scc)
+
+# project on ag employment
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls & no pt source subtractions
+# Set temp_table_final equal to temp_table_project
+temp_table_final <- temp_table_project
+
+# add to final table
+final_table <- rbind(final_table, temp_table_final)
+
+# remove the objects we created for this SCC
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+# Miscellaneous Area Sources > Agriculture Production - Livestock > Poultry Production - broilers > Confinement
+# Get total emissions from the NEI; project based on agricultural employment
+scc <- 2805009100
+
+temp_table <- pull_baseline_from_nei(scc = scc)
+
+# project on ag employment
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls & no pt source subtractions
+# Set temp_table_final equal to temp_table_project
+temp_table_final <- temp_table_project
+
+# add to final table
+final_table <- rbind(final_table, temp_table_final)
+
+# remove the objects we created for this SCC
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+# Miscellaneous Area Sources > Agricultural Production - Livestock > Beef cattle - finishing operations on feedlots (drylots) > Dust Kicked-up by Hooves
+# Get total emissions from the NEI; project based on agricultural employment
+scc <- 2805001000
+
+temp_table <- pull_baseline_from_nei(scc = scc)
+
+# project on ag employment
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls & no pt source subtractions
+# Set temp_table_final equal to temp_table_project
+temp_table_final <- temp_table_project
+
+# add to final table
+final_table <- rbind(final_table, temp_table_final)
+
+# remove the objects we created for this SCC
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agriculture Production - Crops - as nonpoint > Agricultural Field Burning - whole field set on fire > Unspecified crop type and Burn Method
+## This scc covers the burning of crop chaff, stock, and stubble from farming fields, whether piled or in situ.
+scc <- 2801500000
+
+# Total emissions - we just get emissions estimates from the NEI.
+temp_table <- pull_baseline_from_nei(scc = scc)
+
+# Project on agricultural employment
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls
+# No pt source subtractions
+# temp_table_project is our final temp_table
+temp_table_final <- temp_table_project
+
+# add to final table
+final_table <- rbind(final_table, temp_table_final)
+
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+# Miscellaneous Area Sources > Agriculture Production - Crops > Fertilizer Application > Miscellaneous Fertilizers
+scc <- 2801700099
+
+temp_table <- pull_baseline_from_nei(scc = scc)
+# Project on agricultural employment
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls
+# No pt source subtractions
+# temp_table_project is our final temp_table
+temp_table_final <- temp_table_project
+
+# add to final table
+final_table <- rbind(final_table, temp_table_final)
+
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
+```
+
+
 2810010000 - perspiration - report? find citation?
 switch projection methods to the new 'project baseline with same input' function to
 drop a line of code from most SCCs
 ```{r 3.1) create our own EFs - not ideal, as references can go bad}
+
+#Misc sources > aircraft/rocket engine firing and testing > total
+#this scc used to assume emissions from rocket firing and testing were "estimated to be one percent of aircraft emissions at all Utah airports. This was determined by a 1992 Division of Air Quality phone survey of aircraft maintenance staff."
+#it is now focused on actual rocket testing/firing, like we would find at the ATK Promontory/Thiokol site (10009) or the ATK Bacchus plant (10402). We can eventually add inspection/maintenance of aircraft on airports, but that will be a more complex process.
+scc <- 2810040000
+#these pt sccs were manually pulled on 2021/04/08 by Michael Allen. I looked at sites 10009, 10402 in SLEIS and pulled every SCC that looked like it could apply to test fuel combustion. My method is sketchy, and could be improved.
+#I left out 30101010 - TNT manufacturing, because it didn't seem like test rocket fuel
+pt_sccs <- c(50300205,20400201)
+#We assume there is no test rocket fuel burning on nonpermitted sites, so the only emissions captured in this SCC are permitted emissions that do not count as "Major Point Sources" (is_point == FALSE) for wherever we are reporting our data. All of the other processes will be captured by the point source inventory
+temp_table <- pull_pt_removal_table(pt_sccs,scc) %>% filter(is_point == FALSE) %>% select(-is_point)
+#project as steady. These are permitted emissions so they may not radically change over time.
+temp_table <- project_baseline(temp_table,projection_tables[["Steady"]])
+#no controls
+final_table <- rbind(final_table,temp_table)
+
 
 #                               manually calculate
 
@@ -380,8 +671,6 @@ temp_table <- add_controls(temp_table,scc,naa_counties,2017,2022,0.72)
 final_table <- rbind(final_table, temp_table)
 ```
 
-
-## Casey Trout
 
 NOTE: We always do pt source subtractions AFTER adding controls to the emissions estimates. We assume that our pt source emissions are already using the controls before they get phased in.
 
@@ -1166,338 +1455,6 @@ final_table <- rbind(final_table, temp_table_final)
 rm(scc, throughput, efs_table, temp_table, vmt, temp_table_project, temp_table_final)
 ```
 
-## Miscellaneous Area Sources - Animal Agriculture
-
-### Get emissions for agriculture sccs
-
-To calculate emissions for animal agriculture, EPA uses a complicated model. We can send them custom throughput (# of animals in each county) to go into the model if we choose to do so before each NEI inventory. However, we do not get emissions factors from the WW, etc., we just get the final resulting total emissions per county from the NEI workbook when it is released. We're just going to pull total emissions from the NEI for these agriculture sccs, and then we can project based on agricultural employment. 
-
-There are no rules (and therefore, no controls) or pt source subtractions for these sccs.
-
-```{r}
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Poultry production - turkeys > Confinement
-# Get total emissions from NEI; project based on agricultural employment.
-scc <- 2805010100
-
-# Total emissions come from a model
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project based on agricultural employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions for agricultural livestock sccs
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Swine production composite > Not Elsewhere Classified (see also 28-05-039, -047, -053)
-# Get total emissions from NEI; project based on agricultural employment
-scc <- 2805025000
-
-# Total emissions come from a model
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project based on agricultural employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions for agricultural livestock sccs
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Poultry Waste Emissions > Not Elsewhere Classified (see also 28-05-007, -008, -009)
-## Note: This scc was in the workbook as 2805030000, but all that it was was the emissions from 2805007100, so we are going to stop using 2805030000 and replace it with 2805007100.
-
-# Get total emissions from NEI; project based on agricultural employment.
-scc <- 2805007100
-
-# Total emissions come from a model
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project based on agricultural employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions for agricultural livestock sccs
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Horses and Ponies Waste Emissions > Not Elsewhere Classified
-# Get total emissions from NEI; project based on agricultural employment.
-scc <- 2805035000
-
-# Total emissions come from a model
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project based on agricultural employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions for agricultural livestock sccs
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Sheep and Lambs Waste Emissions > Total
-# Get total emissions from NEI; project based on agricultural employment.
-scc <- 2805040000
-
-# Total emissions come from a model
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project based on agricultural employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions for agricultural livestock sccs
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Goats Waste Emissions > Not Elsewhere Classified
-# Get total emissions from NEI; project based on agricultural employment.
-scc <- 2805045000
-
-# Total emissions come from a model
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project based on agricultural employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions for agricultural livestock sccs
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Beef cattle production composite > Not Elsewhere Classified
-# Get total emissions from the NEI; project based on agricultural employment
-scc <- 2805002000
-
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project on ag employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this SCC
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Dairy cattle composite > Not Elsewhere Classified
-# Get total emissions from NEI; project based on agricultural employment
-scc <- 2805018000
-
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project on ag employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this SCC
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Dairy Cattle > Dust Kicked-up by Hooves
-# Get total emissions from NEI; project based on agricultural employment
-scc <- 2805001010
-
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project on ag employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this SCC
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Broilers > Dust Kicked-up by Feet
-# Get total emissions from the NEI; project based on agricultural employment
-scc <- 2805001020
-
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project on ag employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this SCC
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Swine > Dust Kicked-up by Hooves
-# Get total emissions from the NEI; project based on agricultural employment
-scc <- 2805001040
-
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project on ag employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this SCC
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agricultural Production - Livestock > Layers > Dust Kicked-up by Feet
-# Get total emissions from the NEI; project based on agricultural employment
-scc <- 2805001030
-
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project on ag employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this SCC
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agricultral Production - Livestock > Turkeys > Dust Kicked-up by Feet
-# Get total emissions from the NEI; project based on agricultural employment
-scc <- 2805001050
-
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project on ag employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this SCC
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Poultry Production - broilers > Confinement
-# Get total emissions from the NEI; project based on agricultural employment
-scc <- 2805009100
-
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project on ag employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this SCC
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agricultural Production - Livestock > Beef cattle - finishing operations on feedlots (drylots) > Dust Kicked-up by Hooves
-# Get total emissions from the NEI; project based on agricultural employment
-scc <- 2805001000
-
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# project on ag employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions
-# Set temp_table_final equal to temp_table_project
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this SCC
-rm(scc, temp_table, temp_table_project, temp_table_final)
-```
-
-## Other Miscellaneous Area Sources
-
-```{r}
-# Miscellaneous Area Sources > Agriculture Production - Crops - as nonpoint > Agricultural Field Burning - whole field set on fire > Unspecified crop type and Burn Method
-## This scc covers the burning of crop chaff, stock, and stubble from farming fields, whether piled or in situ.
-scc <- 2801500000
-
-# Total emissions - we just get emissions estimates from the NEI.
-temp_table <- pull_baseline_from_nei(scc = scc)
-
-# Project on agricultural employment
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls
-
-# No pt source subtractions
-
-# temp_table_project is our final temp_table
-temp_table_final <- temp_table_project
-
-# add to final table
-final_table <- rbind(final_table, temp_table_final)
-
-# remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Crops > Fertilizer Application > Miscellaneous Fertilizers
-scc <- 2801700099
-```
 
 
 ## Storage and Transport
@@ -1536,7 +1493,6 @@ scc <- 2501012015
 
 
 
-## End Casey Trout
 
 
 ```{r 3.2) pull EFs from WW}
@@ -1936,7 +1892,11 @@ test <- pull_baseline_from_ww(scc)
 ```
 
 I put wood burning stuff in its own section - it has some complex control methods.
+THIS NEEDS TO SCALE WITH RESIDENTIAL WOOD FROM 'WOODBTU'. THE OLD WOOD TABLE IS NOT NEEDED.
 ```{r wood burning WW pulls. See 2104008XXX_woodstoves.xlsx in main_workbook folder for further notes}
+
+
+
 #Controls for "red" burn days/no burn days are NOT applied here. Modeling has to do that. We don't apply them
 #here because it requires Tons per day resolution on data, and this inventory only gives TPY.
 
