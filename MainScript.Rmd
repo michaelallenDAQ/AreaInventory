@@ -388,24 +388,24 @@ NOTE: We always do pt source subtractions AFTER adding controls to the emissions
 ```{r solvents (24-xx-xxx-xxx)}
 # Solvent Utilization > Surface Coating > Traffic Markings > Total: All Solvent Types
 # INCOMPLETE - WE DO NOT HAVE 2017 UDOT DATA. 
-# TO DO - GET 2017 DATA FROM UDOT; DECIDE IF WE SHOULD CREATE A LANE MILES PROJECTION, SEPARATE FROM POPULATION PROJECTION, SINCE LANE MILES DO NOT SCALE PROPORTIONALLY WTIH POPULATION.
+# TO DO FOR 2020 NEI - GET 2020 LANE MILES DATA FROM UDOT
+## Another thing to consider is creating a lane miles projection, instead of using a population projection, because lane miles do not scale proportionally with population.
 
 ## We do not have 2017 lane miles data from UDOT; the data that was used in the workbook (Input Table 102: Paved Roads (lane miles of pavement)) is inaccurate (it was just the length of paved roads in Utah, not total lane miles; to get lane miles, we need to multiply road segment length (paved and unpaved roads) by number of through lanes, but we don't have a through lanes column or the length of unpaved roads in the data we got from UDOT for the excel workbook)
-# Note: Workbook lane miles are the total length of paved roads - input table gives 24,036 total "lane miles" in Utah in 2017; EPA lane miles are from FHWA state-level data, giving 104,219.6 lane miles in Utah in 2017
+### Workbook lane miles are the total length of paved roads - input table gives 24,036 total "lane miles" in Utah in 2017; EPA lane miles are from FHWA state-level data, giving 104,219.6 lane miles in Utah in 2017
 # https://www.fhwa.dot.gov/policyinformation/statistics/2017/hm60.cfm
-## this results in the estimated emissions for VOCs from traffic markings being 5x lower in our workbook than in the WW
+### this results in the estimated emissions for VOCs from traffic markings being 5x lower in our workbook than in the WW
 # Total 'lane miles' (as defined by UDOT and FHWA) includes all the lanes in every county (road length * number of lanes), including paved and unpaved roads
-# Casey Trout contacted UDOT on Feb 9, 2021 to inquire about updated lane miles data; Austin Baysinger (abaysinger@utah.gov, 801-965-4846) responded to her inquiry and sent lane miles data for 2019; the excel file Austin sent has a tab for paved and unpaved roads, each row includes the total length of a road as well as the "through lanes" (the number of lanes on each of those road segments); lane miles is calculated by multiplying the length of the road segment by the through lanes. This resulted in calculating 102,030.4 total lane miles in Utah in 2019 (very similar to the FHWA estimate for Utah for 2017)
-# EPA's NEMO method for calculating the through lanes in counties involved apportioning the total through lanes in the entire state (i.e. 102,030.4 in 2019) using the population in each county; this resulted in drastically overestimating the number of through lanes in more populous counties - i.e., in Salt Lake County, EPA estimated ~38000 lane miles, whereas the UDOT data identifies ~9000 lane miles; it is worth using UDOT data because it is more accurate than apportioning lane miles by population. My understanding is that UDOT reports total lane miles in the state to the FHWA; so EPA uses the FHWA data for total lane miles in each state & apportions back to counties using population, but UDOT has the ACTUAL numbers of lane miles in counties. (Therefore, using the actual number of lane miles in each county (UDOT data) to calculate emissions from traffic markings is more accurate than using the estimated number of lane miles by apportioning the Utah total lane miles to counties based on population).
-#
-#for now, just use WW, as at least the throughput and EF are synced up. 
+# Casey Trout contacted UDOT on Feb 9, 2021 to inquire about updated lane miles data; Austin Baysinger (abaysinger@utah.gov, 801-965-4846) responded to her inquiry and sent lane miles data for 2019; the excel file Austin sent has a tab for paved and unpaved roads, each row includes the total length of a road as well as the "through lanes" (the number of lanes on each of those road segments); lane miles is calculated by multiplying the length of the road segment by the through lanes. This resulted in calculating 102,030.4 total lane miles in Utah in 2019 (very similar to the FHWA estimate for Utah for 2017). However, Casey was unable to obtain 2017 & 2018 lane miles data, as UDOT transferred to a new data system and no longer had that data.
+# EPA's NEMO method for calculating the through lanes in counties involved apportioning the total through lanes in the entire state (i.e. 102,030.4 in 2019) using the population in each county; this resulted in drastically overestimating the number of through lanes in more populous counties - i.e., in Salt Lake County, EPA estimated ~38000 lane miles, whereas the 2019 UDOT data identifies ~9000 lane miles; it is worth using UDOT data because it is more accurate than apportioning lane miles by population. My understanding is that UDOT reports total lane miles in the state to the FHWA; so EPA uses the FHWA data for total lane miles in each state & apportions back to counties using population, but UDOT has the ACTUAL numbers of lane miles in counties. (Therefore, using the actual number of lane miles in each county (UDOT data) to calculate emissions from traffic markings is more accurate than using the estimated number of lane miles by apportioning the Utah total lane miles to counties based on population).
+
+# Since we do not have 2017 lane miles data, we will use the WW for the 2017 emissions inventory, as at least the throughput and EF are synced up. 
 scc <- 2401008000
 temp_table <- pull_baseline_from_ww(scc)
 #projects with population
 temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
 #no controls, no pt subs
 final_table <- rbind(final_table,temp_table)
-
 
 # Solvent Utilization > Surface Coating > Auto Refinishing: SIC 7532 > Total: All Solvent 
 # We assume that businesses within each county fill the autobody refinishing needs of their own county; while this may not be absolutely accurate, any error will cancel between adjacent counties.
@@ -1497,6 +1497,25 @@ rm(scc, temp_table, temp_table_project, temp_table_final)
 
 # Miscellaneous Area Sources > Agriculture Production - Crops > Fertilizer Application > Miscellaneous Fertilizers
 scc <- 2801700099
+
+# Get emissions estimates from the NEI
+temp_table <- pull_baseline_from_nei(scc = scc)
+
+# Project on agricultural employment
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
+
+# No controls
+
+# No pt source subtractions
+
+# temp_table_project is our final temp_table
+temp_table_final <- temp_table_project
+
+# add to final_table
+final_table <- rbind(final_table, temp_table_final)
+
+# remove the objects we created for this SCC
+rm(scc, temp_table, temp_table_project, temp_table_final)
 ```
 
 
