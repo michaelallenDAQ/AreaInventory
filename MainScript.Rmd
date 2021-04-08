@@ -442,6 +442,13 @@ final_table <- rbind(final_table,temp_table)
 
 #                               manually calculate
 
+# misc > ag crop harvesting
+# we came up with emissions calculations for this SCC by ourselves. Wheat, Corn, Hay, and Barley are like 99% of the
+# PM10 that we get from harvesting in the state
+scc <- 2801000005
+
+
+
 #1) Emission factors are from EPA's "Emission Inventory Improvement Program (EIIP)," Vol. III, (6/21/99 ed), section "Area Source Category Method Abstract - Bakeries."										
 #2) Product Consumption factor is from EIIP, Vol. III, (6/21/99 ed), section "Area Source Category Method Abstract - Bakeries."										
 #3) (I AM CURRENTLY NOT DOING THIS FILTERING STEP) Bakeries that distribute outside of Utah are disregarded in the double counting process (i.e. Interstate Brands and Pepperidge Farms).
