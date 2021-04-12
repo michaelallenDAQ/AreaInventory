@@ -175,10 +175,10 @@ pull_input_tables <- function(file_path) {
 #' 
 #' We assume that the projection tables will be in one of three formats:
 #' * the first column is "county" and contains the names of the counties
-#' * the first column is "month" and contains the estimated values for each
-#' month in the year; we will sum up the values for all of the months to get the
-#' total for the entire year and then assume that every county has the same
-#' projection
+#' * the first column is "month" and contains each month in the year, while
+#' the year columns contain the estimated values for each month in the year;
+#' we will sum up the values for all of the months to get the total estimate for
+#' the entire year and then assume that every county has the same projection
 #' * if neither of those is the case, we'll assume that each row in the table
 #' needs to become its own projection table; we'll break that table up so that
 #' each row becomes its own projection table, with values duplicated over all
@@ -207,7 +207,8 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
     # check if the first column in the table of interest is named "county"
     if(names(table)[1] == "county") {
       
-      # Switch the first column in the table from the county names to their fips
+      # Switch the values in the first column in the table from the county names
+      # to their fips
       renamed_table <- table
       ncounties <- dim(table)[1]
       for (j in 1:ncounties) {
@@ -241,8 +242,8 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
       # same as the number of rows in our counties_fips data frame above)  
       table <- table[rep(seq_len(nrow(table)), each = nrow(counties_fips)), ]
       
-      # add a column to the front of the data frame called county, which is the
-      # different fips codes. Delete the "month" column.
+      # Add a column to the front of the data frame called county, which
+      # contains the fips code for every county. Delete the "month" column.
       table <- cbind(county = counties_fips$fip, table[,-1])
       
       # now pivot_longer, so the years are all in one column
@@ -254,7 +255,7 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
       projection_tables[names(tables_to_project[i])] <- list(table)
       
       # now the final condition - we have a table that has different rows that
-      # need to be made into their own tables
+      # each need to be made into their own tables
     } else {
       # for every row in the data frame, we need to create a separate table.
       # let's store these separate tables in a list
@@ -264,11 +265,11 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
         temp_list[j] <- list(table[j,])
       }
       
-      # let's assign the names of the tables in temp_list to the names of the
-      # first column
+      # let's assign the names of the tables in temp_list to the value stored
+      # in the first column
       names(temp_list) <- unlist(table[,1])
       
-      # now we need to do something similar as above - repeat every row in each
+      # now we need to do something similar to above - repeat every row in each
       # table in the temp_list 29 times and assign the name of the fips
       temp_list <- lapply(temp_list, function(temp_table) {
         # repeat that row 29 times(the number of counties in Utah, which is the
@@ -276,8 +277,8 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
         temp_table <- temp_table[rep(seq_len(nrow(temp_table)), 
                                      each = nrow(counties_fips)), ]
         
-        # add a column to the front of the data frame called county, which is the
-        # different fips codes. Delete the first column.
+        # Add a column to the front of the data frame called county, which is 
+        # the different fips codes. Delete the first column.
         temp_table <- cbind(county = counties_fips$fip, temp_table[,-1])
         
         # now pivot_longer, so the years are all in one column
@@ -292,7 +293,7 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
       for(j in 1:length(temp_list)) {
         # the name of the table will be the name of the list element that the
         # table came from, then underscore, then the name in the first column
-        # of the table that we built the entire table from
+        # of the row that the table was built from
         projection_tables[paste0(names(tables_to_project)[i], 
                                  "_", names(temp_list)[j])] <- 
           temp_list[j]
