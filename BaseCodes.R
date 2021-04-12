@@ -164,28 +164,53 @@ pull_input_tables <- function(file_path) {
 #' 
 #' @param table_names Vector of sheet names from input_tables that we want to 
 #' convert to projection tables
-#' @return list with each element the data stored on an input table sheet
+#' @return list with each element being a data frame for a projection table
 #' @export
 pull_projection_tables <- function(table_names, input_list = input_tables) {
   
-  projection_tables <- input_tables[table_names]
+  # what are the tables we are going to use for projection?
+  tables_to_project <- input_list[table_names]
+  
+  # create an empty list we'll use for storing the projection tables
+  projection_tables <- list()
 
-  # now, for each of the sheets, read in the data on that particular sheet and
-  # assign to a new element in the list
-  projection_tables = lapply(projection_tables, function(table) {
+  # now, for each of the tables_to_project, read in the data on that particular 
+  # sheet and assign to an element(s) in the projection_tables list
+  # for each element in the tables_to_project list, run through this loop
+  for(i in 1:length(tables_to_project) {
     
-    #rename the first column to switch the county names to their fips codes
-    renamed_table <- table
-    ncounties <- dim(table)[1]
-    for (i in 1:ncounties) {
-      renamed_table[i, 1] <-
-        as.factor(county_to_fip(table[[i, 1]]))
+    # check if the first column in the table of interest is named "county", 
+    # if it is, the table is already in the correct format for use as a 
+    # projection table
+    if(names(tables_to_project[[i]])[1] == "county") {
+      
+      # Switch the first column in the table from the county names to their fips
+      renamed_table <- table
+      ncounties <- dim(table)[1]
+      for (j in 1:ncounties) {
+        renamed_table[j, 1] <-
+          as.factor(county_to_fip(table[[j, 1]]))
+      }
+      
+      # now pivot_longer, so the years are all in one column
+      longer_table <- pivot_longer(renamed_table, cols = colnames(table)[-1],
+                                   names_to = "year",
+                                   values_to = "unit")
+      
+      # add an element to the projection_tables list for this table
+      projection_tables[names(tables_to_project[i])] <- list(renamed_table)
+      
+      # remove the renamed_table object from the environment
+      rm(renamed_table)
+    } else if(names(table[1] == "month")) {
+      table <- rbind(table, c("sum", colSums(table[,-1])))
+      table <- filter(table, month == "sum")
+        
+        
+      test <- df[rep(seq_len(nrow(table)), each = 2), ]
     }
     
-    #now pivot_longer
-    longer_table <- pivot_longer(renamed_table, cols = colnames(table)[-1],
-                                 names_to = "year",
-                                 values_to = "unit")
+    return(longer_table)
   }
   )
   
