@@ -29,6 +29,17 @@
 #
 #
 
+# FIP-County crosswalk table
+counties_fips <- data.frame(county = c("Beaver", "Box Elder", "Cache", "Carbon",
+                                       "Daggett", "Davis", "Duchesne", "Emery", 
+                                       "Garfield", "Grand", "Iron", "Juab", 
+                                       "Kane", "Millard", "Morgan", "Piute", 
+                                       "Rich", "Salt Lake", "San Juan", 
+                                       "Sanpete", "Sevier", "Summit", "Tooele", 
+                                       "Uintah", "Utah", "Wasatch", 
+                                       "Washington", "Wayne", "Weber"),
+                            fip = seq.int(49001,49057,2))
+
 #This function pulls the entire raw WW, and then changes all
 #final emission values to TPY (if they're LB/year, divide by 2000)
 pull_ww <- function(ww_path) {
@@ -159,36 +170,145 @@ pull_input_tables <- function(file_path) {
 
 #' Create projection tables
 #' 
-#' Pull projection tables from the input_tables, pivot longer to prepare them
-#' for the project function, return a list of projection_tables
+#' Pull projection tables from the input_tables list, format them correctly for
+#' use with the project function
+#' 
+#' We assume that the projection tables will be in one of three formats:
+#' * the first column is "county" and contains the names of the counties
+#' * the first column is "month" and contains each month in the year, while
+#' the year columns contain the estimated values for each month in the year;
+#' we will sum up the values for all of the months to get the total estimate for
+#' the entire year and then assume that every county has the same projection
+#' * if neither of those is the case, we'll assume that each row in the table
+#' needs to become its own projection table; we'll break that table up so that
+#' each row becomes its own projection table, with values duplicated over all
+#' counties
 #' 
 #' @param table_names Vector of sheet names from input_tables that we want to 
 #' convert to projection tables
-#' @return list with each element the data stored on an input table sheet
+#' @return list where each element is a projection table
 #' @export
 pull_projection_tables <- function(table_names, input_list = input_tables) {
   
-  projection_tables <- input_tables[table_names]
+  # what are the tables we are going to use for projection?
+  tables_to_project <- input_list[table_names]
+  
+  # create an empty list we'll use for storing the projection tables
+  projection_tables <- list()
 
-  # now, for each of the sheets, read in the data on that particular sheet and
-  # assign to a new element in the list
-  projection_tables = lapply(projection_tables, function(table) {
+  # now, for each of the tables_to_project, read in the data on that particular 
+  # sheet and assign to an element(s) in the projection_tables list
+  # for each element in the tables_to_project list, run through this loop
+  for(i in 1:length(tables_to_project)) {
     
-    #rename the first column to switch the county names to their fips codes
-    renamed_table <- table
-    ncounties <- dim(table)[1]
-    for (i in 1:ncounties) {
-      renamed_table[i, 1] <-
-        as.factor(county_to_fip(table[[i, 1]]))
+    # assign the table of interest to "table"
+    table <- tables_to_project[[i]]
+    
+    # check if the first column in the table of interest is named "county"
+    if(names(table)[1] == "county") {
+      
+      # Switch the values in the first column in the table from the county names
+      # to their fips
+      renamed_table <- table
+      ncounties <- dim(table)[1]
+      for (j in 1:ncounties) {
+        renamed_table[j, 1] <-
+          as.factor(county_to_fip(table[[j, 1]]))
+      }
+      
+      # now pivot_longer, so the years are all in one column
+      renamed_table <- pivot_longer(renamed_table, cols = colnames(table)[-1],
+                                   names_to = "year",
+                                   values_to = "unit")
+      
+      # add an element to the projection_tables list for this table
+      projection_tables[names(tables_to_project[i])] <- list(renamed_table)
+      
+      # remove the renamed_table object from the environment
+      rm(renamed_table)
+      
+      # if the first column is not named county, is it named month?
+    } else if(names(table)[1] == "month") {
+      
+      # if it is, we need to sum over all the months to get the total for the
+      # year
+      # get the sum and rbind it onto the bottom, call that row "sum"
+      table <- rbind(table, c("sum", colSums(table[,-1])))
+      
+      # now only save the "sum" row that we just rbinded
+      table <- filter(table, month == "sum")
+      
+      # repeat that row 29 times(the number of counties in Utah, which is the
+      # same as the number of rows in our counties_fips data frame above)  
+      table <- table[rep(seq_len(nrow(table)), each = nrow(counties_fips)), ]
+      
+      # Add a column to the front of the data frame called county, which
+      # contains the fips code for every county. Delete the "month" column.
+      table <- cbind(county = counties_fips$fip, table[,-1])
+      
+      # now pivot_longer, so the years are all in one column
+      table <- pivot_longer(table, cols = colnames(table)[-1],
+                            names_to = "year",
+                            values_to = "unit")
+      
+      # add an element to the projection_tables list for this table
+      projection_tables[names(tables_to_project[i])] <- list(table)
+      
+      # now the final condition - we have a table that has different rows that
+      # each need to be made into their own tables
+    } else {
+      # for every row in the data frame, we need to create a separate table.
+      # let's store these separate tables in a list
+      temp_list <- list()
+      
+      for(j in 1:nrow(table)) {
+        temp_list[j] <- list(table[j,])
+      }
+      
+      # let's assign the names of the tables in temp_list to the value stored
+      # in the first column
+      names(temp_list) <- unlist(table[,1])
+      
+      # now we need to do something similar to above - repeat every row in each
+      # table in the temp_list 29 times and assign the name of the fips
+      temp_list <- lapply(temp_list, function(temp_table) {
+        # repeat that row 29 times(the number of counties in Utah, which is the
+        # same as the number of rows in our counties_fips data frame above)  
+        temp_table <- temp_table[rep(seq_len(nrow(temp_table)), 
+                                     each = nrow(counties_fips)), ]
+        
+        # Add a column to the front of the data frame called county, which is 
+        # the different fips codes. Delete the first column.
+        temp_table <- cbind(county = counties_fips$fip, temp_table[,-1])
+        
+        # now pivot_longer, so the years are all in one column
+        temp_table <- pivot_longer(temp_table, cols = colnames(temp_table)[-1],
+                                   names_to = "year",
+                                   values_to = "unit")
+      }
+      )
+        
+      # now we can assign each of those tables in the temp_list to a separate
+      # projection table in our projection_tables list
+      for(j in 1:length(temp_list)) {
+        # the name of the table will be the name of the list element that the
+        # table came from, then underscore, then the name in the first column
+        # of the row that the table was built from
+        projection_tables[paste0(names(tables_to_project)[i], 
+                                 "_", names(temp_list)[j])] <- 
+          temp_list[j]
+      }
+      
+      # remove temp_list from the environment
+      rm(temp_list)
     }
     
-    #now pivot_longer
-    longer_table <- pivot_longer(renamed_table, cols = colnames(table)[-1],
-                                 names_to = "year",
-                                 values_to = "unit")
   }
-  )
   
+  # remove table from the environment
+  rm(table)
+  
+  # return the list of projection tables that we made
   return(projection_tables)
 }
 
