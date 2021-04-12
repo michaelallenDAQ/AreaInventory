@@ -190,10 +190,11 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
   # for each element in the tables_to_project list, run through this loop
   for(i in 1:length(tables_to_project) {
     
-    # check if the first column in the table of interest is named "county", 
-    # if it is, the table is already in the correct format for use as a 
-    # projection table
-    if(names(tables_to_project[[i]])[1] == "county") {
+    # assign the table of interest to "table"
+    table <- tables_to_project[[i]]
+    
+    # check if the first column in the table of interest is named "county"
+    if(names(table)[1] == "county") {
       
       # Switch the first column in the table from the county names to their fips
       renamed_table <- table
@@ -204,7 +205,7 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
       }
       
       # now pivot_longer, so the years are all in one column
-      longer_table <- pivot_longer(renamed_table, cols = colnames(table)[-1],
+      renamed_table <- pivot_longer(renamed_table, cols = colnames(table)[-1],
                                    names_to = "year",
                                    values_to = "unit")
       
@@ -213,15 +214,35 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
       
       # remove the renamed_table object from the environment
       rm(renamed_table)
-    } else if(names(table[1] == "month")) {
+      
+      # if the first column is not named county, is it named month?
+    } else if(names(table)[1] == "month") {
+      
+      # if it is, we need to sum over all the months to get the total for the
+      # year
+      # get the sum and rbind it onto the bottom, call that row "sum"
       table <- rbind(table, c("sum", colSums(table[,-1])))
+      
+      # now only save the "sum" row that we just rbinded
       table <- filter(table, month == "sum")
-        
-        
-      test <- table[rep(seq_len(nrow(table)), each = 2), ]
+      
+      # repeat that row 29 times(the number of counties in Utah, which is the
+      # same as the number of rows in our counties_fips data frame above)  
+      table <- table[rep(seq_len(nrow(table)), each = nrow(counties_fips)), ]
+      
+      # add a column to the front of the data frame called county, which is the
+      # different fips codes. Delete the "month" column.
+      table <- cbind(county = counties_fips$fip, table[,-1])
+      
+      # now pivot_longer, so the years are all in one column
+      table <- pivot_longer(table, cols = colnames(table)[-1],
+                            names_to = "year",
+                            values_to = "unit")
+      
+      # add an element to the projection_tables list for this table
+      projection_tables[names(tables_to_project[i])] <- list(table)
     }
     
-    return(longer_table)
   }
   )
   
