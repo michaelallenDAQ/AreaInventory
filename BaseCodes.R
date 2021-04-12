@@ -29,6 +29,17 @@
 #
 #
 
+# FIP-County crosswalk table
+counties_fips <- data.frame(county = c("Beaver", "Box Elder", "Cache", "Carbon",
+                                       "Daggett", "Davis", "Duchesne", "Emery", 
+                                       "Garfield", "Grand", "Iron", "Juab", 
+                                       "Kane", "Millard", "Morgan", "Piute", 
+                                       "Rich", "Salt Lake", "San Juan", 
+                                       "Sanpete", "Sevier", "Summit", "Tooele", 
+                                       "Uintah", "Utah", "Wasatch", 
+                                       "Washington", "Wayne", "Weber"),
+                            fip = seq.int(49001,49057,2))
+
 #This function pulls the entire raw WW, and then changes all
 #final emission values to TPY (if they're LB/year, divide by 2000)
 pull_ww <- function(ww_path) {
@@ -207,7 +218,7 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
       table <- filter(table, month == "sum")
         
         
-      test <- df[rep(seq_len(nrow(table)), each = 2), ]
+      test <- table[rep(seq_len(nrow(table)), each = 2), ]
     }
     
     return(longer_table)
