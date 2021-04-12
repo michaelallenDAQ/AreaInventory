@@ -170,12 +170,23 @@ pull_input_tables <- function(file_path) {
 
 #' Create projection tables
 #' 
-#' Pull projection tables from the input_tables, pivot longer to prepare them
-#' for the project function, return a list of projection_tables
+#' Pull projection tables from the input_tables list, format them correctly for
+#' use with the project function
+#' 
+#' We assume that the projection tables will be in one of three formats:
+#' * the first column is "county" and contains the names of the counties
+#' * the first column is "month" and contains the estimated values for each
+#' month in the year; we will sum up the values for all of the months to get the
+#' total for the entire year and then assume that every county has the same
+#' projection
+#' * if neither of those is the case, we'll assume that each row in the table
+#' needs to become its own projection table; we'll break that table up so that
+#' each row becomes its own projection table, with values duplicated over all
+#' counties
 #' 
 #' @param table_names Vector of sheet names from input_tables that we want to 
 #' convert to projection tables
-#' @return list with each element being a data frame for a projection table
+#' @return list where each element is a projection table
 #' @export
 pull_projection_tables <- function(table_names, input_list = input_tables) {
   
@@ -266,7 +277,7 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
                                      each = nrow(counties_fips)), ]
         
         # add a column to the front of the data frame called county, which is the
-        # different fips codes. Delete the "month" column.
+        # different fips codes. Delete the first column.
         temp_table <- cbind(county = counties_fips$fip, temp_table[,-1])
         
         # now pivot_longer, so the years are all in one column
@@ -280,7 +291,8 @@ pull_projection_tables <- function(table_names, input_list = input_tables) {
       # projection table in our projection_tables list
       for(j in 1:length(temp_list)) {
         # the name of the table will be the name of the list element that the
-        # table came from, underscore the row name of that table
+        # table came from, then underscore, then the name in the first column
+        # of the table that we built the entire table from
         projection_tables[paste0(names(tables_to_project)[i], 
                                  "_", names(temp_list)[j])] <- 
           temp_list[j]
