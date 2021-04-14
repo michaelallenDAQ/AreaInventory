@@ -81,6 +81,24 @@ suppressMessages(pt_crosswalk_table <- read_xlsx(read_path, sheet = 'Point Sourc
 read_path <- 'ref_workbooks/FuelSCCCrosswalkFromICINEMO_20210203.xlsx'
 suppressMessages(fuel_crosswalk_table <- read_xlsx(read_path))
 
+# pull controls table
+read_path <- 'ref_workbooks/Controls_20210414.xlsx'
+suppressMessages(controls <- read_xlsx(read_path, col_types = c("text", 
+                                                                "text",
+                                                                "text",
+                                                                "text",
+                                                                "text",
+                                                                "numeric",
+                                                                "text",
+                                                                "text",
+                                                                "numeric",
+                                                                "numeric",
+                                                                "numeric",
+                                                                "logical",
+                                                                "logical",
+                                                                "text",
+                                                                "text")))
+
 # pull projection tables from input_tables and format correctly
 project_tables <- c("Wheat","Corn","Hay","Barley","EnergyBySector","PetroleumForecast",
                     "Population","CoalForecast","Steady","Gasoline","GovGas",
