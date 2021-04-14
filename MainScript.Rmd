@@ -442,11 +442,46 @@ final_table <- rbind(final_table,temp_table)
 #                               manually calculate
 
 # misc > ag crop harvesting
-# we came up with emissions calculations for this SCC by ourselves. Wheat, Corn, Hay, and Barley are like 99% of the
-# PM10 that we get from harvesting in the state
+# we came up with emissions calculations for this SCC by ourselves. EPA does not offer any methodologies for it. Wheat, Corn, Hay, and Barley are like 99.3% of the particulate matter from harvesting in our state.
+# The emission factors and calculation method is from chapter 10, Agricultural Harvesting of the "WRAP Fugitive Dust Handbook," dated September 7, 2006.									
+# Acres harvested is from the US agricultural census for 2017.
+
 scc <- 2801000005
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in lb of dust per acre harvested. PM25 is assumed to be 15% of PM10
+TPPPY <-c(1.68/2000, 1.68/2000*0.15, 1.68/2000, 1.68/2000*0.15)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#projection table contains acres harvested of the given agricultural product
+hay_table <- make_baseline(efs_table,projection_tables[["Hay"]], project_to = end_year)
 
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in lb of dust per acre harvested. PM25 is assumed to be 15% of PM10
+TPPPY <-c(5.8/2000, 5.8/2000*0.15, 5.8/2000, 5.8/2000*0.15)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#projection table contains acres harvested of the given agricultural product
+wheat_table <- make_baseline(efs_table,projection_tables[["Wheat"]], project_to = end_year)
 
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in lb of dust per acre harvested. PM25 is assumed to be 15% of PM10
+TPPPY <-c(1.70/2000, 1.70/2000*0.15, 1.70/2000, 1.70/2000*0.15)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#projection table contains acres harvested of the given agricultural product
+corn_table <- make_baseline(efs_table,projection_tables[["Corn"]], project_to = end_year)
+
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in lb of dust per acre harvested. PM25 is assumed to be 15% of PM10
+TPPPY <-c(5.8/2000, 5.8/2000*0.15, 5.8/2000, 5.8/2000*0.15)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#projection table contains acres harvested of the given agricultural product
+barley_table <- make_baseline(efs_table,projection_tables[["Barley"]], project_to = end_year)
+
+#declare temp table as hay table, arbitrarily, to get the table with the right format
+temp_table <- hay_table
+#add together the 4 crops that produce dust when harvested.
+temp_table$TPY <- hay_table$TPY + wheat_table$TPY + corn_table$TPY + barley_table$TPY
+
+final_table <- rbind(final_table,temp_table)
+rm(hay_table, wheat_table, corn_table, barley_table, temp_table, TPPPY, efs_table, pollutants, scc)
 
 #1) Emission factors are from EPA's "Emission Inventory Improvement Program (EIIP)," Vol. III, (6/21/99 ed), section "Area Source Category Method Abstract - Bakeries."										
 #2) Product Consumption factor is from EIIP, Vol. III, (6/21/99 ed), section "Area Source Category Method Abstract - Bakeries."										
