@@ -482,6 +482,150 @@ add_controls <-
     return(cleaned_projected_data)
   }
 
+#this take in a pollution inventory, and targets an scc with a set of counties.
+#It phases in a control factor to that SCC from a start year up to an end year.
+#start_year: last year where emissions are uncontrolled, at 100% of their values
+#end_year: first year where emission controls are completely phased in.
+#end_val: Final control value. 0.3 would mean emissions are 70% reduced.
+#pollutants: you can input specific pollutants to control. The default assumption is that
+#  you want to control all of them.
+
+
+#' Add controls
+#' 
+#' Adjust emissions estimates with applicable controls
+#'
+#' @param raw_proj_data data frame containing columns for FIPS, SCC, year,
+#' pollutant, and TPY
+#' @param ef (optional) emissions factor used to calculate the emissions in
+#' raw_proj_data; if NULL, we pull the emissions factor from the WW
+#' @param baseline_year (optional) year that we should treat as the baseline
+#' for where emissions were calculated; if NULL, we assume that the min year
+#' in the raw_proj_data is the baseline_year
+#'
+#' @return adjusted proj_data data frame with applicable control percent
+#' reductions added
+#' @examples
+add_controls <-
+  function(raw_proj_data, ef = NULL, baseline_year = NULL){
+    # What sccs do we have in the raw_proj_data?
+    scc <- unique(raw_proj_data$SCC)
+    
+    # only save the SCCs of interest from our controls_to_apply function
+    controls_to_apply <- filter(controls, SCC %in% scc)
+    
+    # pivot_longer our controls_to_apply function so that every county in the
+    # County column gets its own row
+    controls_to_apply <- separate_rows(controls_to_apply, County, sep = ", ")
+    
+    # add a column onto our controls_to_apply function for the FIPS codes,
+    # we'll use this to match with the data in raw_proj_data
+    controls_to_apply$FIPS <- sapply(controls_to_apply$County, county_to_fip)
+    
+    # create a data frame called adjusted_proj_data that is raw_proj_data
+    # this is what we'll modify & return at the end of the function
+    adjusted_proj_data <- raw_proj_data
+    
+    # convert the year column in adjusted_proj_data to a numeric
+    adjusted_proj_data$year <- as.numeric(adjusted_proj_data$year)
+    
+    # if our baseline_year is NULL, we're going to pull the min baseline_year
+    # from adjusted_proj_data and use that as our baseline_year
+    if(is.null(baseline_year)) {
+      baseline_year <- min(adjusted_proj_data$year)
+    }
+    
+    # is our controls_to_apply function 0 rows? this would imply that there
+    # are no controls to apply for the SCCs in raw_proj_data
+    if(nrow(controls_to_apply) == 0) {
+      stop(paste0("There are no controls to apply for ", 
+                 paste(scc, collapse = ", "), "."))
+   
+    # if not, we've got to do stuff!
+    } else {
+      
+      # loop over every row in our controls_to_apply table
+      for(i in 1:nrow(controls_to_apply)) {
+        # get the matching pollutant & county from the adjusted_proj_data table
+        proj_obs <- adjusted_proj_data %>%
+          filter(FIPS == controls_to_apply$FIPS[i],
+                 pollutant == controls_to_apply$PollutantCode[i])
+        
+        # get a control_pct table for our controls_to_apply that will identify
+        # how much of our control we should apply over time
+        # our table will start one year before our start year (to have a starting
+        # control.pct of 1)
+        control_pct <- data.frame(year = seq(controls_to_apply$PhaseInStartYear[i] - 1, 
+                                             controls_to_apply$PhaseInEndYear[i], 
+                                             by = 1), 
+                                  # calculate what control pct we'll apply
+                                  # each year
+                                  control.pct = seq(1, controls_to_apply$ControlPct[i], 
+                                                    length.out = (controls_to_apply$PhaseInEndYear[i] - 
+                                                                    (controls_to_apply$PhaseInStartYear[i] - 2))))
+        
+        # now we do our checks to adjust the ControlPct we'll use
+        # if our control is TimeDependent, we may need to adjust it
+        if(controls_to_apply$TimeDependent[i]) {
+          # if our baseline year is after the phase in end year, then our
+          # controlpct should be 0. We shouldn't do anything.
+          if(baseline_year >= controls_to_apply$PhaseInEndYear[i]) {
+
+            # if our baseline year is after the phaseinstartyear, but not
+            # after the phaseinendyear, we've got to do some adjusting
+          } else if(baseline_year >= controls_to_apply$PhaseInStartYear[i]) {
+
+            # what is our expected reduction at the baseline_year?
+            baseline_pct <- (filter(control_pct, year == baseline_year))$control.pct
+            
+            # okay, the baseline_year needs to become "100" now. We should
+            # increase emissions estimates for years prior to baseline_year, 
+            # and decrease emissions estimates for years after baseline_year
+            control_pct$control.pct <- control_pct$control.pct / baseline_pct
+          }
+          # if neither of those conditions hold, then we don't do anything with
+          # our control_pct
+        }
+      }
+    }
+    
+    #we later will filter our list down to only control certain pollutants
+    #if we haven't singled out any pollutants, make sure we include everything 
+    #in 'target_pollutants'
+    if (is.null(pollutants)) {
+      pollutants <- unique(raw_proj_data$pollutant)
+    }
+    
+    drops <-
+      e_year - st_year #number of years you ramp up controls
+    distance <- 1 - end_val # total control factor increase
+    step <- distance / drops #the amount you drop emissions per year
+    
+    cleaned_projected_data <- raw_proj_data %>%
+      #complex mutate below. making a new column of TPY and ultimately
+      #removing the old one
+      mutate(
+        new_TPY = ifelse(
+          # take the raw data. If you don't have the right SCCs or counties, leave TPY
+          # unchanged. If you DO have the right SCCs & counties....
+          (SCC %in% sccs & FIPS %in% counties & pollutant %in% pollutants),
+          ifelse(year > e_year,
+                 #If you are after the end_year. implement the full control efficiency
+                 TPY * end_val,
+                 ifelse(year > st_year,
+                        #If you are between the start and end year, implement a control that linearly
+                        #travels from start_year+1 to end_year.
+                        TPY * (1 - step * (as.numeric(year) - st_year)),
+                        #If you are before or equal to the start year, implement no controls.
+                        TPY)),
+          #if you are not the target counties/pollutant/scc, remain unchanged
+          TPY
+        )) %>% 
+      #remove the old, unedited TPY and put the new one in its place.
+      select(-TPY) %>% rename(TPY = new_TPY)
+    return(cleaned_projected_data)
+  }
+
 #this function takes in a table of EFs for an SCC, and combines it with 
 #  reference data, like population or manufacturing employment, and it creates
 #  an emissions table for that with TPY values.
