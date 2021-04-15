@@ -103,5 +103,6 @@ suppressMessages(controls <- read_xlsx(read_path, col_types = c("text",
 # pull projection tables from input_tables and format correctly
 project_tables <- c("Wheat","Corn","Hay","Barley","EnergyBySector","PetroleumForecast",
                     "Population","CoalForecast","Steady","Gasoline","GovGas",
-                    "USAviationFuel","AgJobs","ManEmp","VMT")
+                    "USAviationFuel","AgJobs","ManEmp","VMT","WoodBTU","LUST",
+                    "NonresidentialConstruction")
 projection_tables <- pull_projection_tables(table_names = project_tables)

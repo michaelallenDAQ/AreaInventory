@@ -68,6 +68,7 @@ final_table <- vector()
 
 ```{r}
 #run this line if I'm tinkering with input tables
+#input_table_path <- "ref_workbooks/new_input_tables20210305.xlsx"
 #input_tables <- pull_input_tables(paste0(Sys.getenv("HomeDir"),"/",input_table_path))
 
 #then go to BaseTables and run the 2 project_tables lines
@@ -483,6 +484,7 @@ temp_table$TPY <- hay_table$TPY + wheat_table$TPY + corn_table$TPY + barley_tabl
 final_table <- rbind(final_table,temp_table)
 rm(hay_table, wheat_table, corn_table, barley_table, temp_table, TPPPY, efs_table, pollutants, scc)
 
+
 #1) Emission factors are from EPA's "Emission Inventory Improvement Program (EIIP)," Vol. III, (6/21/99 ed), section "Area Source Category Method Abstract - Bakeries."										
 #2) Product Consumption factor is from EIIP, Vol. III, (6/21/99 ed), section "Area Source Category Method Abstract - Bakeries."										
 #3) (I AM CURRENTLY NOT DOING THIS FILTERING STEP) Bakeries that distribute outside of Utah are disregarded in the double counting process (i.e. Interstate Brands and Pepperidge Farms).
@@ -680,7 +682,7 @@ pollutants <- c('VOC')
 TPUPY <-(5.11)
 efs_table <- make_simple_efs_table(scc,pollutants,TPUPY)
 #LUST is pulled from base_inputs. It has all the leaking underground storage tanks in the state
-temp_table <- make_baseline(efs_table,LUST,project_to = end_year)
+temp_table <- make_baseline(efs_table,projection_tables[["LUST"]],project_to = end_year)
 #no controls?
 #no pt subs?
 final_table <- rbind(final_table, temp_table)
@@ -1642,15 +1644,19 @@ scc <- 2311020000
 #then get acre-month by assuming 11 months of construction per project
 #  both of these conversion factors (1.00885, 11) are from NOMAD, and 
 #  could potentially be out of date.
-input_table <- NonresidentialConstruction %>% mutate(unit = unit*1.00885/1E6*11)
+input_table <- projection_tables[["NonresidentialConstruction"]] %>% 
+  #filter for year and adjust units
+  filter(year==start_year) %>% mutate(unit = unit*1.00885/1E6*11)
+#pull efs from ww
 efs_table <- pull_efs_from_ww(scc,throughput_unit = 'ACRE-MONTH', all_primaries = TRUE)
 temp_table <- make_baseline(efs_table, input_table)
-#project
 temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+#project
 #Controls: R307-309 is about fugitive dust control plans. Has an assumed 32% 
 #reduction that started in 2014.
 temp_table <- add_controls(temp_table,scc,naa_counties,2013,2014,0.68)
 final_table <- rbind(final_table,temp_table)
+
 
 #surface coatings, architectural
 #pulled from WW
@@ -1959,13 +1965,12 @@ THIS NEEDS TO SCALE WITH RESIDENTIAL WOOD FROM 'WOODBTU'. THE OLD WOOD TABLE IS 
 #assume wood density of 1.04 Tons/Cord
 #most up-to-date emission factors are in the WW tool. I used WW EFs to figure out the TPY reduction.
 #352 of all of the units were replaced in 2018, so I assumed a complete phase-in finished for 2018. This is a rough approximation, but is accurate enough.
-
 #wood fireplace, general
 #685 units removed at 0.08234 cords/unit/year
 #PM25-PRI reduced 0.6906 TPY
 scc <- 2104008100
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,wood)
+temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 temp_table <- add_controls( temp_table, scc,counties = 49003, st_year = 2017, e_year = 2018,end_val = 0.98326)
 temp_table <- add_controls( temp_table, scc,counties = 49011, st_year = 2017, e_year = 2018,end_val = 0.98450)
 temp_table <- add_controls( temp_table, scc,counties = 49035, st_year = 2017, e_year = 2018,end_val = 0.98781)
@@ -1978,7 +1983,7 @@ final_table <- rbind(final_table,temp_table)
 # PM25-PRI reduced 0.1261
 scc <- 2104008210
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, wood)
+temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 temp_table <- add_controls( temp_table, scc,counties = 49003, st_year = 2017, e_year = 2018,end_val = 0.97621)
 temp_table <- add_controls( temp_table, scc,counties = 49011, st_year = 2017, e_year = 2018,end_val = 0.98321)
 temp_table <- add_controls( temp_table, scc,counties = 49035, st_year = 2017, e_year = 2018,end_val = 0.98817)
@@ -1990,14 +1995,14 @@ final_table <- rbind(final_table,temp_table)
 #no controls
 scc <- 2104008220
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, wood)
+temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 final_table <- rbind(final_table,temp_table)
 
 #woodstove, fireplace insert, EPA certified, catalytic
 #no controls
 scc <- 2104008230
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, wood)
+temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 final_table <- rbind(final_table,temp_table)
 
 #woodstove, freestanding, non-EPA certified
@@ -2005,7 +2010,7 @@ final_table <- rbind(final_table,temp_table)
 #PM25-PRI reduced 0.5248 TPY
 scc <- 2104008310
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, wood)
+temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 temp_table <- add_controls( temp_table, scc,counties = 49003, st_year = 2017, e_year = 2018,end_val = 0.98542)
 temp_table <- add_controls( temp_table, scc,counties = 49011, st_year = 2017, e_year = 2018,end_val = 0.98229)
 temp_table <- add_controls( temp_table, scc,counties = 49035, st_year = 2017, e_year = 2018,end_val = 0.98526)
@@ -2018,7 +2023,7 @@ final_table <- rbind(final_table,temp_table)
 #PM25-PRI reduced 0.002568 TPY
 scc <- 2104008320
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, wood)
+temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 temp_table <- add_controls( temp_table, scc,counties = 49003, st_year = 2017, e_year = 2018,end_val = 0.99981)
 temp_table <- add_controls( temp_table, scc,counties = 49011, st_year = 2017, e_year = 2018,end_val = 0.99977)
 temp_table <- add_controls( temp_table, scc,counties = 49035, st_year = 2017, e_year = 2018,end_val = 0.99981)
@@ -2030,7 +2035,7 @@ final_table <- rbind(final_table,temp_table)
 #no controls
 scc <- 2104008330
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, wood)
+temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 final_table <- rbind(final_table,temp_table)
 
 #woodstove, pellet-fired, general (freestanding or FP insert)
@@ -2038,7 +2043,7 @@ final_table <- rbind(final_table,temp_table)
 #PM25-PRI reduced 0.002135 TPY
 scc <- 2104008400
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, wood)
+temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 temp_table <- add_controls( temp_table, scc,counties = 49003, st_year = 2017, e_year = 2018,end_val = 0.99817)
 temp_table <- add_controls( temp_table, scc,counties = 49011, st_year = 2017, e_year = 2018,end_val = 0.99892)
 temp_table <- add_controls( temp_table, scc,counties = 49035, st_year = 2017, e_year = 2018,end_val = 0.99939)
@@ -2050,7 +2055,7 @@ final_table <- rbind(final_table,temp_table)
 #no controls
 scc <- 2104008510
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, wood)
+temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 final_table <- rbind(final_table,temp_table)
 
 #hydronic heater, outdoor
@@ -2058,7 +2063,7 @@ final_table <- rbind(final_table,temp_table)
 #no controls
 scc <- 2104008610
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, wood)
+temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 final_table <- rbind(final_table,temp_table)
 
 #outdoor wood burning device, NEC (fire-pits, chimeas, etc)
@@ -2066,14 +2071,14 @@ final_table <- rbind(final_table,temp_table)
 #no controls
 scc <- 2104008700
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, wood)
+temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 final_table <- rbind(final_table,temp_table)
 
 #firelog, total: all combustor types
 #no controls
 scc <- 2104009000
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, wood)
+temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 final_table <- rbind(final_table,temp_table)
 
 ```
