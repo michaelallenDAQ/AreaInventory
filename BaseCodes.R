@@ -497,8 +497,23 @@ add_controls <-
 #'
 #' @param raw_proj_data data frame containing columns for FIPS, SCC, year,
 #' pollutant, and TPY
-#' @param ef (optional) emissions factor used to calculate the emissions in
-#' raw_proj_data; if NULL, we pull the emissions factor from the WW
+#' @param current_efs (optional) This is only relevant if any of the controls 
+#' applicable to sccs in raw_proj_data are EFDependent. If so, and we want to 
+#' manually identify the controls we currently use, input a table here with a 
+#' SCC, pollutant, and EmissionsFactor column. We will use the emissions factors
+#' in the EmissionsFactor column as the baseline emissions factor and compare
+#' those to the emissions factors from the Controls table. If we simply use the
+#' emissions factors from the WW or NEI, there is no need to manually identify
+#' them here. We can just use the current_ef_source parameter instead.
+#' @param current_ef_source (optional) One of "WW" or "NEI". This is only
+#' relevant if any of the emissions factors are EFDependent AND the current_efs
+#' parameter is NULL. If so, is the current emissions factor that we use from
+#' the NEI or Wagon Wheel? If this is left as NULL, we will first check if the
+#' Emissions Factors for the SCCs and pollutants in raw_proj_data exist in the
+#' Wagon Wheel and use those as our baseline emissions factor if they do. If
+#' they do not, we will check if they exist in the NEI. If they do not exist in
+#' the Wagon Wheel or NEI, we will be unable to apply the emissions factor
+#' adjustment and return a warning stating so.
 #' @param baseline_year (optional) year that we should treat as the baseline
 #' for where emissions were calculated; if NULL, we assume that the min year
 #' in the raw_proj_data is the baseline_year
@@ -506,8 +521,11 @@ add_controls <-
 #' @return adjusted proj_data data frame with applicable control percent
 #' reductions added
 #' @examples
-add_controls <-
-  function(raw_proj_data, ef = NULL, baseline_year = NULL){
+add_controls2 <-
+  function(raw_proj_data, 
+           current_efs = NULL, 
+           current_ef_source = NULL, 
+           baseline_year = NULL){
     # What sccs do we have in the raw_proj_data?
     scc <- unique(raw_proj_data$SCC)
     
@@ -568,8 +586,17 @@ add_controls <-
         # if our control is TimeDependent, we may need to adjust it
         if(controls_to_apply$TimeDependent[i]) {
           # if our baseline year is after the phase in end year, then our
-          # controlpct should be 0. We shouldn't do anything.
+          # controlpct should become 1, since our controls have already
+          # been fully phased-in
+          # but, we also need to increase emissions estimates in the past
+          # in order to account for the times when our controls were not
+          # fully phased-in
           if(baseline_year >= controls_to_apply$PhaseInEndYear[i]) {
+            baseline_pct <- controls_to_apply$ControlPct[i]
+            
+            # okay, the phaseinendyear needs to become "100" now. We should
+            # increase emissions estimates for all years prior to this
+            control_pct$control.pct <- control_pct$control.pct / baseline_pct
 
             # if our baseline year is after the phaseinstartyear, but not
             # after the phaseinendyear, we've got to do some adjusting
@@ -586,6 +613,9 @@ add_controls <-
           # if neither of those conditions hold, then we don't do anything with
           # our control_pct
         }
+        
+        # now we need to check if our control is EFDependent, if it is, we may
+        # need to adjust it if the current EF is different than the historic EF
       }
     }
     
