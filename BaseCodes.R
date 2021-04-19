@@ -577,7 +577,7 @@ add_controls2 <-
       # do we have? We need to make decisions to adjust TPY based on these
       unique_combos <- affected_adjusted_data %>% 
         group_by(FIPS, SCC, pollutant) %>%
-        summarize()
+        summarize(.groups = "drop")
       
       # loop over every row in our unique_combos
       for(i in 1:nrow(unique_combos)) {
@@ -694,7 +694,8 @@ add_controls2 <-
           group_by(year) %>%
           summarize(ControlPct = ifelse(sum(PctAppliesTo) == 1,
                                         sum(ControlPct*PctAppliesTo),
-                                        sum(ControlPct*PctAppliesTo + (1-sum(PctAppliesTo)))))
+                                        sum(ControlPct*PctAppliesTo + (1-sum(PctAppliesTo)))),
+                    .groups = "drop")
 
         # now we can adjust those columns in proj_obs by the control_pct
         proj_obs <- proj_obs %>%
@@ -724,44 +725,6 @@ add_controls2 <-
     
     # return the adjusted_proj_data
     return(adjusted_proj_data)
-  }
-
-    
-    #we later will filter our list down to only control certain pollutants
-    #if we haven't singled out any pollutants, make sure we include everything 
-    #in 'target_pollutants'
-    if (is.null(pollutants)) {
-      pollutants <- unique(raw_proj_data$pollutant)
-    }
-    
-    drops <-
-      e_year - st_year #number of years you ramp up controls
-    distance <- 1 - end_val # total control factor increase
-    step <- distance / drops #the amount you drop emissions per year
-    
-    cleaned_projected_data <- raw_proj_data %>%
-      #complex mutate below. making a new column of TPY and ultimately
-      #removing the old one
-      mutate(
-        new_TPY = ifelse(
-          # take the raw data. If you don't have the right SCCs or counties, leave TPY
-          # unchanged. If you DO have the right SCCs & counties....
-          (SCC %in% sccs & FIPS %in% counties & pollutant %in% pollutants),
-          ifelse(year > e_year,
-                 #If you are after the end_year. implement the full control efficiency
-                 TPY * end_val,
-                 ifelse(year > st_year,
-                        #If you are between the start and end year, implement a control that linearly
-                        #travels from start_year+1 to end_year.
-                        TPY * (1 - step * (as.numeric(year) - st_year)),
-                        #If you are before or equal to the start year, implement no controls.
-                        TPY)),
-          #if you are not the target counties/pollutant/scc, remain unchanged
-          TPY
-        )) %>% 
-      #remove the old, unedited TPY and put the new one in its place.
-      select(-TPY) %>% rename(TPY = new_TPY)
-    return(cleaned_projected_data)
   }
 
 #this function takes in a table of EFs for an SCC, and combines it with 
