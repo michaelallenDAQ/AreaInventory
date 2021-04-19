@@ -540,19 +540,6 @@ add_controls2 <-
     # we'll use this to match with the data in raw_proj_data
     controls_to_apply$FIPS <- sapply(controls_to_apply$County, county_to_fip)
     
-    # create a data frame called adjusted_proj_data that is raw_proj_data
-    # this is what we'll modify & return at the end of the function
-    adjusted_proj_data <- raw_proj_data
-    
-    # convert the year column in adjusted_proj_data to a numeric
-    adjusted_proj_data$year <- as.numeric(adjusted_proj_data$year)
-    
-    # if our baseline_year is NULL, we're going to pull the min baseline_year
-    # from adjusted_proj_data and use that as our baseline_year
-    if(is.null(baseline_year)) {
-      baseline_year <- min(adjusted_proj_data$year)
-    }
-    
     # is our controls_to_apply function 0 rows? this would imply that there
     # are no controls to apply for the SCCs in raw_proj_data
     if(nrow(controls_to_apply) == 0) {
@@ -562,90 +549,158 @@ add_controls2 <-
     # if not, we've got to do stuff!
     } else {
       
-      # loop over every row in our controls_to_apply table
-      for(i in 1:nrow(controls_to_apply)) {
+      # if our baseline_year is NULL, we're going to pull the min baseline_year
+      # from adjusted_proj_data and use that as our baseline_year
+      if(is.null(baseline_year)) {
+        baseline_year <- min(adjusted_proj_data$year)
+      }
+      
+      # create a data frame called adjusted_proj_data that is raw_proj_data
+      # this is what we'll modify & return at the end of the function
+      adjusted_proj_data <- raw_proj_data
+      
+      # convert the year column in adjusted_proj_data to a numeric
+      adjusted_proj_data$year <- as.numeric(adjusted_proj_data$year)
+      
+      # rename the PollutantCode column in controls_to_apply to pollutant to
+      # match with the name that it has in adjusted_proj_data, so that it is
+      # easier to merge these two data frames
+      controls_to_apply <- rename(controls_to_apply, pollutant = PollutantCode)
+      
+      # let's figure out which data will be affected in the adjusted_proj_data
+      # this would be the FIPS, pollutants, and SCCs that exist in our
+      # controls_to_apply
+      affected_adjusted_data <- merge(adjusted_proj_data, controls_to_apply,
+                                      by = c("FIPS", "SCC", "pollutant"))
+      
+      # For our raw_proj_data, how many different FIPS, SCC, and pollutant combos
+      # do we have? We need to make decisions to adjust TPY based on these
+      unique_combos <- affected_adjusted_data %>% 
+        group_by(FIPS, SCC, pollutant) %>%
+        summarize()
+      
+      # loop over every row in our unique_combos
+      for(i in 1:nrow(unique_combos)) {
         # get the matching pollutant & county from the adjusted_proj_data table
         proj_obs <- adjusted_proj_data %>%
-          filter(FIPS == controls_to_apply$FIPS[i],
-                 pollutant == controls_to_apply$PollutantCode[i])
+          filter(FIPS == unique_combos$FIPS[i],
+                 SCC == unique_combos$SCC[i],
+                 pollutant == unique_combos$pollutant[i])
         
-        # get a control_pct table for our controls_to_apply that will identify
-        # how much of our control we should apply over time
-        # our table will start one year before our start year (to have a starting
-        # control.pct of 1)
-        control_pct <- data.frame(year = seq(controls_to_apply$PhaseInStartYear[i] - 1, 
-                                             controls_to_apply$PhaseInEndYear[i], 
-                                             by = 1), 
-                                  # calculate what control pct we'll apply
-                                  # each year
-                                  control.pct = seq(1, controls_to_apply$ControlPct[i], 
-                                                    length.out = (controls_to_apply$PhaseInEndYear[i] - 
-                                                                    (controls_to_apply$PhaseInStartYear[i] - 2))))
+        # and do the same for the controls_to_apply
+        relevant_controls <- controls_to_apply %>%
+          filter(FIPS == unique_combos$FIPS[i],
+                 SCC == unique_combos$SCC[i],
+                 pollutant == unique_combos$pollutant[i])
         
-        # now we do our checks to adjust the ControlPct we'll use
-        # if our control is TimeDependent, we may need to adjust it
-        if(controls_to_apply$TimeDependent[i]) {
-          # if our baseline year is after the phase in end year, then our
-          # controlpct should become 1, since our controls have already
-          # been fully phased-in
-          # but, we also need to increase emissions estimates in the past
-          # in order to account for the times when our controls were not
-          # fully phased-in
-          if(baseline_year >= controls_to_apply$PhaseInEndYear[i]) {
-            baseline_pct <- controls_to_apply$ControlPct[i]
-            
-            # okay, the phaseinendyear needs to become "100" now. We should
-            # increase emissions estimates for all years prior to this
-            control_pct$control.pct <- control_pct$control.pct / baseline_pct
-
-            # if our baseline year is after the phaseinstartyear, but not
-            # after the phaseinendyear, we've got to do some adjusting
-          } else if(baseline_year >= controls_to_apply$PhaseInStartYear[i]) {
-
-            # what is our expected reduction at the baseline_year?
-            baseline_pct <- (filter(control_pct, year == baseline_year))$control.pct
-            
-            # okay, the baseline_year needs to become "100" now. We should
-            # increase emissions estimates for years prior to baseline_year, 
-            # and decrease emissions estimates for years after baseline_year
-            control_pct$control.pct <- control_pct$control.pct / baseline_pct
+        # now, we need to loop over relevant_controls to adjust the ControlPct
+        # make a list that can hold the ControlPcts we need to adjust for each
+        # applicable control
+        control_pct <- list()
+        
+        for(i in 1:nrow(relevant_controls)) {
+          # get a control_pct table for our controls_to_apply that will identify
+          # how much of our control we should apply over time
+          # our table will start one year before our start year (to have a starting
+          # ControlPct of 1)
+          control_pct[i] <- list(data.frame(year = seq(relevant_controls$PhaseInStartYear[i] - 1, 
+                                               relevant_controls$PhaseInEndYear[i], 
+                                               by = 1), 
+                                    # calculate what control pct we'll apply
+                                    # each year
+                                    ControlPct = seq(1, relevant_controls$ControlPct[i], 
+                                                     length.out = (relevant_controls$PhaseInEndYear[i] - 
+                                                                     (relevant_controls$PhaseInStartYear[i] - 2))),
+                                    PctAppliesTo = relevant_controls$PctAppliesTo[i]))
+          
+          # now we do our checks to adjust the ControlPct we'll use
+          # if our control is TimeDependent, we may need to adjust it
+          if(relevant_controls$TimeDependent[i]) {
+            # if our baseline year is after the phase in end year, then our
+            # controlpct should become 1, since our controls have already
+            # been fully phased-in
+            # but, we also need to increase emissions estimates in the past
+            # in order to account for the times when our controls were not
+            # fully phased-in
+            if(baseline_year >= relevant_controls$PhaseInEndYear[i]) {
+              baseline_pct <- relevant_controls$ControlPct[i]
+              
+              # okay, the phaseinendyear needs to become "100" now. We should
+              # increase emissions estimates for all years prior to this
+              control_pct[[i]]$ControlPct <- control_pct[[i]]$ControlPct / baseline_pct
+              
+              # if our baseline year is after the phaseinstartyear, but not
+              # after the phaseinendyear, we've got to do some adjusting
+            } else if(baseline_year >= relevant_controls$PhaseInStartYear[i]) {
+              
+              # what is our expected reduction at the baseline_year?
+              baseline_pct <- (filter(control_pct[[i]], year == baseline_year))$ControlPct
+              
+              # okay, the baseline_year needs to become "100" now. We should
+              # increase emissions estimates for years prior to baseline_year, 
+              # and decrease emissions estimates for years after baseline_year
+              control_pct[[i]]$ControlPct <- control_pct[[i]]$ControlPct / baseline_pct
+            }
+            # if neither of those conditions hold (therefore, the baseline_year is
+            # less than the PhaseInStartYear), then we don't do anything with
+            # our control_pct
           }
-          # if neither of those conditions hold (therefore, the baseline_year is
-          # less than the PhaseInStartYear), then we don't do anything with
-          # our control_pct
+          
+          # now we need to check if our control is EFDependent, if it is, we may
+          # need to adjust it if the current EF is different than the historic EF
+          
+          # Now we can apply the control to adjusted_proj_data for our proj_obs
+          
+          # first, adjust our control_pct table so we can account for any year we
+          # might see in our raw_proj_data (i.e., backproject the relevant
+          # ControlPct to 1900 and forward project to 2100)
+          # create a data frame that holds years from 1900 to the min year
+          # we have in the control_pct table and from the max year we have in the
+          # table to 2100
+          pct_buffer <- data.frame(year = c(seq(1900, min(control_pct[[i]]$year) - 1, by = 1), 
+                                            seq(max(control_pct[[i]]$year) + 1, 2100, by = 1)))
+          
+          # add a column for ControlPct, assign it so that any year prior to the
+          # min year is equal to the ControlPct for the min year and so that any
+          # year after the max year is equal to the ControlPct for the max year
+          # do the same for PctAppliesTo
+          pct_buffer <- pct_buffer %>%
+            mutate(ControlPct = ifelse(year < min(control_pct[[i]]$year), 
+                                        control_pct[[i]][control_pct[[i]]$year == min(control_pct[[i]]$year),]$ControlPct,
+                                        control_pct[[i]][control_pct[[i]]$year == max(control_pct[[i]]$year),]$ControlPct),
+                   PctAppliesTo = ifelse(year < min(control_pct[[i]]$year), 
+                                       control_pct[[i]][control_pct[[i]]$year == min(control_pct[[i]]$year),]$PctAppliesTo,
+                                       control_pct[[i]][control_pct[[i]]$year == max(control_pct[[i]]$year),]$PctAppliesTo))
+        
+          
+          # now we need to rbind the pct_buffer onto our our control_pct table
+          control_pct[[i]] <- rbind(control_pct[[i]], pct_buffer)
         }
         
-        # now we need to check if our control is EFDependent, if it is, we may
-        # need to adjust it if the current EF is different than the historic EF
+        # now we need to make a final control_pct data frame that calculates
+        # the actual control we need to apply in each year based on the info
+        # stored in the control_pct elements
         
-        # Now we can apply the control to adjusted_proj_data for our proj_obs
+        # let's start by rbinding every element
+        control_pct <- do.call(rbind, control_pct)
         
-        # first, adjust our control_pct table so we can account for any year we
-        # might see in our raw_proj_data (i.e., backproject the relevant
-        # control.pct to 1900 and forward project to 2100)
-        # create a data frame that holds years from 1900 to the min year
-        # we have in the control_pct table and from the max year we have in the
-        # table to 2100
-        pct_buffer <- data.frame(year = c(seq(1900, min(control_pct$year) - 1, by = 1), 
-                            seq(max(control_pct$year) + 1, 2100, by = 1)))
-        
-        # add a column for control.pct, assign it so that any year prior to the
-        # min year is equal to the control.pct for the min year and so that any
-        # year after the max year is equal to the control.pct for the max year
-        pct_buffer <- pct_buffer %>%
-          mutate(control.pct = ifelse(year < min(control_pct$year), 
-                                      control_pct[control_pct$year == min(control_pct$year),]$control.pct,
-                                      control_pct[control_pct$year == max(control_pct$year),]$control.pct))
-        
-        # now we need to rbind the pct_buffer onto our our control_pct table
-        control_pct <- rbind(control_pct, pct_buffer)
+        # now, to calculate the actual control applied, we need to add the
+        # controlpct*pctapplies to + 1*(1-pctappliesto)
+        # for example, if pctappliesto is only 0.6, we need to do controlpct*
+        # 0.6 + 0.4
+        # if we have two controls, one being controlpct1 to 0.6 and one being 
+        # controlpct2 to 0.4, we need to do controlpct1*0.6 + controlpct2*0.6
+        control_pct <- control_pct %>%
+          group_by(year) %>%
+          summarize(ControlPct = ifelse(sum(PctAppliesTo) == 1,
+                                        sum(ControlPct*PctAppliesTo),
+                                        sum(ControlPct*PctAppliesTo + (1-sum(PctAppliesTo)))))
 
         # now we can adjust those columns in proj_obs by the control_pct
         proj_obs <- proj_obs %>%
           left_join(control_pct, by = "year") %>%
-          mutate(TPY = TPY*control.pct) %>%
-          select(-control.pct)
-          
+          mutate(TPY = TPY*ControlPct) %>%
+          select(-ControlPct)
         
         # now, we want to replace the columns in adjusted_proj_data by those
         # that exist in proj_obs
@@ -663,13 +718,14 @@ add_controls2 <-
         adjusted_proj_data <- adjusted_proj_data %>%
           mutate(TPY = ifelse(is.na(TPY_new), TPY, TPY_new)) %>%
           select(-TPY_new)
-        
-        
       }
       
-      # return the adjusted_proj_data
-      return(adjusted_proj_data)
     }
+    
+    # return the adjusted_proj_data
+    return(adjusted_proj_data)
+  }
+
     
     #we later will filter our list down to only control certain pollutants
     #if we haven't singled out any pollutants, make sure we include everything 
