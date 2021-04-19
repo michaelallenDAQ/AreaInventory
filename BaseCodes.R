@@ -610,13 +610,65 @@ add_controls2 <-
             # and decrease emissions estimates for years after baseline_year
             control_pct$control.pct <- control_pct$control.pct / baseline_pct
           }
-          # if neither of those conditions hold, then we don't do anything with
+          # if neither of those conditions hold (therefore, the baseline_year is
+          # less than the PhaseInStartYear), then we don't do anything with
           # our control_pct
         }
         
         # now we need to check if our control is EFDependent, if it is, we may
         # need to adjust it if the current EF is different than the historic EF
+        
+        # Now we can apply the control to adjusted_proj_data for our proj_obs
+        
+        # first, adjust our control_pct table so we can account for any year we
+        # might see in our raw_proj_data (i.e., backproject the relevant
+        # control.pct to 1900 and forward project to 2100)
+        # create a data frame that holds years from 1900 to the min year
+        # we have in the control_pct table and from the max year we have in the
+        # table to 2100
+        pct_buffer <- data.frame(year = c(seq(1900, min(control_pct$year) - 1, by = 1), 
+                            seq(max(control_pct$year) + 1, 2100, by = 1)))
+        
+        # add a column for control.pct, assign it so that any year prior to the
+        # min year is equal to the control.pct for the min year and so that any
+        # year after the max year is equal to the control.pct for the max year
+        pct_buffer <- pct_buffer %>%
+          mutate(control.pct = ifelse(year < min(control_pct$year), 
+                                      control_pct[control_pct$year == min(control_pct$year),]$control.pct,
+                                      control_pct[control_pct$year == max(control_pct$year),]$control.pct))
+        
+        # now we need to rbind the pct_buffer onto our our control_pct table
+        control_pct <- rbind(control_pct, pct_buffer)
+
+        # now we can adjust those columns in proj_obs by the control_pct
+        proj_obs <- proj_obs %>%
+          left_join(control_pct, by = "year") %>%
+          mutate(TPY = TPY*control.pct) %>%
+          select(-control.pct)
+          
+        
+        # now, we want to replace the columns in adjusted_proj_data by those
+        # that exist in proj_obs
+        # rename TPY to TPY_new in proj_obs
+        proj_obs <- rename(proj_obs, TPY_new = TPY)
+        
+        # merge the proj_obs table onto the adjusted_proj_data table
+        adjusted_proj_data <- merge(adjusted_proj_data, proj_obs, 
+                                    by = c("FIPS", "SCC", "year", "pollutant"),
+                                    all = TRUE)
+        
+        # TPY_new will only exist for the rows that were in proj_obs
+        # replace TPY with TPY_new and then delete TPY_new from the adjusted
+        # proj data table
+        adjusted_proj_data <- adjusted_proj_data %>%
+          mutate(TPY = ifelse(is.na(TPY_new), TPY, TPY_new)) %>%
+          select(-TPY_new)
+        
+        
       }
+      
+      # return the adjusted_proj_data
+      return(adjusted_proj_data)
     }
     
     #we later will filter our list down to only control certain pollutants
