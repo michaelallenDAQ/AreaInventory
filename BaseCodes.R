@@ -507,23 +507,29 @@ add_controls <-
 #' EFs.
 #' @param current_efs (optional) This is only relevant if any of the controls 
 #' applicable to sccs in raw_proj_data are EFDependent. If so, and we want to 
-#' manually identify the controls we currently use, input a table here with a 
-#' SCC, pollutant, and EmissionsFactor column. We will use the emissions factors
-#' in the EmissionsFactor column as the baseline emissions factor and compare
-#' those to the emissions factors from the Controls table. If we simply use the
-#' emissions factors from the WW, there is no need to manually identify
-#' them here.
+#' manually identify the emissions factors we currently use, input a table here
+#' containing an SCC, pollutant, and EmissionsFactor column. It is not necessary
+#' to identify the emissions factors for every scc and pollutant affected by a 
+#' control in raw_proj_data; if it is not identified here, and use_ww = TRUE, we
+#' will pull emissions factors not identified here from the ww. The emissions 
+#' factors identified in the table will be used as baseline emissions factors
+#' and compared to the emissions factors in the Controls table.
 #' @param baseline_year (optional) year that we should treat as the baseline
-#' for where emissions were calculated; if NULL, we assume that the min year
-#' in the raw_proj_data is the baseline_year
+#' for emissions in the raw_proj_data (we assume every other year, therefore, is
+#' a projection from the baseline_year); if NULL, we assume that the min year
+#' in raw_proj_data is the baseline_year
 #'
 #' @return adjusted proj_data data frame with applicable control percent
 #' reductions added
 #' @examples
-add_controls2 < function(raw_proj_data, 
+#' scc <- 2415000000
+#' temp_table <- pull_baseline_from_ww(scc = scc)
+#' temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
+add_controls2 <- function(raw_proj_data, 
                         use_ww = TRUE,
                         current_efs = NULL, 
                         baseline_year = NULL){
+  
   # What sccs do we have in the raw_proj_data?
   scc <- unique(raw_proj_data$SCC)
   
