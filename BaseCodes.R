@@ -497,6 +497,7 @@ add_controls <-
 #'
 #' @param raw_proj_data data frame containing columns for FIPS, SCC, year,
 #' pollutant, and TPY
+#' @param controls_ws controls table
 #' @param use_ww Default is TRUE. This is only relevant if any of the controls
 #' applicable to sccs in raw_proj_data are EFDependent. If so, and we want to
 #' pull the default emissions factors from WW, leave this as TRUE. If FALSE,
@@ -526,16 +527,17 @@ add_controls <-
 #' scc <- 2415000000
 #' temp_table <- pull_baseline_from_ww(scc = scc)
 #' temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
-add_controls2 <- function(raw_proj_data, 
-                        use_ww = TRUE,
-                        current_efs = NULL, 
-                        baseline_year = NULL){
+add_controls2 <- function(raw_proj_data,
+                          controls_ws = controls,
+                          use_ww = TRUE,
+                          current_efs = NULL, 
+                          baseline_year = NULL){
   
   # What sccs do we have in the raw_proj_data?
   scc <- unique(raw_proj_data$SCC)
   
-  # only save the SCCs of interest from our controls_to_apply function
-  controls_to_apply <- filter(controls, SCC %in% scc)
+  # only save the SCCs of interest from our controls table
+  controls_to_apply <- filter(controls_ws, SCC %in% scc)
   
   # pivot_longer our controls_to_apply function so that every county in the
   # County column gets its own row
@@ -545,7 +547,7 @@ add_controls2 <- function(raw_proj_data,
   # we'll use this to match with the data in raw_proj_data
   controls_to_apply$FIPS <- sapply(controls_to_apply$County, county_to_fip)
   
-  # is our controls_to_apply function 0 rows? this would imply that there
+  # is our controls_to_apply table 0 rows? this would imply that there
   # are no controls to apply for the SCCs in raw_proj_data
   if(nrow(controls_to_apply) == 0) {
     stop(paste0("There are no controls to apply for ", 
@@ -554,18 +556,18 @@ add_controls2 <- function(raw_proj_data,
   # if not, we've got to do stuff!
   } else {
     
-    # if our baseline_year is NULL, we're going to pull the min baseline_year
-    # from adjusted_proj_data and use that as our baseline_year
-    if(is.null(baseline_year)) {
-      baseline_year <- min(adjusted_proj_data$year)
-    }
-    
     # create a data frame called adjusted_proj_data that is raw_proj_data
     # this is what we'll modify & return at the end of the function
     adjusted_proj_data <- raw_proj_data
     
     # convert the year column in adjusted_proj_data to a numeric
     adjusted_proj_data$year <- as.numeric(adjusted_proj_data$year)
+    
+    # if our baseline_year is NULL, we're going to pull the min baseline_year
+    # from adjusted_proj_data and use that as our baseline_year
+    if(is.null(baseline_year)) {
+      baseline_year <- min(adjusted_proj_data$year)
+    }
     
     # rename the PollutantCode column in controls_to_apply to pollutant to
     # match with the name that it has in adjusted_proj_data, so that it is
@@ -578,8 +580,9 @@ add_controls2 <- function(raw_proj_data,
     affected_adjusted_data <- merge(adjusted_proj_data, controls_to_apply,
                                     by = c("FIPS", "SCC", "pollutant"))
     
-    # For our raw_proj_data, how many different FIPS, SCC, and pollutant combos
-    # do we have? We need to make decisions to adjust TPY based on these
+    # For our affected_adjusted_data, how many different FIPS, SCC, and
+    # pollutant combos do we have? We need to make decisions to adjust TPY based
+    # on these
     unique_combos <- affected_adjusted_data %>% 
       group_by(FIPS, SCC, pollutant) %>%
       summarize(.groups = "drop")
@@ -592,6 +595,7 @@ add_controls2 <- function(raw_proj_data,
         filter(EFDependent == TRUE)
       
       # If no current_efs table was supplied, let's make our own
+      # Most common scenario
       if(is.null(current_efs) && use_ww == TRUE) {
         
         # Pull the emissions factors from the wagon wheel
@@ -610,11 +614,11 @@ add_controls2 <- function(raw_proj_data,
         
         for(i in 1:nrow(efs_affected)) {
           print(paste0("For ", efs_affected$SourceClassificationCode[i], 
-                       "calculations for ", efs_affected$PollutantCode[i],
-                       "we are using ", efs_affected$EmissionFactor[i],
+                       " calculations for ", efs_affected$PollutantCode[i],
+                       " we are using ", efs_affected$EmissionFactor[i],
                        " ", efs_affected$EmissionFactorNumeratorUnitofMeasureCode[i],
-                       "/", efs_affected$EmissionFactorDenominatorUnitofMeasureCode,
-                       " as the baseline EmissionsFactor from the Wagon Wheel."
+                       "/", efs_affected$EmissionFactorDenominatorUnitofMeasureCode[i],
+                       " as the baseline EmissionsFactor (from the Wagon Wheel)."
                        ))
         }
         
@@ -631,6 +635,8 @@ add_controls2 <- function(raw_proj_data,
       # If our current_efs is not NULL & use_ww is TRUE, then let's check our
       # current_efs table and make sure it is in the right format and gapfill
       # any emissions factors that are missing from it using the WW.
+        
+      # We very rarely use this, perhaps only for graphic arts and dry cleaning
       } else if (use_ww == TRUE) {
           if(all(c("FIPS", "SCC", "pollutant", "EmissionsFactor") %in% colnames(current_efs))) {
             missing_efs <- ef_controls %>%
@@ -642,7 +648,7 @@ add_controls2 <- function(raw_proj_data,
               filter(is.na(EmissionsFactor))
             
             # if we have any missing_efs, do this
-            if(nrow(missing_efs) > 0) {.
+            if(nrow(missing_efs) > 0) {
               # get emission factors from the wagon wheel
               ww_efs <- ww %>%
                 filter(StateAndCountyFIPSCode %in% missing_efs$FIPS,
@@ -678,6 +684,9 @@ add_controls2 <- function(raw_proj_data,
       # Now, if we do not want to gapfill emissions factors from the Wagon Wheel
       # (use_ww == FALSE), but we do have some emissions factors supplied in 
       # current_efs, do this
+        
+      # This probably will never happen
+      # Unless we are comparing to old inventory methods
       } else if (use_ww == FALSE && !is.null(current_efs)) {
           # Check that our current_efs table is in the right format again.
           if(all(c("FIPS", "SCC", "pollutant", "EmissionsFactor") %in% colnames(current_efs))) {
@@ -741,48 +750,48 @@ add_controls2 <- function(raw_proj_data,
       # applicable control
       control_pct <- list()
       
-      for(i in 1:nrow(relevant_controls)) {
+      for(j in 1:nrow(relevant_controls)) {
         # get a control_pct table for our controls_to_apply that will identify
         # how much of our control we should apply over time
         # our table will start one year before our start year (to have a starting
         # ControlPct of 1)
-        control_pct[i] <- list(data.frame(year = seq(relevant_controls$PhaseInStartYear[i] - 1, 
-                                             relevant_controls$PhaseInEndYear[i], 
+        control_pct[j] <- list(data.frame(year = seq(relevant_controls$PhaseInStartYear[j] - 1, 
+                                             relevant_controls$PhaseInEndYear[j], 
                                              by = 1), 
                                   # calculate what control pct we'll apply
                                   # each year
-                                  ControlPct = seq(1, relevant_controls$ControlPct[i], 
-                                                   length.out = (relevant_controls$PhaseInEndYear[i] - 
-                                                                   (relevant_controls$PhaseInStartYear[i] - 2))),
-                                  PctAppliesTo = relevant_controls$PctAppliesTo[i]))
+                                  ControlPct = seq(1, relevant_controls$ControlPct[j], 
+                                                   length.out = (relevant_controls$PhaseInEndYear[j] - 
+                                                                   (relevant_controls$PhaseInStartYear[j] - 2))),
+                                  PctAppliesTo = relevant_controls$PctAppliesTo[j]))
         
         # now we do our checks to adjust the ControlPct we'll use
         # if our control is TimeDependent, we may need to adjust it
-        if(relevant_controls$TimeDependent[i]) {
+        if(relevant_controls$TimeDependent[j]) {
           # if our baseline year is after the phase in end year, then our
           # controlpct should become 1, since our controls have already
           # been fully phased-in
           # but, we also need to increase emissions estimates in the past
           # in order to account for the times when our controls were not
           # fully phased-in
-          if(baseline_year >= relevant_controls$PhaseInEndYear[i]) {
-            baseline_pct <- relevant_controls$ControlPct[i]
+          if(baseline_year >= relevant_controls$PhaseInEndYear[j]) {
+            baseline_pct <- relevant_controls$ControlPct[j]
             
             # okay, the phaseinendyear needs to become "100" now. We should
             # increase emissions estimates for all years prior to this
-            control_pct[[i]]$ControlPct <- control_pct[[i]]$ControlPct / baseline_pct
+            control_pct[[j]]$ControlPct <- control_pct[[j]]$ControlPct / baseline_pct
             
             # if our baseline year is after the phaseinstartyear, but not
             # after the phaseinendyear, we've got to do some adjusting
-          } else if(baseline_year >= relevant_controls$PhaseInStartYear[i]) {
+          } else if(baseline_year >= relevant_controls$PhaseInStartYear[j]) {
             
             # what is our expected reduction at the baseline_year?
-            baseline_pct <- (filter(control_pct[[i]], year == baseline_year))$ControlPct
+            baseline_pct <- (filter(control_pct[[j]], year == baseline_year))$ControlPct
             
             # okay, the baseline_year needs to become "100" now. We should
             # increase emissions estimates for years prior to baseline_year, 
             # and decrease emissions estimates for years after baseline_year
-            control_pct[[i]]$ControlPct <- control_pct[[i]]$ControlPct / baseline_pct
+            control_pct[[j]]$ControlPct <- control_pct[[j]]$ControlPct / baseline_pct
           }
           # if neither of those conditions hold (therefore, the baseline_year is
           # less than the PhaseInStartYear), then we don't do anything with
@@ -791,16 +800,9 @@ add_controls2 <- function(raw_proj_data,
         
         # now we need to check if our control is EFDependent, if it is, we may
         # need to adjust it if the current EF is different than the historic EF
-        if(relevant_controls$EFDependent[i]) {
+        if(relevant_controls$EFDependent[j]) {
           if(is.null(current_efs)) {
-            current_efs <- ww %>%
-              filter(SourceClassificationCode == relevant_controls$SCC[i],
-                     StateAndCountyFIPSCode == relevant_controls$FIPS[i],
-                     PollutantCode == relevant_controls$pollutant[i]) %>%
-              select(StateAndCountyFIPSCode, SourceClassificationCode, 
-                     PollutantCode, EmissionsFactor)
             
-            print(paste0(""))
           }
         }
         
@@ -812,24 +814,24 @@ add_controls2 <- function(raw_proj_data,
         # create a data frame that holds years from 1900 to the min year
         # we have in the control_pct table and from the max year we have in the
         # table to 2100
-        pct_buffer <- data.frame(year = c(seq(1900, min(control_pct[[i]]$year) - 1, by = 1), 
-                                          seq(max(control_pct[[i]]$year) + 1, 2100, by = 1)))
+        pct_buffer <- data.frame(year = c(seq(1900, min(control_pct[[j]]$year) - 1, by = 1), 
+                                          seq(max(control_pct[[j]]$year) + 1, 2100, by = 1)))
         
         # add a column for ControlPct, assign it so that any year prior to the
         # min year is equal to the ControlPct for the min year and so that any
         # year after the max year is equal to the ControlPct for the max year
         # do the same for PctAppliesTo
         pct_buffer <- pct_buffer %>%
-          mutate(ControlPct = ifelse(year < min(control_pct[[i]]$year), 
-                                      control_pct[[i]][control_pct[[i]]$year == min(control_pct[[i]]$year),]$ControlPct,
-                                      control_pct[[i]][control_pct[[i]]$year == max(control_pct[[i]]$year),]$ControlPct),
-                 PctAppliesTo = ifelse(year < min(control_pct[[i]]$year), 
-                                     control_pct[[i]][control_pct[[i]]$year == min(control_pct[[i]]$year),]$PctAppliesTo,
-                                     control_pct[[i]][control_pct[[i]]$year == max(control_pct[[i]]$year),]$PctAppliesTo))
+          mutate(ControlPct = ifelse(year < min(control_pct[[j]]$year), 
+                                      control_pct[[j]][control_pct[[j]]$year == min(control_pct[[j]]$year),]$ControlPct,
+                                      control_pct[[j]][control_pct[[j]]$year == max(control_pct[[j]]$year),]$ControlPct),
+                 PctAppliesTo = ifelse(year < min(control_pct[[j]]$year), 
+                                     control_pct[[j]][control_pct[[j]]$year == min(control_pct[[j]]$year),]$PctAppliesTo,
+                                     control_pct[[j]][control_pct[[j]]$year == max(control_pct[[j]]$year),]$PctAppliesTo))
       
         
         # now we need to rbind the pct_buffer onto our our control_pct table
-        control_pct[[i]] <- rbind(control_pct[[i]], pct_buffer)
+        control_pct[[j]] <- rbind(control_pct[[j]], pct_buffer)
       }
       
       # now we need to make a final control_pct data frame that calculates
