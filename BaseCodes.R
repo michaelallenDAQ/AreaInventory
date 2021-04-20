@@ -801,8 +801,29 @@ add_controls2 <- function(raw_proj_data,
         # now we need to check if our control is EFDependent, if it is, we may
         # need to adjust it if the current EF is different than the historic EF
         if(relevant_controls$EFDependent[j]) {
-          if(is.null(current_efs)) {
+          old_ef <- relevant_controls$EmissionsFactor[j] * relevant_controls$PctAppliesTo[j]
+          
+          old_end_ef <- relevant_controls$EmissionsFactor[j] *
+            relevant_controls$ControlPct[j] * relevant_controls$PctAppliesTo[j]
+         
+          new_ef <- (current_efs %>%
+            filter(FIPS == relevant_controls$FIPS[j],
+                   SCC == relevant_controls$SCC[j],
+                   pollutant == relevant_controls$pollutant[j]))$EmissionsFactor *
+            relevant_controls$PctAppliesTo[j]
+          
+          new_end_ef <- new_ef * relevant_controls$ControlPct[j]
+          
+          if(new_end_ef >= old_ef) {
+            # do nothing
+          } else if(new_ef < old_end_ef) {
+            control_pct[[j]]$ControlPct <- 1
+          } else {
+            new_control_pct <- old_end_ef/new_ef
             
+            control_pct[[j]]$ControlPct <- seq(1, new_control_pct,
+                                             length.out = (relevant_controls$PhaseInEndYear[j] - 
+                                                             (relevant_controls$PhaseInStartYear[j] - 2)))
           }
         }
         
