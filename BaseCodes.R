@@ -812,9 +812,9 @@ add_controls2 <- function(raw_proj_data,
                    pollutant == relevant_controls$pollutant[j]))$EmissionsFactor *
             relevant_controls$PctAppliesTo[j]
           
-          new_end_ef <- new_ef * relevant_controls$ControlPct[j]
+          new_end_ef <- new_ef * relevant_controls$ControlPct[j] * relevant_controls$PctAppliesTo[j]
           
-          if(new_end_ef >= old_ef) {
+          if(new_end_ef >= old_end_ef) {
             # do nothing
           } else if(new_ef < old_end_ef) {
             control_pct[[j]]$ControlPct <- 1
@@ -867,7 +867,7 @@ add_controls2 <- function(raw_proj_data,
       # for example, if pctappliesto is only 0.6, we need to do controlpct*
       # 0.6 + 0.4
       # if we have two controls, one being controlpct1 to 0.6 and one being 
-      # controlpct2 to 0.4, we need to do controlpct1*0.6 + controlpct2*0.6
+      # controlpct2 to 0.4, we need to do controlpct1*0.6 + controlpct2*0.4
       control_pct <- control_pct %>%
         group_by(year) %>%
         summarize(ControlPct = ifelse(sum(PctAppliesTo) == 1,
