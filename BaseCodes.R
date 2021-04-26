@@ -604,6 +604,16 @@ add_controls2 <- function(raw_proj_data,
       # same unit
       ef_controls$EFNumerator <- sapply(ef_controls$EFUnit, function(x) strsplit(x, "/")[[1]][1])
       
+      # we only need to have the columns that are relevant for making our
+      # current_efs table
+      ef_controls <- select(ef_controls, FIPS, SCC, pollutant, EmissionsFactor,
+                            EFNumerator)
+      
+      # only save unique ones (this will only be relevant when we have
+      # multiple controls that apply to the same FIPS, scc, and pollutant
+      # that are EFDependent)
+      ef_controls <- unique(ef_controls)
+      
       # Was any current_efs table supplied to the function?
       # We normally just fall back on the default WW, so we really only use this
       # for graphic arts and dry cleaning (and, starting with the 2020 NEI, we
@@ -755,7 +765,7 @@ add_controls2 <- function(raw_proj_data,
           current_efs$EmissionsFactor <- current_efs$EmissionFactor
           
           current_efs <- select(current_efs, -EmissionFactor, -EmissionFactorNumeratorUnitofMeasureCode)
-          
+
           # Give a notice regarding the emissions factors we're pulling from
           # the Wagon Wheel.
           print("We pulled these emission factors from Wagon Wheel.")
@@ -865,8 +875,7 @@ add_controls2 <- function(raw_proj_data,
         if(relevant_controls$EFDependent[j]) {
           old_ef <- relevant_controls$EmissionsFactor[j] * relevant_controls$PctAppliesTo[j]
           
-          old_end_ef <- relevant_controls$EmissionsFactor[j] *
-            relevant_controls$ControlPct[j] * relevant_controls$PctAppliesTo[j]
+          old_end_ef <- old_ef * relevant_controls$ControlPct[j]
          
           new_ef <- (current_efs %>%
             filter(FIPS == relevant_controls$FIPS[j],
@@ -874,13 +883,16 @@ add_controls2 <- function(raw_proj_data,
                    pollutant == relevant_controls$pollutant[j]))$EmissionsFactor *
             relevant_controls$PctAppliesTo[j]
           
-          new_end_ef <- new_ef * relevant_controls$ControlPct[j] * relevant_controls$PctAppliesTo[j]
+          new_end_ef <- new_ef * relevant_controls$ControlPct[j]
           
-          if(new_end_ef >= old_end_ef) {
-            # do nothing
+          if(new_ef >= old_ef) {
+            # do nothing, add the same control percent as always
           } else if(new_ef < old_end_ef) {
+            # we should stop adding any control
             control_pct[[j]]$ControlPct <- 1
           } else {
+            # adjust the control we apply, so that our new_end_ef will be equal
+            # to our old_end_ef
             new_control_pct <- old_end_ef/new_ef
             
             control_pct[[j]]$ControlPct <- seq(1, new_control_pct,
