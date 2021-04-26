@@ -427,7 +427,7 @@ drop a line of code from most SCCs
 
 #Misc sources > aircraft/rocket engine firing and testing > total
 #this scc used to assume emissions from rocket firing and testing were "estimated to be one percent of aircraft emissions at all Utah airports. This was determined by a 1992 Division of Air Quality phone survey of aircraft maintenance staff."
-#it is now focused on actual rocket testing/firing, like we would find at the ATK Promontory/Thiokol site (10009) or the ATK Bacchus plant (10402). We can eventually add inspection/maintenance of aircraft on airports, but that will be a more complex process.
+#it is now focused on actual rocket testing/firing, like we would find at the ATK Promontory/Thiokol site (10009) or the ATK Bacchus plant (10402). We can eventually add inspection/maintenance of aircraft on airports, but that will be a more complex process, and they might not even apply to this scc.
 scc <- 2810040000
 #these pt sccs were manually pulled on 2021/04/08 by Michael Allen. I looked at sites 10009, 10402 in SLEIS and pulled every SCC that looked like it could apply to test fuel combustion. My method is sketchy, and could be improved.
 #I left out 30101010 - TNT manufacturing, because it didn't seem like test rocket fuel
@@ -436,6 +436,92 @@ pt_sccs <- c(50300205,20400201)
 temp_table <- pull_pt_removal_table(pt_sccs,scc) %>% filter(is_point == FALSE) %>% select(-is_point)
 #project as steady. These are permitted emissions so they may not radically change over time.
 temp_table <- project_baseline(temp_table,projection_tables[["Steady"]])
+#no controls
+final_table <- rbind(final_table,temp_table)
+
+
+#industrial processes > mining and quarrying: SIC 14 > all processes
+scc <- 2325000000
+#all quarrying/mining should be happening on permitted sites. This SCC will simply catch all the processes that don't count as "Major Point Source" for wherever we are reporting, and it will put them in the area inventory
+#these pt sccs were manually pulled on 2021/04/22 by Michael Allen. The list of SCCs may be incomplete. I took a list of every non-retired 8 digit SCC, and then searched the layer descriptions for things like "crush", "mill", "drill", "blast" etc, and then manually filtered through the resulting ~800 sccs to take out irrelevant codes. I ended with 349 SCCs. Look in main_workbook > references > 2325000000_MiningQuarryingSCCs.xlsx for the work. My method is not comprehensive, and could be improved.
+
+#see "2325000000_Mining & quarrying NEMO 2017 FINAL_4-2" update in references. The EPA considers 4 activities for this SCC: 
+#    "overburden removal, 
+#    drilling and blasting, 
+#    loading and unloading, and 
+#    overburden replacement. 
+#Not included are the 
+#    transfer and conveyance operations, 
+#    crushing and screening operations, and 
+#    storage 
+#since the dust emissions from these activities are assumed to be well controlled."
+
+#since I have documentable emissions from transfer/conveyors/crushing/screening/storage, I included them in this SCC.
+pt_sccs <- c(
+  30300001, 30300003, 30300307, 30300309, 30300310, 30300311, 30300312, 30300316, 30300318,
+  30300336, 30300609, 30300610, 30300613, 30300614, 30300615, 30300616, 30300623, 30300624,
+  30301002, 30301004, 30301010, 30301012, 30301013, 30301015, 30301016, 30301018, 30301019,
+  30301020, 30301021, 30301030, 30301032, 30301102, 30301302, 30302301, 30302302, 30302303,
+  30302304, 30302305, 30302306, 30302307, 30302316, 30302320, 30302325, 30302327, 30302328,
+  30302330, 30302331, 30302341, 30302344, 30302345, 30302347, 30302393, 30302395, 30302396,
+  30302397, 30302398, 30302401, 30302402, 30302403, 30302405, 30302406, 30302407, 30302409,
+  30302410, 30303009, 30303014, 30303020, 30303026, 30303101, 30303102, 30303103, 30303104,
+  30303105, 30303106, 30303107, 30304010, 30400108, 30400116, 30400117, 30400132, 30400357,
+  30400358, 30400403, 30400411, 30400421, 30400422, 30400524, 30400612, 30400723, 30400724,
+  30400736, 30400770, 30400775, 30400785, 30400812, 30401002, 30500115, 30500120, 30500121,
+  30500134, 30500135, 30500141, 30500143, 30500144, 30500145, 30500302, 30500303, 30500305,
+  30500355, 30500405, 30500406, 30500502, 30500609, 30500610, 30500611, 30500612, 30500616,
+  30500624, 30500625, 30500626, 30500627, 30500628, 30500629, 30500709, 30500710, 30500711,
+  30500712, 30500716, 30500727, 30500728, 30500729, 30500802, 30500803, 30500804, 30500806,
+  30500904, 30500905, 30500906, 30500907, 30500908, 30500910, 30501006, 30501009, 30501010,
+  30501011, 30501012, 30501014, 30501017, 30501022, 30501033, 30501034, 30501035, 30501036,
+  30501037, 30501042, 30501043, 30501045, 30501048, 30501051, 30501060, 30501061, 30501062,
+  30501104, 30501105, 30501106, 30501107, 30501114, 30501115, 30501117, 30501121, 30501122,
+  30501123, 30501124, 30501221, 30501222, 30501224, 30501315, 30501316, 30501413, 30501502,
+  30501504, 30501505, 30501506, 30501507, 30501509, 30501510, 30501513, 30501514, 30501515,
+  30501518, 30501601, 30501602, 30501607, 30501610, 30501615, 30501616, 30501624, 30501625,
+  30501629, 30501630, 30501631, 30501632, 30501710, 30501903, 30501904, 30501907, 30502001,
+  30502002, 30502003, 30502004, 30502005, 30502006, 30502007, 30502009, 30502010, 30502014,
+  30502015, 30502016, 30502017, 30502018, 30502021, 30502032, 30502104, 30502105, 30502106,
+  30502502, 30502503, 30502507, 30502510, 30502511, 30502512, 30502514, 30502522, 30502523,
+  30502701, 30502705, 30502713, 30502740, 30502760, 30503101, 30503102, 30503105, 30503106,
+  30503108, 30503201, 30503202, 30503203, 30503204, 30503205, 30503206, 30503299, 30503312,
+  30503331, 30503336, 30503341, 30503401, 30503501, 30503502, 30503503, 30503504, 30503506,
+  30503813, 30504001, 30504002, 30504021, 30504022, 30504024, 30504030, 30504031, 30504034,
+  30504102, 30504103, 30504115, 30504129, 30504151, 30504170, 30504171, 30504202, 30504203,
+  30504215, 30504270, 30504271, 30504302, 30504303, 30504315, 30504329, 30504351, 30504370,
+  30504371, 30504402, 30504403, 30504415, 30504451, 30504470, 30504471, 30504502, 30504503,
+  30504515, 30504551, 30504570, 30504571, 30504602, 30504603, 30504615, 30504629, 30504670,
+  30504671, 30505005, 30508906, 30508908, 30508911, 30508912, 30508914, 30508917, 30508949,
+  30508958, 30508985, 30509002, 30509201, 30509205, 30510101, 30510102, 30510103, 30510104,
+  30510105, 30510106, 30510107, 30510108, 30510196, 30510197, 30510198, 30510199, 30510201,
+  30510202, 30510203, 30510204, 30510205, 30510206, 30510207, 30510208, 30510209, 30510296,
+  30510297, 30510298, 30510299, 30510604, 30510808, 30510809, 30515003)
+
+real_table <- pull_pt_removal_table(pt_sccs,scc) %>% 
+  filter(is_point == FALSE) %>% 
+  select(-is_point) %>%
+  #only take PM emissions from the pull. Only do PMXX-PRI, because we assume that PM-CON is 0 and that PMXX-FIL=PMXX-PRI. For this SCC, we only are looking for dust, so we only look for PM
+  filter(pollutant %in% c("PM10-PRI", "PM25-PRI"))
+
+#There are counties with 0 emissions for this SCC. Since EPA offers default data for this SCC, if we don't explicitly put a "0" for those counties, EPA may add their default data in those counties. So we need to add "0"s for those counties.
+pollutants <- c("PM10-PRI","PM25-PRI")
+TPPPY <-c(0, 0)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+zeros_table <- make_baseline(efs_table,projection_tables[["Steady"]])
+zeros_table$year <- as.integer(zeros_table$year)
+
+#now combine the zeros data with the real data we have pulled
+temp_table <- left_join(zeros_table, real_table, by=c("FIPS","SCC","year","pollutant"))
+#reformat the real data NA's to be zeros, or else we will get errors when we add the columns
+temp_table$TPY.y <- ifelse(is.na(temp_table$TPY.y),0,temp_table$TPY.y)
+#add the columns and delete old fluff
+temp_table$TPY <- temp_table$TPY.x + temp_table$TPY.y
+temp_table <- temp_table %>% select(-c(TPY.x, TPY.y))
+
+#let's just project this to remain steady. Am open to other options
+temp_table <- project_baseline(temp_table, projection_tables[["Steady"]])
+
 #no controls
 final_table <- rbind(final_table,temp_table)
 
@@ -2098,78 +2184,8 @@ temp_table <- pull_baseline_from_ww(scc)
 
 ```
 
-```{r old sccs that I had to adjust HAPS for comparisons, and also my combustion tinkering}
+```{r old sccs that I had to adjust HAPS for comparisons}
 raw_sccs_from_ww <- consolidate_xylenes(raw_sccs_from_ww, c(2104008210, 2104008230, 2104008310, 2104008330, 2810025000))
-
-
-#SIP_compiled <-
-#  read_xlsx(
-#    'U:/PLAN/SIP/Ozone/2015 Standard/Episodic Inventories/TSD Writeup/Area/2017 Supporting Documents/5.26.2020 New Point File for Kristy ozone marginal.xlsx')
-#sip_ids<- unique(SIP_compiled$`Site ID`)
-                                    #Natural Gas
-                                    #Natural Gas
-                                    #Natural Gas
-#industrial NG boilers/ICEs
-scc <- 2102006000
-thru_unit <- 'E6FT3'
-#throughput is MMCF
-efs_table <- pull_efs_from_ww_all_primaries(scc,throughput_unit = 'E6FT3')
-#the gas company (Dominion Energy) makes the distinction between
-#  Residential, and 
-#  Non-residential (Electrical/Industrial/Commercial)
-#we will pull the non-residential statewide throughput, 
-#and from it we will pull the industrial portion
-non_resident_ng_table <- 
-  shame_pull_input_table_from_workbook('ComNatGas',
-                                       convert_fips = FALSE, 
-                                       throughput_unit = thru_unit) %>%
-  filter(year == start_year) 
-non_resident_ng <- non_resident_ng_table[[1,3]]
-#now find out how much is pure_industrial
-#*Questar's 2014 usage consumption proportions provided by Dave Landward were: 
-#Residential - 36%
-#Commercial - 22%
-#Industrial - 19% and 
-#Electric - 23%.  
-#so of the non-residential, we can divvy things out further.
-ind_portion <- 19/(22+19+23)
-#remember this is MMCF
-raw_ind_ng <- non_resident_ng*ind_portion
-#now we get the pt source throughput of NG. let's pull it from the SLEIS data dump
-ind_naics <- c(21, 31:33)
-materials <- 'Natural Gas'
-test_sip <- pull_pt_material_throughput(materials,ind_naics,SIP_ids_to_filter = sip_ids)
-
-  #pull raw data from SLEIS
-sleis_raw <- pull_pt_material_throughput(materials,ind_naics,SIP_ids_to_filter = sip_ids,raw_pull_return = TRUE)
-
-#pull a list of all the sites
-sort(unique(test_sip$`Facility Identifier`)) #37,033 MMCF, now 42,608 MMCF
-sort(unique(SIP_temp_comb_t$`Site ID`)) #23,452 MMCF
-
-#get a list of all facilities that show up in sleis and combustion table
-shared_ids <- sort(unique(SIP_temp_comb_t$`Site ID`))
-shared_ids <- append(shared_ids,11386)
-
-#go through each facility and give throughput for SLEIS and combustion table
-for (cur_id in shared_ids){
-  cat(cur_id)
-  cat('\nSLEIS\n')
-  a <-test_sip %>% filter(`Facility Identifier` == cur_id) %>% select(Throughput) 
-  if(dim(a)[1]==0){
-    cat(0)
-  } else{
-  cat(sum(a))
-  }
-  cat('\nCOMBUSTION TABLE \n')
-  a<- SIP_temp_comb_t %>% filter(`Site ID` == cur_id) %>% select(Throughput)
-  if(dim(a)[1]==0){
-    cat(0)
-  } else{
-  cat(sum(a))
-  }
-  cat('\n\n')
-}
 
 ```
   5) Merge inventories.
