@@ -603,9 +603,12 @@ add_controls2 <- function(raw_proj_data,
       if(!is.null(current_efs)) {
         
         # Make sure our current_efs table has the appropriate columns/column
-        # names, if not, we'll stop the function
-        if(all(c("FIPS", "SCC", "pollutant", "EmissionsFactor", "EFNumerator") %in% colnames(current_efs))) {
+        # names, if not, we'll stop the function (below)
+        if(!all(c("FIPS", "SCC", "pollutant", "EmissionsFactor", "EFNumerator") %in% colnames(current_efs))) {
           
+          stop("The current_efs data is not in the correct format. It needs to have a 'FIPS', 'SCC', 'pollutant', and 'EmissionsFactor' column.") }
+        
+        else {
           # check to make sure that our current_efs and ef_controls have the same
           # numerators
           test_numerator <- merge(ef_controls, current_efs, by = c("FIPS", "SCC", "pollutant"), all.y = TRUE)
@@ -665,99 +668,7 @@ add_controls2 <- function(raw_proj_data,
               # EmissionFactor column
               missing_efs$EmissionsFactor <- missing_efs$EmissionFactor
               
-              missing_efs <- select(missing_efs, -EmissionFactor)
-              
-              # Give a notice regarding the emissions factors we're pulling from
-              # the Wagon Wheel.
-              print("These emission factors were not in the current_efs table. We pulled them from Wagon Wheel.")
-              print(missing_efs)
-              
-              missing_efs <- missing_efs %>%
-                rename("EFNumerator" = EmissionFactorNumeratorUnitofMeasureCode)
-              
-              # Now bind the missing_efs onto our current_efs.
-              current_efs <- rbind(current_efs, missing_efs)
-            }
-          }
-        } else {
-          stop("The current_efs data is not in the correct format. It needs to have a 'FIPS', 'SCC', 'pollutant', and 'EmissionsFactor' column.")
-        }
-      }
-      
-      # If no current_efs table was supplied, let's make our own
-      # Most common scenario
-      if(is.null(current_efs) && use_ww == TRUE) {
-        
-        # Pull the emissions factors from the wagon wheel
-        current_efs <- ww %>%
-          filter(SourceClassificationCode %in% ef_controls$SCC,
-                 StateAndCountyFIPSCode %in% ef_controls$FIPS,
-                 PollutantCode %in% ef_controls$pollutant)
-        
-        # Print out which emissions factors we are using from the Wagon Wheel
-        # as a notice.
-        efs_affected <- current_efs %>%
-          group_by(SourceClassificationCode, ThroughputUnit, PollutantCode,
-                   EmissionFactor, EmissionFactorNumeratorUnitofMeasureCode,
-                   EmissionFactorDenominatorUnitofMeasureCode) %>%
-          summarize(.groups = "drop")
-        
-        for(i in 1:nrow(efs_affected)) {
-          print(paste0("For ", efs_affected$SourceClassificationCode[i], 
-                       " calculations for ", efs_affected$PollutantCode[i],
-                       " we are using ", efs_affected$EmissionFactor[i],
-                       " ", efs_affected$EmissionFactorNumeratorUnitofMeasureCode[i],
-                       "/", efs_affected$EmissionFactorDenominatorUnitofMeasureCode[i],
-                       " as the baseline EmissionsFactor (from the Wagon Wheel)."
-                       ))
-        }
-        
-        # Now match our current_efs table to the format we would expect if it
-        # had been supplied.
-        current_efs <- current_efs %>%
-          select(StateAndCountyFIPSCode, SourceClassificationCode, 
-                 PollutantCode, EmissionFactor) %>%
-          rename(FIPS = StateAndCountyFIPSCode,
-                 SCC = SourceClassificationCode,
-                 pollutant = PollutantCode,
-                 EmissionsFactor = EmissionFactor)
-      
-      # If our current_efs is not NULL & use_ww is TRUE, then let's check our
-      # current_efs table and make sure it is in the right format and gapfill
-      # any emissions factors that are missing from it using the WW.
-        
-      # We very rarely use this, perhaps only for graphic arts and dry cleaning
-      } else if (use_ww == TRUE) {
-          if(all(c("FIPS", "SCC", "pollutant", "EmissionsFactor") %in% colnames(current_efs))) {
-            missing_efs <- ef_controls %>%
-              select(FIPS, SCC, pollutant)
-            
-            missing_efs <- merge(missing_efs, current_efs, by = c("FIPS", "SCC", "pollutant"), all = TRUE)
-            
-            missing_efs <- missing_efs %>%
-              filter(is.na(EmissionsFactor))
-            
-            # if we have any missing_efs, do this
-            if(nrow(missing_efs) > 0) {
-              # get emission factors from the wagon wheel
-              ww_efs <- ww %>%
-                filter(StateAndCountyFIPSCode %in% missing_efs$FIPS,
-                       SourceClassificationCode %in% missing_efs$SCC,
-                       PollutantCode %in% missing_efs$pollutant) %>%
-                rename(FIPS = StateAndCountyFIPSCode,
-                       SCC = SourceClassificationCode,
-                       pollutant = PollutantCode) %>%
-                select(FIPS, SCC, pollutant, EmissionFactor)
-              
-              # merge them onto our missing_efs data frame
-              missing_efs <- merge(missing_efs, ww_efs, by = c("FIPS", "SCC", "pollutant"), all = TRUE)
-              
-              # replace the values in EmissionsFactor with the values from 
-              # Wagon Wheel (in the EmissionFactor column) and delete the
-              # EmissionFactor column
-              missing_efs$EmissionsFactor <- missing_efs$EmissionFactor
-              
-              missing_efs <- select(missing_efs, -EmissionFactor)
+              missing_efs <- select(missing_efs, -EmissionFactor, -EmissionFactorNumeratorUnitofMeasureCode)
               
               # Give a notice regarding the emissions factors we're pulling from
               # the Wagon Wheel.
@@ -767,24 +678,19 @@ add_controls2 <- function(raw_proj_data,
               # Now bind the missing_efs onto our current_efs.
               current_efs <- rbind(current_efs, missing_efs)
             }
+            
+            # Now, if we do not want to gapfill emissions factors from the Wagon Wheel
+            # (use_ww == FALSE), but we do have some emissions factors supplied in 
+            # current_efs, do this
+            
+            # This probably will never happen
+            # Unless we are comparing to old inventory methods
           } else {
-            stop("The current_efs data is not in the correct format. It needs to have a 'FIPS', 'SCC', 'pollutant', and 'EmissionsFactor' column.")
-          }
-        
-      # Now, if we do not want to gapfill emissions factors from the Wagon Wheel
-      # (use_ww == FALSE), but we do have some emissions factors supplied in 
-      # current_efs, do this
-        
-      # This probably will never happen
-      # Unless we are comparing to old inventory methods
-      } else if (use_ww == FALSE && !is.null(current_efs)) {
-          # Check that our current_efs table is in the right format again.
-          if(all(c("FIPS", "SCC", "pollutant", "EmissionsFactor") %in% colnames(current_efs))) {
             # which efs are we missing from current_efs?
             missing_efs <- ef_controls %>%
-              select(FIPS, SCC, pollutant)
+              select(FIPS, SCC, pollutant, EFNumerator)
             
-            missing_efs <- merge(missing_efs, current_efs, by = c("FIPS", "SCC", "pollutant"), all = TRUE)
+            missing_efs <- merge(missing_efs, current_efs, by = c("FIPS", "SCC", "pollutant", "EFNumerator"), all = TRUE)
             
             missing_efs <- missing_efs %>%
               filter(is.na(EmissionsFactor)) %>%
@@ -793,31 +699,81 @@ add_controls2 <- function(raw_proj_data,
             # okay, so we're just going to give those missing efs the emissions
             # factor from our controls table and print a warning.
             efs_from_controls <- ef_controls %>%
-              select(FIPS, SCC, pollutant, EmissionsFactor)
+              select(FIPS, SCC, pollutant, EmissionsFactor, EFNumerator)
             
-            missing_efs <- merge(missing_efs, efs_from_controls, by = c("FIPS", "SCC", "pollutant"), all.x = TRUE)
+            missing_efs <- merge(missing_efs, efs_from_controls, by = c("FIPS", "SCC", "pollutant", "EFNumerator"), all.x = TRUE)
             
             print("These emission factors were not in the current_efs table. Since use_ww == FALSE, we are just setting them equal to the emissions factors from the Controls table.")
             print(missing_efs)
             
             current_efs <- rbind(current_efs, missing_efs)
-            
-          # if not, stop the function and print an error.
-          } else {
-            stop("The current_efs data is not in the correct format. It needs to have a 'FIPS', 'SCC', 'pollutant', and 'EmissionsFactor' column.")
           }
+        }
         
-      # if no current_efs are supplied, and use_ww = FALSE, we're just going to
-      # assume that we want to use the emissions factors from the controls table
-      # as our baseline emissions factor (i.e., no difference between them, so
-      # we won't actually do any adjustments due to different emissions factors)
+        # Now, if no current_efs table is supplied
       } else {
-        current_efs <- ef_controls %>%
-          select(FIPS, SCC, pollutant, EmissionsFactor)
         
-        print("No emissions factors were supplied to current_efs and use_ww = FALSE, so we are going to use the emissions factors from the Controls table. This means that, though there are controls to be applied that are emissions factor dependent, we are going to assume the emissions factors have not changed since the control was created.")
-        print("These are the emissions factors that are emissions factor dependent. We are assuming that the baseline emissions factor is the same as what it was when the control was created.")
+        # most common scenario
+        if(use_ww == TRUE) {
+          # create a current_efs table
+          current_efs <- ef_controls %>%
+            select(FIPS, SCC, pollutant, EmissionsFactor, EFNumerator)
+          
+          # get emission factors from the wagon wheel
+          ww_efs <- ww %>%
+            filter(StateAndCountyFIPSCode %in% current_efs$FIPS,
+                   SourceClassificationCode %in% current_efs$SCC,
+                   PollutantCode %in% current_efs$pollutant) %>%
+            rename(FIPS = StateAndCountyFIPSCode,
+                   SCC = SourceClassificationCode,
+                   pollutant = PollutantCode) %>%
+            select(FIPS, SCC, pollutant, EmissionFactor, EmissionFactorNumeratorUnitofMeasureCode)
+          
+          # merge ww_efs onto our current_efs data frame
+          current_efs <- merge(current_efs, ww_efs, by = c("FIPS", "SCC", "pollutant"), all = TRUE)
+          
+          # make sure that our numerators are matching
+          if(!all(tolower(current_efs$EFNumerator) == tolower(current_efs$EmissionFactorNumeratorUnitofMeasureCode))) {
+            paste("EFNumerator from controls_ws does not match with EmissionFactorNumeratorUnitofMeasureCode from the ww. We can't compare these emissions factors.")
+            print(missing_efs %>% 
+                    select(FIPS, SCC, pollutant, EFNumerator, EmissionFactorNumeratorUnitofMeasureCode))
+            stop("Try again with a current_efs table or use_ww = FALSE")
+          }
+          
+          # replace the values in EmissionsFactor with the values from 
+          # Wagon Wheel (in the EmissionFactor column) and delete the
+          # EmissionFactor column
+          current_efs$EmissionsFactor <- current_efs$EmissionFactor
+          
+          current_efs <- select(current_efs, -EmissionFactor, -EmissionFactorNumeratorUnitofMeasureCode)
+          
+          # Give a notice regarding the emissions factors we're pulling from
+          # the Wagon Wheel.
+          print("We pulled these emission factors from Wagon Wheel.")
+          print(current_efs)
+          
+          # # if no current_efs are supplied, and use_ww = FALSE, we're just going to
+          # assume that we want to use the emissions factors from the controls table
+          # as our baseline emissions factor (i.e., no difference between them, so
+          # we won't actually do any adjustments due to different emissions factors)
+        } else {
+          current_efs <- ef_controls %>%
+            select(FIPS, SCC, pollutant, EmissionsFactor, EFNumerator)
+          
+          print("No emissions factors were supplied to current_efs and use_ww = FALSE, so we are going to use the emissions factors from the Controls table. This means that, though there are controls to be applied that are emissions factor dependent, we are going to assume the emissions factors have not changed since the control was created.")
+          print("These are the emissions factors that are emissions factor dependent. We are assuming that the baseline emissions factor is the same as what it was when the control was created.")
+          print(current_efs)
+        }
+      }
+      
+      # double check that there are no missing emissions factors
+      test_missing_efs <- merge(ef_controls, current_efs, by = c("FIPS", "SCC", "pollutant"), all.x = TRUE)
+      
+      if(any(is.na(test_missing_efs$EmissionsFactor.y))) {
+        print("There is one or more missing emissions factors in the current_efs table. We can't compare with current emissions factors. Stopping the function.")
         print(current_efs)
+        
+        stop("Correct the error with a missing emissions factor. This is likely due to the emissions factor not existing in the wagon wheel. You may need to supply this emissions factor, or use_ww = FALSE.")
       }
     }
     
