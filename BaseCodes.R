@@ -532,7 +532,18 @@ add_controls <-
 #' scc <- 2415000000
 #' temp_table <- pull_baseline_from_ww(scc = scc)
 #' temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
-add_controls2 <- function(raw_proj_data,
+#' temp_table_controlled <- add_controls(temp_table_project)
+#' 
+#' scc <- 2425000000
+#' temp_table <- pull_baseline_from_ww(scc = scc)
+#' ww_ef <- pull_efs_from_ww(scc = scc, throughput_unit = 'EACH')
+#' ww_ef <- ww_ef %>% filter(pollutant == 'VOC') %>% select(TPUPY)
+#' ww_ef <- ww_ef[[1,1]] * 2000
+#' temp_table$TPY <- temp_table$TPY*(201/ww_ef)
+#' temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
+#' graphic_arts_efs <- data.frame(FIPS = unique(temp_table$FIPS), SCC = scc, pollutant = "VOC", EmissionsFactor = 201, EFNumerator = "lb")
+#' temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, current_efs = graphic_arts_efs)
+add_controls <- function(raw_proj_data,
                           controls_ws = controls,
                           use_ww = TRUE,
                           current_efs = NULL, 
@@ -606,8 +617,8 @@ add_controls2 <- function(raw_proj_data,
       
       # we only need to have the columns that are relevant for making our
       # current_efs table
-      ef_controls <- select(ef_controls, FIPS, SCC, pollutant, EmissionsFactor,
-                            EFNumerator)
+      ef_controls <- ef_controls %>%
+        select(FIPS, SCC, pollutant, EmissionsFactor, EFNumerator)
       
       # only save unique ones (this will only be relevant when we have
       # multiple controls that apply to the same FIPS, scc, and pollutant
@@ -629,14 +640,15 @@ add_controls2 <- function(raw_proj_data,
         
         else {
           # check to make sure that our current_efs and ef_controls have the same
-          # numerators
+          # numerators. If the supplied current_efs has an EF that is not used,
+          # we can just ignore it.
           test_numerator <- merge(ef_controls, current_efs, by = c("FIPS", "SCC", "pollutant"), all.y = TRUE)
           
           test_numerator$MatchingNumerators <- ifelse(tolower(test_numerator$EFNumerator.x) == tolower(test_numerator$EFNumerator.y), TRUE, FALSE)
          
           # if not, stop the function 
-          if(!all(test_numerator$MatchingNumerators)) {
-            paste("EFNumerator from controls_ws does not match with EFNumerator from the current_efs table. We can't compare these emissions factors.")
+          if(!all(test_numerator$MatchingNumerators, na.rm = TRUE)) {
+            print("EFNumerator from controls_ws does not match with EFNumerator from the current_efs table. We can't compare these emissions factors.")
             print(test_numerator %>% 
                     select(FIPS, SCC, pollutant, EFNumerator.x, EFNumerator.y) %>% 
                     rename("EFNumerator.controls_ws" = EFNumerator.x,
