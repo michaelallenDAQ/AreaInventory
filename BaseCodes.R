@@ -520,7 +520,8 @@ add_controls <-
 #' from the ww. The emissions factors identified in the table will be used as
 #' baseline emissions factors and compared to the emissions factors in the
 #' Controls table.
-#' @param baseline_year (optional) year that we should treat as the baseline
+#' @param baseline_year (optional) This is only relevant if any of the controls
+#' are TimeDependent. Year that we should treat as the baseline
 #' for emissions in the raw_proj_data (we assume every other year, therefore, is
 #' a projection from the baseline_year); if NULL, we assume that the min year
 #' in raw_proj_data is the baseline_year
@@ -571,10 +572,16 @@ add_controls2 <- function(raw_proj_data,
     # convert the year column in adjusted_proj_data to a numeric
     adjusted_proj_data$year <- as.numeric(adjusted_proj_data$year)
     
-    # if our baseline_year is NULL, we're going to pull the min baseline_year
-    # from adjusted_proj_data and use that as our baseline_year
-    if(is.null(baseline_year)) {
-      baseline_year <- min(adjusted_proj_data$year)
+    # check if any of our controls are time dependent
+    if(any(controls_to_apply$TimeDependent)) {
+      
+      print("Some or all of the controls relevant to your data are time dependent. We will be adjusting the relevant controls accordingly.")
+      
+      # if our baseline_year is NULL, we're going to pull the min baseline_year
+      # from adjusted_proj_data and use that as our baseline_year
+      if(is.null(baseline_year)) {
+        baseline_year <- min(adjusted_proj_data$year)
+      }
     }
     
     # rename the PollutantCode column in controls_to_apply to pollutant to
@@ -586,6 +593,8 @@ add_controls2 <- function(raw_proj_data,
     # a current_efs table that we can use to compare current_efs with old efs
     # (old efs are stored in the controls ws)
     if(any(controls_to_apply$EFDependent)) {
+      
+      print("Some or all of the controls relevant to your data are emissions factor dependent. We will be adjusting the relevant controls accordingly.")
       
       # What are they?
       ef_controls <- controls_to_apply %>%
@@ -773,7 +782,7 @@ add_controls2 <- function(raw_proj_data,
         print("There is one or more missing emissions factors in the current_efs table. We can't compare with current emissions factors. Stopping the function.")
         print(current_efs)
         
-        stop("Correct the error with a missing emissions factor. This is likely due to the emissions factor not existing in the wagon wheel. You may need to supply this emissions factor, or use_ww = FALSE.")
+        stop("Correct the error with a missing emissions factor. This is likely due to the emissions factor not existing in the wagon wheel. You may need to supply this emissions factor, or try use_ww = FALSE.")
       }
     }
     
