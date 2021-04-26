@@ -508,14 +508,18 @@ add_controls <-
 #' EFs.
 #' @param current_efs (optional) This is only relevant if any of the controls 
 #' applicable to sccs in raw_proj_data are EFDependent. If so, and we want to 
-#' manually identify the emissions factors we currently use, input a table here
-#' containing a FIPS, SCC, pollutant, and EmissionsFactor column. It is not 
-#' necessary to identify the emissions factors for every scc and pollutant
-#' affected by a control in raw_proj_data; if it is not identified here, and
-#' use_ww = TRUE, we will pull emissions factors not identified here from the
-#' ww. The emissions factors identified in the table will be used as baseline
-#' emissions factors and compared to the emissions factors in the Controls
-#' table.
+#' manually identify the emissions factors we currently use, so input a table 
+#' here containing a FIPS, SCC, pollutant, EmissionsFactor, and EFNumerator
+#' column. FIPS is the FIPS code of the county with the unique emissions factor,
+#' SCC is the SCC code for the control, pollutant is the pollutant the control
+#' applies to, emissionsfactor is the emissionsfactor value, and EFNumerator is
+#' the numerator for the emissions factor (likely one of LB or TON).
+#' It is not necessary to identify the emissions factors for every scc and
+#' pollutant affected by a control in raw_proj_data; if it is not identified
+#' here, and use_ww = TRUE, we will pull emissions factors not identified here
+#' from the ww. The emissions factors identified in the table will be used as
+#' baseline emissions factors and compared to the emissions factors in the
+#' Controls table.
 #' @param baseline_year (optional) year that we should treat as the baseline
 #' for emissions in the raw_proj_data (we assume every other year, therefore, is
 #' a projection from the baseline_year); if NULL, we assume that the min year
@@ -580,19 +584,94 @@ add_controls2 <- function(raw_proj_data,
     affected_adjusted_data <- merge(adjusted_proj_data, controls_to_apply,
                                     by = c("FIPS", "SCC", "pollutant"))
     
-    # For our affected_adjusted_data, how many different FIPS, SCC, and
-    # pollutant combos do we have? We need to make decisions to adjust TPY based
-    # on these
-    unique_combos <- affected_adjusted_data %>% 
-      group_by(FIPS, SCC, pollutant) %>%
-      summarize(.groups = "drop")
-    
-    # Are any of our controls to apply EFDependent?
+    # Are any of our controls to apply EFDependent? If so, we want to make
+    # a current_efs table that we can use to compare current_efs with old efs
+    # (old efs are stored in the controls ws)
     if(any(controls_to_apply$EFDependent)) {
       
       # What are they?
       ef_controls <- controls_to_apply %>%
         filter(EFDependent == TRUE)
+      
+      # Add an EFNumerator column so we can make sure our EFs are still in the
+      # same unit
+      ef_controls$EFNumerator <- sapply(ef_controls$EFUnit, function(x) strsplit(x, "/")[[1]][1])
+      
+      # Was any current_efs table supplied to the function?
+      # We normally just fall back on the default WW, so we really only use this
+      # for graphic arts and dry cleaning (and, starting with the 2020 NEI, we
+      # should start using the default values for those, and won't need this
+      # option anymore)
+      if(!is.null(current_efs)) {
+        
+        # check to make sure that our current_efs and ef_controls have the same
+        # numerators
+        test_numerator <- merge(ef_controls, current_efs, by = c("FIPS", "SCC", "pollutant"), all.y = TRUE)
+        
+        test_numerator$MatchingNumerators <- ifelse(tolower(test_numerator$EFNumerator.x) == tolower(test_numerator$EFNumerator.y), TRUE, FALSE)
+        
+        if(!all(test_numerator$MatchingNumerators)) {
+          paste("EFNumerator from controls_ws does not match with EFNumerator from the current_efs table. We can't compare these emissions factors.")
+          print(test_numerator %>% 
+                  select(FIPS, SCC, pollutant, EFNumerator.x, EFNumerator.y) %>% 
+                  rename("EFNumerator.controls_ws" = EFNumerator.x,
+                          "EFNumerator.current_efs" = EFNumerator.y))
+          stop("Try again with current_efs that have matching numerators with those in the controls_ws")
+        }
+        
+        # Make sure our current_efs table has the appropriate columns/column
+        # names, if not, we'll stop the function
+        if(all(c("FIPS", "SCC", "pollutant", "EmissionsFactor", "EFNumerator") %in% colnames(current_efs))) {
+          # if use_ww == TRUE, we want to gapfill any emissions factors that
+          # are not supplied in the current_efs table with the ones from WW
+          if(use_ww == TRUE) {
+            # which efs are not in the current_efs table?
+            missing_efs <- ef_controls %>%
+              select(FIPS, SCC, pollutant, EFNumerator)
+            
+            # merge those with the current efs table. The ones that are missing
+            # will have "NA" for the EmissionsFactor column
+            missing_efs <- merge(missing_efs, current_efs, by = c("FIPS", "SCC", "pollutant"), all = TRUE)
+            
+            # only save the missing efs (those that are NA for EmissionsFactor)
+            missing_efs <- missing_efs %>%
+              filter(is.na(EmissionsFactor))
+            
+            # if we have any missing_efs, do this
+            if(nrow(missing_efs) > 0) {
+              # get emission factors from the wagon wheel
+              ww_efs <- ww %>%
+                filter(StateAndCountyFIPSCode %in% missing_efs$FIPS,
+                       SourceClassificationCode %in% missing_efs$SCC,
+                       PollutantCode %in% missing_efs$pollutant) %>%
+                rename(FIPS = StateAndCountyFIPSCode,
+                       SCC = SourceClassificationCode,
+                       pollutant = PollutantCode) %>%
+                select(FIPS, SCC, pollutant, EmissionFactor, EmissionFactorNumeratorUnitofMeasureCode)
+              
+              # merge them onto our missing_efs data frame
+              missing_efs <- merge(missing_efs, ww_efs, by = c("FIPS", "SCC", "pollutant"), all = TRUE)
+              
+              # replace the values in EmissionsFactor with the values from 
+              # Wagon Wheel (in the EmissionFactor column) and delete the
+              # EmissionFactor column
+              missing_efs$EmissionsFactor <- missing_efs$EmissionFactor
+              
+              missing_efs <- select(missing_efs, -EmissionFactor)
+              
+              # Give a notice regarding the emissions factors we're pulling from
+              # the Wagon Wheel.
+              print("These emission factors were not in the current_efs table. We pulled them from Wagon Wheel.")
+              print(missing_efs)
+              
+              # Now bind the missing_efs onto our current_efs.
+              current_efs <- rbind(current_efs, missing_efs)
+            }
+          }
+        } else {
+          stop("The current_efs data is not in the correct format. It needs to have a 'FIPS', 'SCC', 'pollutant', and 'EmissionsFactor' column.")
+        }
+      }
       
       # If no current_efs table was supplied, let's make our own
       # Most common scenario
@@ -730,6 +809,13 @@ add_controls2 <- function(raw_proj_data,
         print(current_efs)
       }
     }
+    
+    # For our affected_adjusted_data, how many different FIPS, SCC, and
+    # pollutant combos do we have? We need to make decisions to adjust TPY based
+    # on these
+    unique_combos <- affected_adjusted_data %>% 
+      group_by(FIPS, SCC, pollutant) %>%
+      summarize(.groups = "drop")
     
     # loop over every row in our unique_combos
     for(i in 1:nrow(unique_combos)) {
