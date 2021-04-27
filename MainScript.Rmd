@@ -809,6 +809,9 @@ tank_efs <- efs_table %>%
 # now run the function. we supplied all the needed emissions factors for adding controls in the current_efs table. we'll just set use_ww = FALSE anyway since this SCC doesn't exist in the WW.
 temp_table_controlled <- add_controls(temp_table_project, current_efs = tank_efs, use_ww = FALSE)
 final_table <- rbind(final_table, temp_table_controlled)
+
+# remove the objects we created from the environment
+rm(scc, pollutants, TPPPY, efs_table, temp_table_project, tank_efs, temp_table_controlled)
 ```
 
 
@@ -899,20 +902,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-343 Wood Furniture Manufacturing
 ## Assume 5-yr phase in period starting in 2018; 74% reduction
 ## "Training program, in collaboration with manufacturers, on new coating application began in 2016 when distributors began to see source purchases of compliant coatings."
-old_control <- 0.26
-old_end_ef <- old_control * 437 
-#let's see what the new EF is, and adjust our controls to reach the right end EF.
-#Pull the VOC EF from WW
-new_ef <- pull_efs_from_ww(scc, throughput_unit = "EACH", all_primaries = TRUE) %>% filter(pollutant == "VOC") %>% select(TPUPY) %>% unique() %>% head() %>% as.double()*2000
-#get a new end control value. It is simply the difference between our old final value and our new EF.
-new_control <- (old_end_ef/new_ef)
-if(new_control< old_control) {
-  new_control <- old_control
-}
-if(new_control >1) {
-  new_control <- 1
-}
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = new_control)
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
@@ -936,21 +926,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-346 Metal Furniture Surface Coating
 ## Assume 5-yr phase in period starting in 2018; 27% reduction
 ## NAA counties
-## Note: The EF listed in the Workbook is from the 2014 NEI and is 537 lbs/employee; 
-old_control <- 0.73
-old_end_ef <- old_control * 537 
-#let's see what the new EF is, and adjust our controls to reach the right end EF.
-#Pull the VOC EF from WW
-new_ef <- pull_efs_from_ww(scc, throughput_unit = "EACH", all_primaries = FALSE) %>% filter(pollutant == "VOC") %>% select(TPUPY) %>% unique() %>% head() %>% as.double()*2000
-#get a new end control value. It is simply the difference between our old final value and our new EF.
-new_control <- (old_end_ef/new_ef)
-if(new_control< old_control) {
-  new_control <- old_control
-}
-if(new_control >1) {
-  new_control <- 1
-}
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = new_control)
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
@@ -980,21 +956,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-344 Paper, Film and Foil Surface Coating
 ## Assume 5-yr phase in period starting in 2018; 71% reduction
 ## NAA counties
-## Note: The EF listed in the Workbook is from the 2014 NEI and is 415 lbs/employee
-old_control <- 0.29
-old_end_ef <- old_control * 415
-#let's see what the new EF is, and adjust our controls to reach the right end EF.
-#Pull the VOC EF from WW
-new_ef <- pull_efs_from_ww(scc, throughput_unit = "EACH", all_primaries = FALSE) %>% filter(pollutant == "VOC") %>% select(TPUPY) %>% unique() %>% head() %>% as.double()*2000
-#get a new end control value. It is simply the difference between our old final value and our new EF.
-new_control <- (old_end_ef/new_ef)
-if(new_control< old_control) {
-  new_control <- old_control
-}
-if(new_control >1) {
-  new_control <- 1
-}
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = new_control)
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
@@ -1009,7 +971,6 @@ rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt
 
 
 # Solvent Utilization > Surface Coating > Metal Cans: SIC 341 > Total: All Solvent Types
-## Note: The EF listed in the Workbook is from the 2014 NEI and is 2493 lbs/employee; the new WW EF is 2239.43 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
 scc <- 2401040000
 # Throughput is employees in NAICS 33243
 temp_table <- pull_baseline_from_ww(scc = scc)
@@ -1019,7 +980,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-352 Sheet, Strip, Coil and Container Surface Coating
 ## Assume 5-yr phase in period starting in 2018; 33% reduction
 ## NAA counties
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.67)
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 ## EPA crosswalk lists a lot of potential related point sccs
@@ -1032,7 +993,7 @@ temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_control
 final_table <- rbind(final_table, temp_table_final)
 
 # remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
+rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 
 # Solvent Utilization > Surface Coating > Machinery and Equipment: SIC 35 > Total: All Solvent Types
@@ -1046,7 +1007,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-350 Miscellaneous Metal Surface Coating
 ## NAA Counties only
 ## Assume 5-yr phase in period starting in 2018; 31% reduction
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.69)
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 ## EPA crosswalk lists a lot of potential related point sccs
@@ -1059,11 +1020,10 @@ temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_control
 final_table <- rbind(final_table, temp_table_final)
 
 # remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, test, temp_table_final)
+rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 # Solvent Utilization > Surface Coating > Large Appliances: SIC 363 > Total: All Solvent Types
 # DONE
-## Note: The EF listed in the Workbook is from the 2014 NEI and is 184 lbs/employee; the new WW EF is 168.96 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
 
 # Get ww emissions estimates; apply controls; there are no pt source subtractions.
 scc <- 2401060000
@@ -1075,7 +1035,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-347 Large Appliance Surface Coating
 ## NAA Counties only
 ## Assume 5-yr phase in period starting in 2018; 24% reduction
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.76)
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
@@ -1091,7 +1051,7 @@ if(dim(pt_subs)[1]!=0){
 temp_table_final <- temp_table_controlled
 final_table <- rbind(final_table, temp_table_final)
 # remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
+rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 
 # Solvent Utilization > Surface Coating > Electronic and Other Electrical: SIC 36 - 363 > Total: All Solvent Types
@@ -1105,7 +1065,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-348
 ## NAA Counties
 ## Starts in 2018; 28% reduction
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2018, end_val = 0.72)
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
@@ -1122,11 +1082,10 @@ temp_table_final <- temp_table_controlled
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
 # remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
+rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 
 # Solvent Utilization > Surface Coating > Motor Vehicles: SIC 371 > Total: All Solvent Types
-## Note: The EF listed in the Workbook is from the 2014 NEI and is 168 lbs/employee; the new WW EF is 160.31 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
 scc <- 2401070000
 # Throughput is employees in NAICS 3361, 3362, 3363
 temp_table <- pull_baseline_from_ww(scc = scc)
@@ -1136,7 +1095,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-350
 ## NAA Counties
 ## Assume 5-year phase-in period starting in 2018 based on industry input; 31% reduction
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.69)
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
@@ -1148,10 +1107,9 @@ temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_control
 final_table <- rbind(final_table, temp_table_final)
 
 # remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
+rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 # Solvent Utilization > Surface Coating > Aircraft: SIC 372 > Total: All Solvent Types
-## Note: The EF listed in the Workbook is from the 2014 NEI and is 14 lbs/employee; the new WW EF is 15.40 lbs/employee. The EF increased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
 scc <- 2401075000
 # Throughput is employees in NAICS 3364
 temp_table <- pull_baseline_from_ww(scc = scc)
@@ -1161,7 +1119,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-350 Miscellaneous Metal Surface Coating
 ## NAA Counties 
 ## Assume 5-year phase-in period starting in 2018 based on major source inspection; 46% reduction
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.54)
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 ## EPA crosswalk lists 7 potential related point sccs
@@ -1179,11 +1137,10 @@ temp_table_final <- temp_table_controlled
 final_table <- rbind(final_table, temp_table_final)
 
 # remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
+rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 
 # Solvent Utilization > Surface Coating > Marine: SIC 373 > Total: All Solvent Types
-## Note: The EF listed in the Workbook is from the 2014 NEI and is 200 lbs/employee; the new WW EF is 176.75 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
 scc <- 2401080000
 # Throughput is employees in NAICS 3366, 488390
 temp_table <- pull_baseline_from_ww(scc = scc)
@@ -1209,7 +1166,6 @@ rm(scc, temp_table, temp_table_project, pt_sccs, pt_subs, temp_table_final)
 
 
 # Solvent Utilization > Surface Coating > Railroad: SIC 374 > Total: All Solvent Types
-## Note: The EF listed in the Workbook is from the 2014 NEI and is 180 lbs/employee; the new WW EF is 212.90 lbs/employee. The EF increased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
 scc <- 2401085000
 # Throughput is employees in NAICS 3365
 temp_table <- pull_baseline_from_ww(scc = scc)
@@ -1229,9 +1185,6 @@ rm(scc, temp_table, temp_table_project, temp_table_final)
 
 
 # Solvent Utilization > Surface Coating > Miscellaneous Manufacturing > Total: All Solvent Types
-## Note: The EF listed in the Workbook is from the 2014 NEI and is 78 lbs/employee; the new WW EF is 69.99 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
-## Note - controls are complicated here; this scc encompasses two different industries, and different rules apply to the industries, so we have to account for two control emission reduction rates.
-
 scc <- 2401090000
 # Throughput is employees in NAICS 339, 3369
 temp_table <- pull_baseline_from_ww(scc = scc)
@@ -1244,25 +1197,13 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 
 ### R307-353 Plastic Parts Surface Coating
 ### The following NAICS were considered for the plastic coating employment subset: 336991, 336992, 336999, 339113, 339910, 339920, 339930, 339940, 339950, 339992.
-### Based on 2014 Census employment data by NAICS, the employment for plastic coatings represents approximately 44% of employment related to this scc. The control is therefore only applied to 44% the total emissions.
-temp_table_p <- temp_table_project
-temp_table_p$TPY <- temp_table_p$TPY * 0.44
-
+### Based on 2017 Census Utah employment data by NAICS, the employment for plastic coatings represents approximately 38.9% of employment related to this scc. The control is therefore only applied to 38.9% the total emissions.
 ### Assume 5 yr phase-in period starting in 2018 based on industry input
 ### The control is expected to reduce applicable VOC emissions by 27% for all NAA counties.
-temp_table_controlled_p <- add_controls(raw_proj_data = temp_table_p, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.73)
-
 ### R307-345 Fabric and Vinyl Surface Coating
-### We assume that fabric and vinyl account for the remaining 56% of employment for this scc. 
-temp_table_fv <- temp_table_project
-temp_table_fv$TPY <- temp_table_fv$TPY * 0.56
-
+### We assume that fabric and vinyl account for the remaining 61.1% of employment for this scc. 
 ### Assume 5-year phase-in period starting in 2018 based on industry input; 47% reduction
-temp_table_controlled_fv <- add_controls(raw_proj_data = temp_table_fv, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.53)
-
-## now we want to assign the TPY column in temp_table_controlled to the sum of emissions from temp_table_p and temp_table_fv
-temp_table_controlled <- temp_table_project
-temp_table_controlled$TPY <- temp_table_controlled_p$TPY + temp_table_controlled_fv$TPY
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 ## EPA crosswalk lists a lot of potential related point sccs
@@ -1275,7 +1216,7 @@ temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_control
 final_table <- rbind(final_table, temp_table_final)
 
 # remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_p, temp_table_fv, temp_table_controlled_p, temp_table_controlled_fv, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
+rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 
 # Solvent Utilization > Surface Coating > Industrial Maintenance Coatings > Total: All Solvent Types
@@ -1307,7 +1248,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## NAA counties
 ## R307-350 Miscellaneous Metal Surface Coating
 ## Assume 5-year phase-in period starting in 2018 based on major source inspection; 31% reduction
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.69)
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 ## No potential related point sccs in the crosswalk
@@ -1315,11 +1256,10 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs =
 
 temp_table_final <- temp_table_controlled
 final_table <- rbind(final_table, temp_table_final)
-rm(scc, temp_table, temp_table_project, temp_table_controlled, test, temp_table_final)
+rm(scc, temp_table, temp_table_project, temp_table_controlled, temp_table_final)
 
 
 # Solvent Utilization > Degreasing > All Processes/All Industries > Total: All Solvent Types
-## Note: The EF listed in the Workbook is from the 2014 NEI and is 37 lbs/employee; the new WW EF is 32.36 lbs/employee. The EF decreased from the 2014-2017 NEI. This implies that the controls may no longer be relevant.
 # Pull baseline from WW, project based on manufacturing employment growth, add controls, point source subtractions.
 scc <- 2415000000
 # Throughput is employees in NAICS codes 331, 332, 333, 334, 335, 336, 337, 339, 441, 483, 484, 485, 488, 8111, 8112
@@ -1331,7 +1271,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-304 Solvent Cleaning
 ## Assume 5-year phase-in period starting in 2018; 28% reduction
 ## Note: Workbook states "controls apply to residential only" - not sure what is meant by this.
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = 0.72)
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
@@ -1343,12 +1283,12 @@ temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_control
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
 # remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
+rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 
 # Solvent Utilization > Dry Cleaning > All Processes > Total: All Solvent Types
 # Workbook Note: On 3/7/12 - VOC Emission Factor was changed to 10 lb/employee as per ERTAC/UDAQ/Industry collaboration.
-# DONE, BUT NEEDS DOCUMENTATION. WHAT IS THE JUSTIFICATION FOR THE MODIFIED EMISSION FACTOR?
+# We should really just use the emission factor from the WW for this one in the 2020 NEI. We are not justified in continuing to use the 10 lb/employee emission factor.
 # Get baseline from WW; adjust total emissions to be reflective of what they would be if we were using the Utah EF; project based on population; apply controls to ALL counties in the scc for PERC only; pt source subtractions.
 scc <- 2420000000
 
@@ -1381,7 +1321,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## No applicable rule - 
 ### Workbook note: "On 3/18/2015, added in perc phase out factor to adjust perc emissions based on consultation with local industry representative (Brad Overmore, former president of Red Hanger) and DAQ Dry Cleaner Inspector, Greg Sorenson. Perc machine life expectancy was 15 years and hydrocarbon/green earth machines began to be used in Utah around 2011.
 ## Assume 15-year phase-in period starting in 2011; 100% reduction; only applies to 127184
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, pollutants = "127184", counties = unique(temp_table$FIPS), st_year = 2011, e_year = 2026, end_val = 0.0)
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
@@ -1394,7 +1334,7 @@ temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_control
 final_table <- rbind(final_table, temp_table_final)
 
 # remove the objects we created for this scc
-rm(scc, temp_table, ww_ef, ww_ef_VOC, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
+rm(scc, temp_table, ww_ef, ww_ef_VOC, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 
 # Solvent Utilization > Graphic Arts > All Processes > Total: All Processes
@@ -1435,7 +1375,11 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-351 Graphic Arts Surface Coating
 ## NAA Counties
 ## Assume 3 year phase-in starting in 2018; 61% reduction
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2020, end_val = 0.39)
+## we need to create our own current_efs table since we use a different EF than what exists in the wagon wheel
+graphic_arts_efs <- data.frame(FIPS = unique(temp_table$FIPS), SCC = scc, pollutant = "VOC", EmissionsFactor = 201, EFNumerator = "lb")
+
+# now add controls. we add use_ww = FALSE here, even though we provide all the efs that will be used.
+temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, current_efs = graphic_arts_efs, use_ww = FALSE)
 
 # Pt source subtractions
 pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
@@ -1446,7 +1390,7 @@ temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_control
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
 # remove the objects we created for this scc
-rm(scc, temp_table, ww_ef, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
+rm(scc, temp_table, ww_ef, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 
 # Solvent Utilization > Miscellaneous Non-industrial: Commercial > Cutback Asphalt > Total: All Processes
@@ -1559,8 +1503,6 @@ final_table <- rbind(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, throughput, efs_table, temp_table, vmt, temp_table_project, temp_table_final)
 ```
-
-
 
 ## Storage and Transport
 
