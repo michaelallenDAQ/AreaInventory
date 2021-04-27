@@ -1657,7 +1657,7 @@ temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #project
 #Controls: R307-309 is about fugitive dust control plans. Has an assumed 32% 
 #reduction that started in 2014.
-temp_table <- add_controls(temp_table,scc,naa_counties,2013,2014,0.68)
+temp_table <- add_controls(temp_table)
 final_table <- rbind(final_table,temp_table)
 
 
@@ -1669,10 +1669,9 @@ scc <- 2401001000
 efs_table <- pull_efs_from_ww(scc,'EACH',all_primaries = FALSE)
 temp_table <- make_baseline(efs_table, projection_tables[["Population"]], project_to = end_year)
 #controls are based on R307-361: "architectural coatings"
-temp_table <- add_controls(temp_table,scc,naa_counties,2015,2016,0.45)
+temp_table <- add_controls(temp_table)
 #pt subs? Maybe used to be but is no longer supported in EPA crosswalk.
 final_table <- rbind(final_table,temp_table)
-
 ```
 
 
@@ -1700,7 +1699,7 @@ temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 counties <- seq.int(49001,49057,2)
 #here is where we turn everything into zeros
-temp_table <- add_controls(temp_table,scc,counties,1900,1901,0)
+temp_table <- add_manual_controls(temp_table,scc,counties,1900,1901,0)
 final_table <- rbind(final_table, temp_table)
 
 #unpaved roads emissions
