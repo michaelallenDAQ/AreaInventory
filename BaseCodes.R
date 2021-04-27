@@ -658,7 +658,7 @@ add_controls <- function(raw_proj_data,
           
           # if use_ww == TRUE, we want to gapfill any emissions factors that
           # are not supplied in the current_efs table with the ones from WW
-          if(use_ww == TRUE) {
+          if(use_ww) {
             # which efs are not in the current_efs table?
             missing_efs <- ef_controls %>%
               select(FIPS, SCC, pollutant, EFNumerator)
@@ -745,7 +745,7 @@ add_controls <- function(raw_proj_data,
       } else {
         
         # most common scenario
-        if(use_ww == TRUE) {
+        if(use_ww) {
           # create a current_efs table
           current_efs <- ef_controls %>%
             select(FIPS, SCC, pollutant, EmissionsFactor, EFNumerator)

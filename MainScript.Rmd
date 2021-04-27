@@ -838,30 +838,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-354 Autobody Refinishing
 ## Assume 5-year phase-in period starting in 2016 based on UCAIR grant program initiation to support the industry; 73% reduction
 ## Controls apply to NAA counties
-#Control factor was based on 2014 which assumed 87 lbs/employee.
-# 73% reduction on 87 lbs would end with 23.49 lb/employee.
-old_control <- 0.27
-old_end_ef <- old_control * 87 #23.49
-#let's see what the new EF is, and adjust our controls to reach the right end EF.
-
-#Pull the VOC EF from WW
-new_ef <- pull_efs_from_ww(scc, throughput_unit = "EACH") %>% filter(pollutant == "VOC") %>% select(TPUPY) %>% unique() %>% head() %>% as.double()*2000
-#get a new end control value. It is simply the difference between our old final value and our new EF.
-new_control <- (old_end_ef/new_ef)
-#if the new control value has DECREASED from the old value, that means the EF has gone up since
-#it was last updated, and we need a more extreme control factor.
-#If that's the case, we will assume the increased EF is real, and we will
-#not add more aggressive controls. So if the new control value has become smaller/more aggressive,
-#reset it to the old value.
-if(new_control< old_control) {
-  new_control <- old_control
-}
-#if the new EF is so small that it renders our old control factor useless, we will get a control
-#factor greater than 1. If this is the case, just set the control to 1 (will not affect emissions)
-if(new_control >1){
-  new_control <- 1
-}
-temp_table_controlled <- add_manual_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2015, e_year = 2020, end_val = new_control)
+temp_table_controlled <- add_controls(temp_table_project)
 
 temp_table_final <- temp_table_controlled
 
@@ -880,20 +857,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 ## R307-349 Flat Wood Surface Coating
 ## Assume 5-yr phase in period starting in 2018; 30% reduction from the 2014 EF of 48 lbs/employee
 ## NAA Counties only
-old_control <- 0.7
-old_end_ef <- old_control * 48 
-#let's see what the new EF is, and adjust our controls to reach the right end EF.
-#Pull the VOC EF from WW
-new_ef <- pull_efs_from_ww(scc, throughput_unit = "EACH") %>% filter(pollutant == "VOC") %>% select(TPUPY) %>% unique() %>% head() %>% as.double()*2000
-#get a new end control value. It is simply the difference between our old final value and our new EF.
-new_control <- (old_end_ef/new_ef)
-if(new_control< old_control) {
-  new_control <- old_control
-}
-if(new_control >1){
-  new_control <- 1
-}
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2017, e_year = 2022, end_val = new_control)
+temp_table_controlled <- add_controls(temp_table_project)
 
 # Pt source subtractions
 ## EPA crosswalk lists a lot of potential point to nonpoint, and then project it
