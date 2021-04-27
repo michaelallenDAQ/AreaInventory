@@ -689,7 +689,7 @@ add_controls <- function(raw_proj_data,
               # make sure that our numerators are matching
               if(!all(tolower(missing_efs$EFNumerator) == tolower(missing_efs$EmissionFactorNumeratorUnitofMeasureCode)) | 
                  is.na(all(tolower(missing_efs$EFNumerator) == tolower(missing_efs$EmissionFactorNumeratorUnitofMeasureCode)))) {
-                paste("EFNumerator from controls_ws does not match with EmissionFactorNumeratorUnitofMeasureCode from the ww. We can't compare these emissions factors.")
+                print("EFNumerator from controls_ws does not match with EmissionFactorNumeratorUnitofMeasureCode from the ww. We can't compare these emissions factors.")
                 print(missing_efs %>% 
                         select(FIPS, SCC, pollutant, EFNumerator, EmissionFactorNumeratorUnitofMeasureCode))
                 stop("Try again with a current_efs table or use_ww = FALSE")
@@ -767,7 +767,7 @@ add_controls <- function(raw_proj_data,
           # make sure that our numerators are matching
           if(!all(tolower(current_efs$EFNumerator) == tolower(current_efs$EmissionFactorNumeratorUnitofMeasureCode)) |
                   is.na(all(tolower(current_efs$EFNumerator) == tolower(current_efs$EmissionFactorNumeratorUnitofMeasureCode)))) {
-            paste("EFNumerator from controls_ws does not match with EmissionFactorNumeratorUnitofMeasureCode from the ww. We can't compare these emissions factors.")
+            print("EFNumerator from controls_ws does not match with EmissionFactorNumeratorUnitofMeasureCode from the ww. We can't compare these emissions factors.")
             print(missing_efs %>% 
                     select(FIPS, SCC, pollutant, EFNumerator, EmissionFactorNumeratorUnitofMeasureCode))
             stop("Try again with a current_efs table or use_ww = FALSE")
