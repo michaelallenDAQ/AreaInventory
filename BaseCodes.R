@@ -994,6 +994,11 @@ add_controls <- function(raw_proj_data,
     
   }
   
+  # make the year column into a character in adjusted_proj_data so its the same
+  # format table (same classes for each column) as it was in raw_proj_data
+  adjusted_proj_data$year <- as.character(adjusted_proj_data$year)
+  
+  
   # return the adjusted_proj_data
   return(adjusted_proj_data)
 }
