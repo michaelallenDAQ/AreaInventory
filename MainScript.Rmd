@@ -861,7 +861,7 @@ if(new_control< old_control) {
 if(new_control >1){
   new_control <- 1
 }
-temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2015, e_year = 2020, end_val = new_control)
+temp_table_controlled <- add_manual_controls(raw_proj_data = temp_table_project, sccs = scc, counties = naa_counties, st_year = 2015, e_year = 2020, end_val = new_control)
 
 temp_table_final <- temp_table_controlled
 

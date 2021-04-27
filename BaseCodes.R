@@ -443,7 +443,7 @@ pull_translate_table <- function(pol_ref_path){
 #end_val: Final control value. 0.3 would mean emissions are 70% reduced.
 #pollutants: you can input specific pollutants to control. The default assumption is that
 #  you want to control all of them.
-add_controls <-
+add_manual_controls <-
   function(raw_proj_data, sccs,counties, st_year, e_year,end_val,pollutants = NULL,is_pt_sources = FALSE){
     #we later will filter our list down to only control certain pollutants
     #if we haven't singled out any pollutants, make sure we include everything 
