@@ -482,6 +482,515 @@ add_controls <-
     return(cleaned_projected_data)
   }
 
+#this take in a pollution inventory, and targets an scc with a set of counties.
+#It phases in a control factor to that SCC from a start year up to an end year.
+#start_year: last year where emissions are uncontrolled, at 100% of their values
+#end_year: first year where emission controls are completely phased in.
+#end_val: Final control value. 0.3 would mean emissions are 70% reduced.
+#pollutants: you can input specific pollutants to control. The default assumption is that
+#  you want to control all of them.
+
+
+#' Add controls
+#' 
+#' Adjust emissions estimates with applicable controls
+#'
+#' @param raw_proj_data data frame containing columns for FIPS, SCC, year,
+#' pollutant, and TPY
+#' @param controls_ws controls table
+#' @param use_ww Default is TRUE. This is only relevant if any of the controls
+#' applicable to sccs in raw_proj_data are EFDependent. If so, and we want to
+#' pull the default emissions factors from WW, leave this as TRUE. If FALSE,
+#' we will only compare EFs that are listed in a table supplied to the
+#' current_efs parameter. If the EF is not listed in the table supplied to
+#' current_efs, we will assume that the current EF is equal to the original EF
+#' and give a warning noting which EFs we were unable to compare with current 
+#' EFs.
+#' @param current_efs (optional) This is only relevant if any of the controls 
+#' applicable to sccs in raw_proj_data are EFDependent. If so, and we want to 
+#' manually identify the emissions factors we currently use, so input a table 
+#' here containing a FIPS, SCC, pollutant, EmissionsFactor, and EFNumerator
+#' column. FIPS is the FIPS code of the county with the unique emissions factor,
+#' SCC is the SCC code for the control, pollutant is the pollutant the control
+#' applies to, emissionsfactor is the emissionsfactor value, and EFNumerator is
+#' the numerator for the emissions factor (likely one of LB or TON).
+#' It is not necessary to identify the emissions factors for every scc and
+#' pollutant affected by a control in raw_proj_data; if it is not identified
+#' here, and use_ww = TRUE, we will pull emissions factors not identified here
+#' from the ww. The emissions factors identified in the table will be used as
+#' baseline emissions factors and compared to the emissions factors in the
+#' Controls table.
+#' @param baseline_year (optional) This is only relevant if any of the controls
+#' are TimeDependent. Year that we should treat as the baseline
+#' for emissions in the raw_proj_data (we assume every other year, therefore, is
+#' a projection from the baseline_year); if NULL, we assume that the min year
+#' in raw_proj_data is the baseline_year
+#'
+#' @return adjusted proj_data data frame with applicable control percent
+#' reductions added
+#' @examples
+#' scc <- 2415000000
+#' temp_table <- pull_baseline_from_ww(scc = scc)
+#' temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
+#' temp_table_controlled <- add_controls(temp_table_project)
+#' 
+#' scc <- 2425000000
+#' temp_table <- pull_baseline_from_ww(scc = scc)
+#' ww_ef <- pull_efs_from_ww(scc = scc, throughput_unit = 'EACH')
+#' ww_ef <- ww_ef %>% filter(pollutant == 'VOC') %>% select(TPUPY)
+#' ww_ef <- ww_ef[[1,1]] * 2000
+#' temp_table$TPY <- temp_table$TPY*(201/ww_ef)
+#' temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ManEmp"]])
+#' graphic_arts_efs <- data.frame(FIPS = unique(temp_table$FIPS), SCC = scc, pollutant = "VOC", EmissionsFactor = 201, EFNumerator = "lb")
+#' temp_table_controlled <- add_controls(raw_proj_data = temp_table_project, current_efs = graphic_arts_efs)
+add_controls <- function(raw_proj_data,
+                          controls_ws = controls,
+                          use_ww = TRUE,
+                          current_efs = NULL, 
+                          baseline_year = NULL){
+  
+  # adjust our controls_ws to have a row for each county
+  controls_to_apply <- separate_rows(controls_ws, County, sep = ", ")
+  
+  # add a column onto our controls_to_apply function for the FIPS codes,
+  # we'll use this to match with the data in raw_proj_data
+  controls_to_apply$FIPS <- sapply(controls_to_apply$County, county_to_fip)
+  
+  # What unique combos of FIPS, sccs, and pollutants do we have in raw_proj_data?
+  unique_combos <- raw_proj_data %>% 
+    group_by(FIPS, SCC, pollutant) %>%
+    summarize(.groups = "drop")
+  
+  # only save the unique_combos that show up in the controls_to_apply function,
+  # these are the only ones that we'll be working with
+  controls_to_apply <- merge(controls_to_apply, unique_combos, 
+                             by.x = c("FIPS", "SCC", "PollutantCode"),
+                             by.y = c("FIPS", "SCC", "pollutant"))
+
+  # is our controls_to_apply table 0 rows? this would imply that there
+  # are no controls to apply for the SCCs in raw_proj_data
+  if(nrow(controls_to_apply) == 0) {
+    stop(paste0("There are no controls to apply for ", 
+               paste(scc, collapse = ", "), "."))
+ 
+  # if not, we've got to do stuff!
+  } else {
+    
+    # create a data frame called adjusted_proj_data that is raw_proj_data
+    # this is what we'll modify & return at the end of the function
+    adjusted_proj_data <- raw_proj_data
+    
+    # convert the year column in adjusted_proj_data to a numeric
+    adjusted_proj_data$year <- as.numeric(adjusted_proj_data$year)
+    
+    # check if any of our controls are time dependent
+    if(any(controls_to_apply$TimeDependent)) {
+      
+      print("Some or all of the controls relevant to your data are time dependent. We will be adjusting the relevant controls accordingly.")
+      
+      # if our baseline_year is NULL, we're going to pull the min baseline_year
+      # from adjusted_proj_data and use that as our baseline_year
+      if(is.null(baseline_year)) {
+        baseline_year <- min(adjusted_proj_data$year)
+      }
+    }
+    
+    # rename the PollutantCode column in controls_to_apply to pollutant to
+    # match with the name that it has in adjusted_proj_data, so that it is
+    # easier to merge these two data frames
+    controls_to_apply <- rename(controls_to_apply, pollutant = PollutantCode)
+    
+    # Are any of our controls to apply EFDependent? If so, we want to make
+    # a current_efs table that we can use to compare current_efs with old efs
+    # (old efs are stored in the controls ws)
+    if(any(controls_to_apply$EFDependent)) {
+      
+      print("Some or all of the controls relevant to your data are emissions factor dependent. We will be adjusting the relevant controls accordingly.")
+      
+      # What are they?
+      ef_controls <- controls_to_apply %>%
+        filter(EFDependent == TRUE)
+      
+      # Add an EFNumerator column so we can make sure our EFs are still in the
+      # same unit
+      ef_controls$EFNumerator <- sapply(ef_controls$EFUnit, function(x) strsplit(x, "/")[[1]][1])
+      
+      # we only need to have the columns that are relevant for making our
+      # current_efs table
+      ef_controls <- ef_controls %>%
+        select(FIPS, SCC, pollutant, EmissionsFactor, EFNumerator)
+      
+      # only save unique ones (this will only be relevant when we have
+      # multiple controls that apply to the same FIPS, scc, and pollutant
+      # that are EFDependent)
+      ef_controls <- unique(ef_controls)
+      
+      # Was any current_efs table supplied to the function?
+      # We normally just fall back on the default WW, so we really only use this
+      # for graphic arts and dry cleaning (and, starting with the 2020 NEI, we
+      # should start using the default values for those, and won't need this
+      # option anymore)
+      if(!is.null(current_efs)) {
+        
+        # Make sure our current_efs table has the appropriate columns/column
+        # names, if not, we'll stop the function (below)
+        if(!all(c("FIPS", "SCC", "pollutant", "EmissionsFactor", "EFNumerator") %in% colnames(current_efs))) {
+          
+          stop("The current_efs data is not in the correct format. It needs to have a 'FIPS', 'SCC', 'pollutant', and 'EmissionsFactor' column.") }
+        
+        else {
+          # check to make sure that our current_efs and ef_controls have the same
+          # numerators. If the supplied current_efs has an EF that is not used,
+          # we can just ignore it.
+          test_numerator <- merge(ef_controls, current_efs, by = c("FIPS", "SCC", "pollutant"), all.y = TRUE)
+          
+          test_numerator$MatchingNumerators <- ifelse(tolower(test_numerator$EFNumerator.x) == tolower(test_numerator$EFNumerator.y), TRUE, FALSE)
+         
+          # if not, stop the function 
+          if(!all(test_numerator$MatchingNumerators, na.rm = TRUE)) {
+            print("EFNumerator from controls_ws does not match with EFNumerator from the current_efs table. We can't compare these emissions factors.")
+            print(test_numerator %>% 
+                    select(FIPS, SCC, pollutant, EFNumerator.x, EFNumerator.y) %>% 
+                    rename("EFNumerator.controls_ws" = EFNumerator.x,
+                           "EFNumerator.current_efs" = EFNumerator.y))
+            stop("Try again with current_efs that have matching numerators with those in the controls_ws")
+          }
+          
+          # if use_ww == TRUE, we want to gapfill any emissions factors that
+          # are not supplied in the current_efs table with the ones from WW
+          if(use_ww == TRUE) {
+            # which efs are not in the current_efs table?
+            missing_efs <- ef_controls %>%
+              select(FIPS, SCC, pollutant, EFNumerator)
+            
+            # merge those with the current efs table. The ones that are missing
+            # will have "NA" for the EmissionsFactor column
+            missing_efs <- merge(missing_efs, current_efs, by = c("FIPS", "SCC", "pollutant", "EFNumerator"), all = TRUE)
+            
+            # only save the missing efs (those that are NA for EmissionsFactor)
+            missing_efs <- missing_efs %>%
+              filter(is.na(EmissionsFactor))
+            
+            # if we have any missing_efs, do this
+            if(nrow(missing_efs) > 0) {
+              # get emission factors from the wagon wheel
+              ww_efs <- ww %>%
+                filter(StateAndCountyFIPSCode %in% missing_efs$FIPS,
+                       SourceClassificationCode %in% missing_efs$SCC,
+                       PollutantCode %in% missing_efs$pollutant) %>%
+                rename(FIPS = StateAndCountyFIPSCode,
+                       SCC = SourceClassificationCode,
+                       pollutant = PollutantCode) %>%
+                select(FIPS, SCC, pollutant, EmissionFactor, EmissionFactorNumeratorUnitofMeasureCode)
+              
+              # merge them onto our missing_efs data frame
+              missing_efs <- merge(missing_efs, ww_efs, by = c("FIPS", "SCC", "pollutant"), all = TRUE)
+              
+              # make sure that our numerators are matching
+              if(!all(tolower(missing_efs$EFNumerator) == tolower(missing_efs$EmissionFactorNumeratorUnitofMeasureCode))) {
+                paste("EFNumerator from controls_ws does not match with EmissionFactorNumeratorUnitofMeasureCode from the ww. We can't compare these emissions factors.")
+                print(missing_efs %>% 
+                        select(FIPS, SCC, pollutant, EFNumerator, EmissionFactorNumeratorUnitofMeasureCode))
+                stop("Try again with a current_efs table or use_ww = FALSE")
+              }
+              
+              # replace the values in EmissionsFactor with the values from 
+              # Wagon Wheel (in the EmissionFactor column) and delete the
+              # EmissionFactor column
+              missing_efs$EmissionsFactor <- missing_efs$EmissionFactor
+              
+              missing_efs <- select(missing_efs, -EmissionFactor, -EmissionFactorNumeratorUnitofMeasureCode)
+              
+              # Give a notice regarding the emissions factors we're pulling from
+              # the Wagon Wheel.
+              print("These emission factors were not in the current_efs table. We pulled them from Wagon Wheel.")
+              print(missing_efs)
+              
+              # Now bind the missing_efs onto our current_efs.
+              current_efs <- rbind(current_efs, missing_efs)
+            }
+            
+            # Now, if we do not want to gapfill emissions factors from the Wagon Wheel
+            # (use_ww == FALSE), but we do have some emissions factors supplied in 
+            # current_efs, do this
+            
+            # This probably will never happen
+            # Unless we are comparing to old inventory methods
+          } else {
+            # which efs are we missing from current_efs?
+            missing_efs <- ef_controls %>%
+              select(FIPS, SCC, pollutant, EFNumerator)
+            
+            missing_efs <- merge(missing_efs, current_efs, by = c("FIPS", "SCC", "pollutant", "EFNumerator"), all = TRUE)
+            
+            missing_efs <- missing_efs %>%
+              filter(is.na(EmissionsFactor)) %>%
+              select(-EmissionsFactor)
+            
+            # okay, so we're just going to give those missing efs the emissions
+            # factor from our controls table and print a warning.
+            efs_from_controls <- ef_controls %>%
+              select(FIPS, SCC, pollutant, EmissionsFactor, EFNumerator)
+            
+            missing_efs <- merge(missing_efs, efs_from_controls, by = c("FIPS", "SCC", "pollutant", "EFNumerator"), all.x = TRUE)
+            
+            print("These emission factors were not in the current_efs table. Since use_ww == FALSE, we are just setting them equal to the emissions factors from the Controls table.")
+            print(missing_efs)
+            
+            current_efs <- rbind(current_efs, missing_efs)
+          }
+        }
+        
+        # Now, if no current_efs table is supplied
+      } else {
+        
+        # most common scenario
+        if(use_ww == TRUE) {
+          # create a current_efs table
+          current_efs <- ef_controls %>%
+            select(FIPS, SCC, pollutant, EmissionsFactor, EFNumerator)
+          
+          # get emission factors from the wagon wheel
+          ww_efs <- ww %>%
+            filter(StateAndCountyFIPSCode %in% current_efs$FIPS,
+                   SourceClassificationCode %in% current_efs$SCC,
+                   PollutantCode %in% current_efs$pollutant) %>%
+            rename(FIPS = StateAndCountyFIPSCode,
+                   SCC = SourceClassificationCode,
+                   pollutant = PollutantCode) %>%
+            select(FIPS, SCC, pollutant, EmissionFactor, EmissionFactorNumeratorUnitofMeasureCode)
+          
+          # merge ww_efs onto our current_efs data frame
+          current_efs <- merge(current_efs, ww_efs, by = c("FIPS", "SCC", "pollutant"), all = TRUE)
+          
+          # make sure that our numerators are matching
+          if(!all(tolower(current_efs$EFNumerator) == tolower(current_efs$EmissionFactorNumeratorUnitofMeasureCode))) {
+            paste("EFNumerator from controls_ws does not match with EmissionFactorNumeratorUnitofMeasureCode from the ww. We can't compare these emissions factors.")
+            print(missing_efs %>% 
+                    select(FIPS, SCC, pollutant, EFNumerator, EmissionFactorNumeratorUnitofMeasureCode))
+            stop("Try again with a current_efs table or use_ww = FALSE")
+          }
+          
+          # replace the values in EmissionsFactor with the values from 
+          # Wagon Wheel (in the EmissionFactor column) and delete the
+          # EmissionFactor column
+          current_efs$EmissionsFactor <- current_efs$EmissionFactor
+          
+          current_efs <- select(current_efs, -EmissionFactor, -EmissionFactorNumeratorUnitofMeasureCode)
+
+          # Give a notice regarding the emissions factors we're pulling from
+          # the Wagon Wheel.
+          print("We pulled these emission factors from Wagon Wheel.")
+          print(current_efs)
+          
+          # # if no current_efs are supplied, and use_ww = FALSE, we're just going to
+          # assume that we want to use the emissions factors from the controls table
+          # as our baseline emissions factor (i.e., no difference between them, so
+          # we won't actually do any adjustments due to different emissions factors)
+        } else {
+          current_efs <- ef_controls %>%
+            select(FIPS, SCC, pollutant, EmissionsFactor, EFNumerator)
+          
+          print("No emissions factors were supplied to current_efs and use_ww = FALSE, so we are going to use the emissions factors from the Controls table. This means that, though there are controls to be applied that are emissions factor dependent, we are going to assume the emissions factors have not changed since the control was created.")
+          print("These are the emissions factors that are emissions factor dependent. We are assuming that the baseline emissions factor is the same as what it was when the control was created.")
+          print(current_efs)
+        }
+      }
+      
+      # double check that there are no missing emissions factors
+      test_missing_efs <- merge(ef_controls, current_efs, by = c("FIPS", "SCC", "pollutant"), all.x = TRUE)
+      
+      if(any(is.na(test_missing_efs$EmissionsFactor.y))) {
+        print("There is one or more missing emissions factors in the current_efs table. We can't compare with current emissions factors. Stopping the function.")
+        print(current_efs)
+        
+        stop("Correct the error with a missing emissions factor. This is likely due to the emissions factor not existing in the wagon wheel. You may need to supply this emissions factor, or try use_ww = FALSE.")
+      }
+    }
+    
+    # For our controls_to_apply, how many different FIPS, SCC, and
+    # pollutant combos do we have? We need to make decisions to adjust TPY based
+    # on these
+    unique_combos <- controls_to_apply %>% 
+      group_by(FIPS, SCC, pollutant) %>%
+      summarize(.groups = "drop")
+    
+    # loop over every row in our unique_combos
+    for(i in 1:nrow(unique_combos)) {
+      # get the matching pollutant & county from the adjusted_proj_data table
+      proj_obs <- adjusted_proj_data %>%
+        filter(FIPS == unique_combos$FIPS[i],
+               SCC == unique_combos$SCC[i],
+               pollutant == unique_combos$pollutant[i])
+      
+      # and do the same for the controls_to_apply
+      relevant_controls <- controls_to_apply %>%
+        filter(FIPS == unique_combos$FIPS[i],
+               SCC == unique_combos$SCC[i],
+               pollutant == unique_combos$pollutant[i])
+      
+      # now, we need to loop over relevant_controls to adjust the ControlPct
+      # make a list that can hold the ControlPcts we need to adjust for each
+      # applicable control
+      control_pct <- list()
+      
+      for(j in 1:nrow(relevant_controls)) {
+        # get a control_pct table for our controls_to_apply that will identify
+        # how much of our control we should apply over time
+        # our table will start one year before our start year (to have a starting
+        # ControlPct of 1)
+        control_pct[j] <- list(data.frame(year = seq(relevant_controls$PhaseInStartYear[j] - 1, 
+                                             relevant_controls$PhaseInEndYear[j], 
+                                             by = 1), 
+                                  # calculate what control pct we'll apply
+                                  # each year
+                                  ControlPct = seq(1, relevant_controls$ControlPct[j], 
+                                                   length.out = (relevant_controls$PhaseInEndYear[j] - 
+                                                                   (relevant_controls$PhaseInStartYear[j] - 2))),
+                                  PctAppliesTo = relevant_controls$PctAppliesTo[j]))
+        
+        # now we do our checks to adjust the ControlPct we'll use
+        # if our control is TimeDependent, we may need to adjust it
+        if(relevant_controls$TimeDependent[j]) {
+          # if our baseline year is after the phase in end year, then our
+          # controlpct should become 1, since our controls have already
+          # been fully phased-in
+          # but, we also need to increase emissions estimates in the past
+          # in order to account for the times when our controls were not
+          # fully phased-in
+          if(baseline_year >= relevant_controls$PhaseInEndYear[j]) {
+            baseline_pct <- relevant_controls$ControlPct[j]
+            
+            # okay, the phaseinendyear needs to become "100" now. We should
+            # increase emissions estimates for all years prior to this
+            control_pct[[j]]$ControlPct <- control_pct[[j]]$ControlPct / baseline_pct
+            
+            # if our baseline year is after the phaseinstartyear, but not
+            # after the phaseinendyear, we've got to do some adjusting
+          } else if(baseline_year >= relevant_controls$PhaseInStartYear[j]) {
+            
+            # what is our expected reduction at the baseline_year?
+            baseline_pct <- (filter(control_pct[[j]], year == baseline_year))$ControlPct
+            
+            # okay, the baseline_year needs to become "100" now. We should
+            # increase emissions estimates for years prior to baseline_year, 
+            # and decrease emissions estimates for years after baseline_year
+            control_pct[[j]]$ControlPct <- control_pct[[j]]$ControlPct / baseline_pct
+          }
+          # if neither of those conditions hold (therefore, the baseline_year is
+          # less than the PhaseInStartYear), then we don't do anything with
+          # our control_pct
+        }
+        
+        # now we need to check if our control is EFDependent, if it is, we may
+        # need to adjust it if the current EF is different than the historic EF
+        if(relevant_controls$EFDependent[j]) {
+          old_ef <- relevant_controls$EmissionsFactor[j] * relevant_controls$PctAppliesTo[j]
+          
+          old_end_ef <- old_ef * relevant_controls$ControlPct[j]
+         
+          new_ef <- (current_efs %>%
+            filter(FIPS == relevant_controls$FIPS[j],
+                   SCC == relevant_controls$SCC[j],
+                   pollutant == relevant_controls$pollutant[j]))$EmissionsFactor *
+            relevant_controls$PctAppliesTo[j]
+          
+          new_end_ef <- new_ef * relevant_controls$ControlPct[j]
+          
+          if(new_ef >= old_ef) {
+            # do nothing, add the same control percent as always
+          } else if(new_ef < old_end_ef) {
+            # we should stop adding any control
+            control_pct[[j]]$ControlPct <- 1
+          } else {
+            # adjust the control we apply, so that our new_end_ef will be equal
+            # to our old_end_ef
+            new_control_pct <- old_end_ef/new_ef
+            
+            control_pct[[j]]$ControlPct <- seq(1, new_control_pct,
+                                             length.out = (relevant_controls$PhaseInEndYear[j] - 
+                                                             (relevant_controls$PhaseInStartYear[j] - 2)))
+          }
+        }
+        
+        # Now we can apply the control to adjusted_proj_data for our proj_obs
+        
+        # first, adjust our control_pct table so we can account for any year we
+        # might see in our raw_proj_data (i.e., backproject the relevant
+        # ControlPct to 1900 and forward project to 2100)
+        # create a data frame that holds years from 1900 to the min year
+        # we have in the control_pct table and from the max year we have in the
+        # table to 2100
+        pct_buffer <- data.frame(year = c(seq(1900, min(control_pct[[j]]$year) - 1, by = 1), 
+                                          seq(max(control_pct[[j]]$year) + 1, 2100, by = 1)))
+        
+        # add a column for ControlPct, assign it so that any year prior to the
+        # min year is equal to the ControlPct for the min year and so that any
+        # year after the max year is equal to the ControlPct for the max year
+        # do the same for PctAppliesTo
+        pct_buffer <- pct_buffer %>%
+          mutate(ControlPct = ifelse(year < min(control_pct[[j]]$year), 
+                                      control_pct[[j]][control_pct[[j]]$year == min(control_pct[[j]]$year),]$ControlPct,
+                                      control_pct[[j]][control_pct[[j]]$year == max(control_pct[[j]]$year),]$ControlPct),
+                 PctAppliesTo = ifelse(year < min(control_pct[[j]]$year), 
+                                     control_pct[[j]][control_pct[[j]]$year == min(control_pct[[j]]$year),]$PctAppliesTo,
+                                     control_pct[[j]][control_pct[[j]]$year == max(control_pct[[j]]$year),]$PctAppliesTo))
+      
+        
+        # now we need to rbind the pct_buffer onto our our control_pct table
+        control_pct[[j]] <- rbind(control_pct[[j]], pct_buffer)
+      }
+      
+      # now we need to make a final control_pct data frame that calculates
+      # the actual control we need to apply in each year based on the info
+      # stored in the control_pct elements
+      
+      # let's start by rbinding every element
+      control_pct <- do.call(rbind, control_pct)
+      
+      # now, to calculate the actual control applied, we need to add the
+      # controlpct*pctapplies to + 1*(1-pctappliesto)
+      # for example, if pctappliesto is only 0.6, we need to do controlpct*
+      # 0.6 + 0.4
+      # if we have two controls, one being controlpct1 to 0.6 and one being 
+      # controlpct2 to 0.4, we need to do controlpct1*0.6 + controlpct2*0.4
+      control_pct <- control_pct %>%
+        group_by(year) %>%
+        summarize(ControlPct = ifelse(sum(PctAppliesTo) == 1,
+                                      sum(ControlPct*PctAppliesTo),
+                                      sum(ControlPct*PctAppliesTo + (1-sum(PctAppliesTo)))),
+                  .groups = "drop")
+
+      # now we can adjust those columns in proj_obs by the control_pct
+      proj_obs <- proj_obs %>%
+        left_join(control_pct, by = "year") %>%
+        mutate(TPY = TPY*ControlPct) %>%
+        select(-ControlPct)
+      
+      # now, we want to replace the columns in adjusted_proj_data by those
+      # that exist in proj_obs
+      # rename TPY to TPY_new in proj_obs
+      proj_obs <- rename(proj_obs, TPY_new = TPY)
+      
+      # merge the proj_obs table onto the adjusted_proj_data table
+      adjusted_proj_data <- merge(adjusted_proj_data, proj_obs, 
+                                  by = c("FIPS", "SCC", "year", "pollutant"),
+                                  all = TRUE)
+      
+      # TPY_new will only exist for the rows that were in proj_obs
+      # replace TPY with TPY_new and then delete TPY_new from the adjusted
+      # proj data table
+      adjusted_proj_data <- adjusted_proj_data %>%
+        mutate(TPY = ifelse(is.na(TPY_new), TPY, TPY_new)) %>%
+        select(-TPY_new)
+    }
+    
+  }
+  
+  # return the adjusted_proj_data
+  return(adjusted_proj_data)
+}
+
 #this function takes in a table of EFs for an SCC, and combines it with 
 #  reference data, like population or manufacturing employment, and it creates
 #  an emissions table for that with TPY values.
