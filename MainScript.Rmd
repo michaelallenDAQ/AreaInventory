@@ -795,12 +795,20 @@ scc <- 2461100000
 pollutants <- c('VOC')
 TPPPY <-(9.299E-8)
 efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+temp_table_project <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt source
 #assumed rule 307-304 for solvent cleaning applies to this SCC.
 # ends up with 28% reduction over 2017-2022
-temp_table <- add_controls(temp_table,scc,naa_counties,2017,2022,0.72)
-final_table <- rbind(final_table, temp_table)
+# we need to input a current_efs table to the controls function since these emission factors don't exist in the Wagon Wheel.
+tank_efs <- efs_table %>%
+  mutate(EmissionsFactor = TPUPY*2000,
+         EFNumerator = "LB") %>%
+  rename(FIPS = county) %>%
+  select(-TPUPY)
+
+# now run the function. we supplied all the needed emissions factors for adding controls in the current_efs table. we'll just set use_ww = FALSE anyway since this SCC doesn't exist in the WW.
+temp_table_controlled <- add_controls(temp_table_project, current_efs = tank_efs, use_ww = FALSE)
+final_table <- rbind(final_table, temp_table_controlled)
 ```
 
 
