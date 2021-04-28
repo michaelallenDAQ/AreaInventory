@@ -839,11 +839,15 @@ add_controls <- function(raw_proj_data,
       # check if we have multiple rows where relevant_controls is the same rule
       # this might imply different throughput (i.e. 2311010000). we want to
       # apply the rule only once.
+      # basically, if everything is the same except the emissionsfactor, they
+      # are duplicate.
       test_duplicate_controls <- relevant_controls %>%
-        group_by(FIPS, SCC, pollutant, YearFinalized, County, ControlPct, PctAppliesTo, PhaseInStartYear, PhaseInEndYear, EFDependent, RuleNumber) %>%
+        group_by(FIPS, SCC, pollutant, YearFinalized, County, ControlPct, PctAppliesTo, PhaseInStartYear, PhaseInEndYear, EFDependent, TimeDependent, RuleNumber) %>%
         summarize(.groups = "drop")
       
-      if(nrow(test_duplicate_controls) < nrow(relevant_controls)) {
+      # make sure its not EFDependent, otherwise the code will break when we
+      # get there.
+      if(nrow(test_duplicate_controls) < nrow(relevant_controls) && all(test_duplicate_controls$EFDependent == FALSE)) {
         relevant_controls <- test_duplicate_controls
       }
       
@@ -962,6 +966,7 @@ add_controls <- function(raw_proj_data,
       # now we need to make a final control_pct data frame that calculates
       # the actual control we need to apply in each year based on the info
       # stored in the control_pct elements
+      control_pct <- do.call(rbind, control_pct)
       
       # now, to calculate the actual control applied, we need to add the
       # controlpct*pctapplies to + 1*(1-pctappliesto)
