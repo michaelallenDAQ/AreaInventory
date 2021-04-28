@@ -981,9 +981,9 @@ add_controls <- function(raw_proj_data,
                                       sum(ControlPct*PctAppliesTo + (1-sum(PctAppliesTo)))),
                   .groups = "drop") 
       
-      # check to make sure that our PctAppliesTo is not > 1
-      if(any(abs(control_pct$ControlPct) > 1)) {
-        print("Applicable rules result in a ControlPct not between 0 and 1. This shoudn't happen.")
+      # check to make sure that our ControlPct is not negative
+      if(any(control_pct$PctAppliesTo < 0)) {
+        print("Applicable rules result in a negative ControlPct. This shoudn't happen.")
         print(control_pct)
         
         stop("Fix this.")
