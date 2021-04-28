@@ -836,6 +836,17 @@ add_controls <- function(raw_proj_data,
                SCC == unique_combos$SCC[i],
                pollutant == unique_combos$pollutant[i])
       
+      # check if we have multiple rows where relevant_controls is the same rule
+      # this might imply different throughput (i.e. 2311010000). we want to
+      # apply the rule only once.
+      test_duplicate_controls <- relevant_controls %>%
+        group_by(FIPS, SCC, pollutant, YearFinalized, County, ControlPct, PctAppliesTo, PhaseInStartYear, PhaseInEndYear, EFDependent, RuleNumber) %>%
+        summarize(.groups = "drop")
+      
+      if(nrow(test_duplicate_controls) < nrow(relevant_controls)) {
+        relevant_controls <- test_duplicate_controls
+      }
+      
       # now, we need to loop over relevant_controls to adjust the ControlPct
       # make a list that can hold the ControlPcts we need to adjust for each
       # applicable control
@@ -951,18 +962,6 @@ add_controls <- function(raw_proj_data,
       # now we need to make a final control_pct data frame that calculates
       # the actual control we need to apply in each year based on the info
       # stored in the control_pct elements
-      
-      # check if all the lists are equal. If so, this is probably due to the
-      # throughput being duplicated (i.e. 2311010000) so we should really only
-      # save one of them them
-      same_pcts <- function(x) all(duplicated.default(x)[-1])
-      
-      if(same_pcts(control_pct)) {
-        control_pct <- control_pct[[1]]
-      } else {
-        # rbind the lists
-        control_pct <- do.call(rbind, control_pct) 
-      }
       
       # now, to calculate the actual control applied, we need to add the
       # controlpct*pctapplies to + 1*(1-pctappliesto)
