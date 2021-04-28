@@ -994,6 +994,38 @@ add_controls <- function(raw_proj_data,
     
   }
   
+  # add a check for if controls_to_apply includes PM25 but not PM10
+  if(any(str_detect(controls_to_apply$pollutant, "PM25")) && 
+     !any(str_detect(controls_to_apply$pollutant, "PM10"))) {
+    adjust_pm <- merge(adjusted_proj_data, raw_proj_data,
+                                by = c("FIPS", "SCC", "year", "pollutant"),
+                                all = T)
+    
+    adjust_pm$PMPRI <- ifelse(adjust_pm$pollutant %in% c("PM25-PRI", "PM10-PRI"), TRUE, FALSE)
+    
+    adjust_pm$PMFIL <- ifelse(adjust_pm$pollutant %in% c("PM25-FIL", "PM10-FIL"), TRUE, FALSE)
+    
+    adjust_pm_diff <- adjust_pm %>% 
+      filter(pollutant %in% c("PM25-PRI", "PM25-FIL"))
+    
+    adjust_pm_diff$TPY.diff <- adjust_pm_diff$TPY.y - adjust_pm_diff$TPY.x
+    
+    adjust_pm_diff <- select(adjust_pm_diff, -pollutant, -TPY.x, -TPY.y)
+    
+    adjust_pm <- merge(adjust_pm, adjust_pm_diff,
+                       by = c("FIPS", "SCC", "year", "PMPRI", "PMFIL"),
+                       all = T)
+    
+    adjust_pm$TPY.new <- ifelse(adjust_pm$pollutant %in% c("PM10-PRI", "PM10-FIL"),
+                              adjust_pm$TPY.x-adjust_pm$TPY.diff,
+                              adjust_pm$TPY.x)
+    
+    adjust_pm$TPY <- adjust_pm$TPY.new
+    
+    adjusted_proj_data <- adjust_pm %>%
+      select(FIPS, SCC, year, pollutant, TPY)
+  }
+  
   # make the year column into a character in adjusted_proj_data so its the same
   # format table (same classes for each column) as it was in raw_proj_data
   adjusted_proj_data$year <- as.character(adjusted_proj_data$year)
