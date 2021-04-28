@@ -952,8 +952,17 @@ add_controls <- function(raw_proj_data,
       # the actual control we need to apply in each year based on the info
       # stored in the control_pct elements
       
-      # let's start by rbinding every element
-      control_pct <- do.call(rbind, control_pct)
+      # check if all the lists are equal. If so, this is probably due to the
+      # throughput being duplicated (i.e. 2311010000) so we should really only
+      # save one of them them
+      same_pcts <- function(x) all(duplicated.default(x)[-1])
+      
+      if(same_pcts(control_pct)) {
+        control_pct <- control_pct[[1]]
+      } else {
+        # rbind the lists
+        control_pct <- do.call(rbind, control_pct) 
+      }
       
       # now, to calculate the actual control applied, we need to add the
       # controlpct*pctapplies to + 1*(1-pctappliesto)
@@ -966,7 +975,15 @@ add_controls <- function(raw_proj_data,
         summarize(ControlPct = ifelse(sum(PctAppliesTo) == 1,
                                       sum(ControlPct*PctAppliesTo),
                                       sum(ControlPct*PctAppliesTo + (1-sum(PctAppliesTo)))),
-                  .groups = "drop")
+                  .groups = "drop") 
+      
+      # check to make sure that our PctAppliesTo is not > 1
+      if(any(abs(control_pct$ControlPct) > 1)) {
+        print("Applicable rules result in a ControlPct not between 0 and 1. This shoudn't happen.")
+        print(control_pct)
+        
+        stop("Fix this.")
+      }
 
       # now we can adjust those columns in proj_obs by the control_pct
       proj_obs <- proj_obs %>%
