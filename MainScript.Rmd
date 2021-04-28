@@ -1727,17 +1727,12 @@ final_table <- rbind(final_table, temp_table)
 scc <- 2302002100 
 temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-#add controls
-#Controls began in 2016 and are provided by Utah DAQ's Joel Karmazyn based on existing rules.
-#Rule 370-303 has a 76% reduction in emissions for VOC and PM25. For This 
-#  specific SCC, PM25 ~= PM10, so I will be controlling it with the same factor.
-#  that is an approximation though.
-#The workbook only controlled VOC/HAPS, but I added PM because the rule language
-#  suggests PM is being controlled.
-#for this SCC, the only pollutant we do not target is CO
-target_pollutants <- sort(unique(temp_table$pollutant))
-target_pollutants <- target_pollutants[!target_pollutants %in% 'CO']
-temp_table <- add_controls(temp_table,scc,naa_counties,2015,2016,0.24,pollutants = target_pollutants )
+# add controls
+# Controls began in 2016 and are provided by Utah DAQ's Joel Karmazyn based on existing rules.
+# Rule 370-303 has a 76% reduction in emissions for VOC and PM25.
+# The workbook only controlled VOC/HAPS, but I added PM because the rule language
+# suggests PM is being controlled.
+temp_table <- add_controls(temp_table)
 #no pt subs?
 final_table <- rbind(final_table, temp_table)
 
@@ -1856,10 +1851,7 @@ temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
 #  except for Salt Lake, which we assume 100% compliance.
 #from our rule website, it looks like the rule was implemented late 2014. 
 #  (It's not in the normal control TSD). I'll assume 2015 was fully implemented.
-counties <- seq.int(49001,49057,2)
-temp_table  <- add_controls(temp_table,scc,counties,st_year = 2014,e_year = 2015,0.2)
-#then do extra control for SLC
-temp_table  <- add_controls(temp_table,scc,49035,st_year = 2014,e_year = 2015,0.0)
+temp_table  <- add_controls(temp_table)
 #no pt subs. This is like, burning residential stuff. Not in permits
 final_table <- rbind(final_table,temp_table)
 
@@ -1883,14 +1875,9 @@ temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #  assume participating counties have a 80% control.
 #  Rule 202 was implemented late 2014 I believe, so assume fully phased in by 2015.
 #NOTE: the number of participating counties could have changed since this was updated.
-counties <- c(49001,49003,49005,49007,
-              49011,49013,49015,49021,
-              49023,49043,49045,49047,
-              49049,49053,49055,49057)
-temp_table  <- add_controls(temp_table,scc,counties,st_year = 2014,e_year = 2015,0.2)
 #  Salt Lake County's control was raised to 100% due to their ordinance 9.24.140 
 #  and 9.24.150 banning open burning 
-temp_table  <- add_controls(temp_table,scc,49035,st_year = 2014,e_year = 2015,0.0)
+temp_table  <- add_controls(temp_table)
 #no pt subs
 final_table <- rbind(final_table,temp_table)
 
@@ -1913,14 +1900,9 @@ temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #  assume participating counties have a 80% control.
 #  Rule 202 was implemented late 2014 I believe, so assume fully phased in by 2015.
 #NOTE: the number of participating counties could have changed since this was updated.
-counties <- c(49001,49003,49005,49007,
-              49011,49013,49015,49021,
-              49023,49043,49045,49047,
-              49049,49053,49055,49057)
-temp_table  <- add_controls(temp_table,scc,counties,st_year = 2014,e_year = 2015,0.2)
 #  Salt Lake County's control was raised to 100% due to their ordinance 9.24.140 
 #  and 9.24.150 banning open burning 
-temp_table  <- add_controls(temp_table,scc,49035,st_year = 2014,e_year = 2015,0.0)
+temp_table  <- add_controls(temp_table)
 #no pt subs
 final_table <- rbind(final_table,temp_table)
 
