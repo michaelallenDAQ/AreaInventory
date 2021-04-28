@@ -997,31 +997,45 @@ add_controls <- function(raw_proj_data,
   # add a check for if controls_to_apply includes PM25 but not PM10
   if(any(str_detect(controls_to_apply$pollutant, "PM25")) && 
      !any(str_detect(controls_to_apply$pollutant, "PM10"))) {
+    
+    # if so, create a new table that compares adjusted data with raw data
     adjust_pm <- merge(adjusted_proj_data, raw_proj_data,
                                 by = c("FIPS", "SCC", "year", "pollutant"),
                                 all = T)
     
+    # add a column to specify if the pollutant is PMPRI
     adjust_pm$PMPRI <- ifelse(adjust_pm$pollutant %in% c("PM25-PRI", "PM10-PRI"), TRUE, FALSE)
     
+    # add a column to specify if the pollutant is PM25
     adjust_pm$PMFIL <- ifelse(adjust_pm$pollutant %in% c("PM25-FIL", "PM10-FIL"), TRUE, FALSE)
     
+    # only save PM25 PRI and PM25 FIL
     adjust_pm_diff <- adjust_pm %>% 
       filter(pollutant %in% c("PM25-PRI", "PM25-FIL"))
     
+    # add a column for TPY diff
     adjust_pm_diff$TPY.diff <- adjust_pm_diff$TPY.y - adjust_pm_diff$TPY.x
     
+    # don't save pollutant or TPY values
     adjust_pm_diff <- select(adjust_pm_diff, -pollutant, -TPY.x, -TPY.y)
     
+    # merge the diff data frame with our data frame, now we have a column for
+    # TPY diff if the pollutant is PMPRI or PMFIL
     adjust_pm <- merge(adjust_pm, adjust_pm_diff,
                        by = c("FIPS", "SCC", "year", "PMPRI", "PMFIL"),
                        all = T)
     
+    # We want to subtract TPY diff from the PM10s, this means we are subtracting
+    # our estimated reduction in PM25 from PM10, since PM25 falls under PM10
     adjust_pm$TPY.new <- ifelse(adjust_pm$pollutant %in% c("PM10-PRI", "PM10-FIL"),
                               adjust_pm$TPY.x-adjust_pm$TPY.diff,
                               adjust_pm$TPY.x)
     
+    # make a new TPY column from TPY.new
     adjust_pm$TPY <- adjust_pm$TPY.new
     
+    # replace our adjusted_proj_data with this new adjust_pm data, but only save
+    # the columns of interest
     adjusted_proj_data <- adjust_pm %>%
       select(FIPS, SCC, year, pollutant, TPY)
   }
