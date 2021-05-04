@@ -1507,10 +1507,43 @@ rm(scc, throughput, efs_table, temp_table, vmt, temp_table_project, temp_table_f
 ```
 
 ## Storage and Transport
+If reporting to NEI, DO NOT RUN THIS SECTION!!!
+Utah currently defers to EPA for emission calculations for most fuel storage and transport SCCs, so we don't want to claim primacy when reporting these numbers. This section should only be run/added to the inventory when we are reporting for SIP projections or WEBSITE projections. For projections only.
 
-```{r}
+```{r Storage and Transport (25-xx-xxx-xxx)}
+#all of these SCCs project with the same data: statewide fuel usage. It is the combination of 
+#"GovGas" and "Gasoline" tables, which sum up to total gasoline and gasohol consumption in the state.
+gasoline <- projection_tables[["Gasoline"]]
+govgas <- projection_tables[["GovGas"]]
+
+#combine govgas and gasoline
+all_gas<- left_join(gasoline, govgas, by = c("county", "year"))
+all_gas <- all_gas %>% 
+  #add together the two throughput columns
+  mutate(unit = as.numeric(unit.x) + as.numeric(unit.y)) %>% 
+  #drop our old throughputs
+  select(-c("unit.x","unit.y"))
+
 # Storage & Transport > Petroleum and Petroleum Product Storage > Residential Portable Gas Cans > Permeation
+#declare the SCC
 scc <- 2501011011
+#pull baseline EPA-estimated emissions from their NEI
+temp_table <- pull_baseline_from_nei(scc)
+#project the baseline based on all_gas fuel consumption
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = all_gas)
+
+# No controls
+# No pt source subtractions
+
+temp_table_final <- temp_table_project
+# add to final table
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+
+#FOR ERIC: do the rest of these SCCs 
 
 # Storage and Transport > Petroleum and Petroleum Product Storage > Residential Portable Gas Cans > Evaporation (includes Diurnal losses)
 scc <- 2501011012
