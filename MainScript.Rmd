@@ -443,94 +443,6 @@ temp_table <- project_baseline(temp_table,projection_tables[["Steady"]])
 final_table <- rbind(final_table,temp_table)
 
 
-#industrial processes > mining and quarrying: SIC 14 > all processes
-scc <- 2325000000
-#all quarrying/mining should be happening on permitted sites. This SCC will simply catch all the processes that don't count as "Major Point Source" for wherever we are reporting, and it will put them in the area inventory
-#these pt sccs were manually pulled on 2021/04/22 by Michael Allen. The list of SCCs may be incomplete. I took a list of every non-retired 8 digit SCC, and then searched the layer descriptions for things like "crush", "mill", "drill", "blast" etc, and then manually filtered through the resulting ~800 sccs to take out irrelevant codes. I ended with 349 SCCs. Look in main_workbook > references > 2325000000_MiningQuarryingSCCs.xlsx for the work. My method is not comprehensive, and could be improved.
-
-#see "2325000000_Mining & quarrying NEMO 2017 FINAL_4-2" update in references. The EPA considers 4 activities for this SCC: 
-#    "overburden removal, 
-#    drilling and blasting, 
-#    loading and unloading, and 
-#    overburden replacement. 
-#Not included are the 
-#    transfer and conveyance operations, 
-#    crushing and screening operations, and 
-#    storage 
-#since the dust emissions from these activities are assumed to be well controlled."
-
-#since I have documentable emissions from transfer/conveyors/crushing/screening/storage, I included them in this SCC.
-pt_sccs <- c(
-  30300001, 30300003, 30300307, 30300309, 30300310, 30300311, 30300312, 30300316, 30300318,
-  30300336, 30300609, 30300610, 30300613, 30300614, 30300615, 30300616, 30300623, 30300624,
-  30301002, 30301004, 30301010, 30301012, 30301013, 30301015, 30301016, 30301018, 30301019,
-  30301020, 30301021, 30301030, 30301032, 30301102, 30301302, 30302301, 30302302, 30302303,
-  30302304, 30302305, 30302306, 30302307, 30302316, 30302320, 30302325, 30302327, 30302328,
-  30302330, 30302331, 30302341, 30302344, 30302345, 30302347, 30302393, 30302395, 30302396,
-  30302397, 30302398, 30302401, 30302402, 30302403, 30302405, 30302406, 30302407, 30302409,
-  30302410, 30303009, 30303014, 30303020, 30303026, 30303101, 30303102, 30303103, 30303104,
-  30303105, 30303106, 30303107, 30304010, 30400108, 30400116, 30400117, 30400132, 30400357,
-  30400358, 30400403, 30400411, 30400421, 30400422, 30400524, 30400612, 30400723, 30400724,
-  30400736, 30400770, 30400775, 30400785, 30400812, 30401002, 30500115, 30500120, 30500121,
-  30500134, 30500135, 30500141, 30500143, 30500144, 30500145, 30500302, 30500303, 30500305,
-  30500355, 30500405, 30500406, 30500502, 30500609, 30500610, 30500611, 30500612, 30500616,
-  30500624, 30500625, 30500626, 30500627, 30500628, 30500629, 30500709, 30500710, 30500711,
-  30500712, 30500716, 30500727, 30500728, 30500729, 30500802, 30500803, 30500804, 30500806,
-  30500904, 30500905, 30500906, 30500907, 30500908, 30500910, 30501006, 30501009, 30501010,
-  30501011, 30501012, 30501014, 30501017, 30501022, 30501033, 30501034, 30501035, 30501036,
-  30501037, 30501042, 30501043, 30501045, 30501048, 30501051, 30501060, 30501061, 30501062,
-  30501104, 30501105, 30501106, 30501107, 30501114, 30501115, 30501117, 30501121, 30501122,
-  30501123, 30501124, 30501221, 30501222, 30501224, 30501315, 30501316, 30501413, 30501502,
-  30501504, 30501505, 30501506, 30501507, 30501509, 30501510, 30501513, 30501514, 30501515,
-  30501518, 30501601, 30501602, 30501607, 30501610, 30501615, 30501616, 30501624, 30501625,
-  30501629, 30501630, 30501631, 30501632, 30501710, 30501903, 30501904, 30501907, 30502001,
-  30502002, 30502003, 30502004, 30502005, 30502006, 30502007, 30502009, 30502010, 30502014,
-  30502015, 30502016, 30502017, 30502018, 30502021, 30502032, 30502104, 30502105, 30502106,
-  30502502, 30502503, 30502507, 30502510, 30502511, 30502512, 30502514, 30502522, 30502523,
-  30502701, 30502705, 30502713, 30502740, 30502760, 30503101, 30503102, 30503105, 30503106,
-  30503108, 30503201, 30503202, 30503203, 30503204, 30503205, 30503206, 30503299, 30503312,
-  30503331, 30503336, 30503341, 30503401, 30503501, 30503502, 30503503, 30503504, 30503506,
-  30503813, 30504001, 30504002, 30504021, 30504022, 30504024, 30504030, 30504031, 30504034,
-  30504102, 30504103, 30504115, 30504129, 30504151, 30504170, 30504171, 30504202, 30504203,
-  30504215, 30504270, 30504271, 30504302, 30504303, 30504315, 30504329, 30504351, 30504370,
-  30504371, 30504402, 30504403, 30504415, 30504451, 30504470, 30504471, 30504502, 30504503,
-  30504515, 30504551, 30504570, 30504571, 30504602, 30504603, 30504615, 30504629, 30504670,
-  30504671, 30505005, 30508906, 30508908, 30508911, 30508912, 30508914, 30508917, 30508949,
-  30508958, 30508985, 30509002, 30509201, 30509205, 30510101, 30510102, 30510103, 30510104,
-  30510105, 30510106, 30510107, 30510108, 30510196, 30510197, 30510198, 30510199, 30510201,
-  30510202, 30510203, 30510204, 30510205, 30510206, 30510207, 30510208, 30510209, 30510296,
-  30510297, 30510298, 30510299, 30510604, 30510808, 30510809, 30515003)
-
-real_table <- pull_pt_removal_table(pt_sccs,scc) %>% 
-  filter(is_point == FALSE) %>% 
-  select(-is_point) %>%
-  #only take PM emissions from the pull. Only do PMXX-PRI, because we assume that PM-CON is 0 and that PMXX-FIL=PMXX-PRI. For this SCC, we only are looking for dust, so we only look for PM
-  filter(pollutant %in% c("PM10-PRI", "PM25-PRI"))
-
-#There are counties with 0 emissions for this SCC. Since EPA offers default data for this SCC, if we don't explicitly put a "0" for those counties, EPA may add their default data in those counties. So we need to add "0"s for those counties.
-pollutants <- c("PM10-PRI","PM25-PRI")
-TPPPY <-c(0, 0)
-efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-zeros_table <- make_baseline(efs_table,projection_tables[["Steady"]])
-zeros_table$year <- as.integer(zeros_table$year)
-
-#now combine the zeros data with the real data we have pulled
-temp_table <- left_join(zeros_table, real_table, by=c("FIPS","SCC","year","pollutant"))
-#reformat the real data NA's to be zeros, or else we will get errors when we add the columns
-temp_table$TPY.y <- ifelse(is.na(temp_table$TPY.y),0,temp_table$TPY.y)
-#add the columns and delete old fluff
-temp_table$TPY <- temp_table$TPY.x + temp_table$TPY.y
-temp_table <- temp_table %>% select(-c(TPY.x, TPY.y))
-
-#let's just project this to remain steady. Am open to other options
-temp_table <- project_baseline(temp_table, projection_tables[["Steady"]])
-
-# add control
-# since its time dependent and we're past the phaseinendyear (2014), no controls will be added. But if we backproject to 2012, emissions will increase a bit for years prior to 2015.
-temp_table <- add_controls(temp_table)
-
-# merge with final table
-final_table <- rbind(final_table,temp_table)
 
 
 #                               manually calculate
@@ -578,36 +490,6 @@ final_table <- rbind(final_table,temp_table)
 rm(hay_table, wheat_table, corn_table, barley_table, temp_table, TPPPY, efs_table, pollutants, scc)
 
 
-#1) Emission factors are from EPA's "Emission Inventory Improvement Program (EIIP)," Vol. III, (6/21/99 ed), section "Area Source Category Method Abstract - Bakeries."										
-#2) Product Consumption factor is from EIIP, Vol. III, (6/21/99 ed), section "Area Source Category Method Abstract - Bakeries."										
-#3) (I AM CURRENTLY NOT DOING THIS FILTERING STEP) Bakeries that distribute outside of Utah are disregarded in the double counting process (i.e. Interstate Brands and Pepperidge Farms).
-#4) An EPA memo (that is cited in the EIIP document) suggests using the lower value of the range for sponge-dough emissions; i.e., 5.0 lbs VOC/1000 lbs product.										
-#5) The "Estimated Consumption Fractions" were adjusted to 25% and 75% to achieve the 5.0 value suggest by that EPA memo.										
-#bakeries, yeast
-# Straight dough is 0.5 lb VOC/1000 lb product. 25% of product
-# Sponge dough is 6.5 lb VOC/1000 lb, 75% of product
-# 0.5(0.25) + 6.5(0.75) = 
-#   5 lb VOC/1000 lb mixed product
-# assume 70 lb of bread per person per year
-# 
-# Population * 70 lb/person * 1 klb/1000 lb * 5 lb VOC/ klb * 1 TPY/2000lb 
-#   Population * 70/1000*5/2000
-#   Population * 350/2,000,000
-#     Population * 1.75E-4 = TPY VOC
-scc <- 2302050000
-pollutants <- c('VOC')
-TPPPY <-(1.75E-4)
-efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]], project_to = end_year)
-#every SCC with 302032XX. Manually inputting this one
-pt_sccs <- seq.int(30203201,30203299)
-pt_pols <- c('VOC')
-pt_table <- pull_pt_removal_table(pt_sccs,scc,raw_scc_pull_return = FALSE)
-#pt_table <- pull_pt_removal_table(pt_sccs,pt_pols,scc,raw_scc_pull_return = TRUE)
-pt_table <- project_baseline(pt_table,projection_tables[["Population"]],has_pt = TRUE)
-temp_table <- subtract_pt_sources(pt_table,temp_table)
-#no controls
-final_table <- rbind(final_table, temp_table)
 
 
 #percent of households that own pets is from American Veterinary Medical 
@@ -781,45 +663,261 @@ temp_table <- make_baseline(efs_table,projection_tables[["LUST"]],project_to = e
 final_table <- rbind(final_table, temp_table)
 
 
-#solvent use - fuel tank/drum cleaning
-#used to be 2461160000, but in 2016, was mapped to 2461100000 (see 'sccref' source)
-#Uses AP42 4.8 for tank truck cleaning. Largest EF in the document 
-#  is 0.686 lb/truck, so that's what we used. (4.8-2)
-#Federal Highway Administration Department of Motor Carriers, Bruce Holmes, 
-#  estimated that 400 cargo tanks are cleaned and purged annually in Salt Lake
-#  and Davis Counties. (No date given or citation on this number)
-#So 400 tanks with a population of 1,127,117 and 348,281, respectively, is
-#  400 tank cleanings/1,475,398 people, or:
-#    2.711E-4 tank cleanings/person.
-#with 0.686 lb/cleaning, we have 
-#    2.711E-4 * 0.686 / 2000 = 
-#    9.299E-8 Ton/person/year
-#We then extrapolate that to the rest of the state
-scc <- 2461100000
-pollutants <- c('VOC')
-TPPPY <-(9.299E-8)
-efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table_project <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
-#no pt source
-#assumed rule 307-304 for solvent cleaning applies to this SCC.
-# ends up with 28% reduction over 2017-2022
-# we need to input a current_efs table to the controls function since these emission factors don't exist in the Wagon Wheel. although we converted the above emissions factor to lb/prson, it really is lb/tank. And lb/tank is 0.686, which is the same as what it was when the rule was created. We need to create a tank_efs table with that emissions factor.
-tank_efs <- data.frame(FIPS = unique(temp_table_project$FIPS),
-                       SCC = scc,
-                       pollutant = "VOC",
-                       EmissionsFactor = 0.686,
-                       EFNumerator = "LB")
 
-# now run the function. we supplied all the needed emissions factors for adding controls in the current_efs table. we'll just set use_ww = FALSE anyway since this SCC doesn't exist in the WW.
-temp_table_controlled <- add_controls(temp_table_project, current_efs = tank_efs, use_ww = FALSE)
-final_table <- rbind(final_table, temp_table_controlled)
 
-# remove the objects we created from the environment
-rm(scc, pollutants, TPPPY, efs_table, temp_table_project, tank_efs, temp_table_controlled)
+
+
+
+
+
+
 ```
 
 
-NOTE: We always do pt source subtractions AFTER adding controls to the emissions estimates. We assume that our pt source emissions are already using the controls before they get phased in.
+```{r food, construction, mining (23-xx-xxx-xxx)}
+
+#industrial processes,
+#food and kindred products, SIC 20
+#commercial cooking - charbroiling
+#conveyorized charbroiling
+#
+#NOMAD method is based on number of restaurants in each county, number of cooking
+#  devices in each restaurant, amount of meat processed on each device. elaborate.
+#projects with population
+scc <- 2302002100 
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+# add controls
+# Controls began in 2016 and are provided by Utah DAQ's Joel Karmazyn based on existing rules.
+# Rule 370-303 has a 76% reduction in emissions for VOC and PM25.
+# The workbook only controlled VOC/HAPS, but I added PM because the rule language
+# suggests PM is being controlled.
+temp_table <- add_controls(temp_table)
+#no pt subs?
+final_table <- rbind(final_table, temp_table)
+
+
+#industrial processes,
+#food and kindred products, SIC 20
+#commercial cooking - charbroiling
+#under-fired charbroiling
+#
+#NOMAD method is based on number of restaurants in each county, number of cooking
+#  devices in each restaurant, amount of meat processed on each device. elaborate.
+#projects with population
+scc <- 2302002200 
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+#no controls?
+#no pt subs?
+final_table <- rbind(final_table, temp_table)
+
+
+#industrial processes,
+#food and kindred products, SIC 20
+#commercial cooking - frying
+#deep fat frying
+#
+#NOMAD method is based on number of restaurants in each county, number of cooking
+#  devices in each restaurant, amount of meat processed on each device. elaborate.
+#projects with population
+scc <- 2302003000
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+#no controls?
+#no pt subs?
+final_table <- rbind(final_table, temp_table)
+
+
+#industrial processes,
+#food and kindred products, SIC 20
+#commercial cooking - frying
+#flat griddle frying
+#
+#NOMAD method is based on number of restaurants in each county, number of cooking
+#  devices in each restaurant, amount of meat processed on each device. elaborate.
+#projects with population
+scc <- 2302003100
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+#no controls?
+#no pt subs?
+final_table <- rbind(final_table, temp_table)
+
+
+#industrial processes,
+#food and kindred products, SIC 20
+#commercial cooking - frying
+#clamshell griddle frying
+#
+#NOMAD method is based on number of restaurants in each county, number of cooking
+#  devices in each restaurant, amount of meat processed on each device. elaborate.
+#projects with population
+scc <- 2302003200
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+#no controls
+#no pt subs?
+final_table <- rbind(final_table, temp_table)
+
+
+#1) Emission factors are from EPA's "Emission Inventory Improvement Program (EIIP)," Vol. III, (6/21/99 ed), section "Area Source Category Method Abstract - Bakeries."										
+#2) Product Consumption factor is from EIIP, Vol. III, (6/21/99 ed), section "Area Source Category Method Abstract - Bakeries."										
+#3) (I AM CURRENTLY NOT DOING THIS FILTERING STEP) Bakeries that distribute outside of Utah are disregarded in the double counting process (i.e. Interstate Brands and Pepperidge Farms).
+#4) An EPA memo (that is cited in the EIIP document) suggests using the lower value of the range for sponge-dough emissions; i.e., 5.0 lbs VOC/1000 lbs product.										
+#5) The "Estimated Consumption Fractions" were adjusted to 25% and 75% to achieve the 5.0 value suggest by that EPA memo.										
+#bakeries, yeast
+# Straight dough is 0.5 lb VOC/1000 lb product. 25% of product
+# Sponge dough is 6.5 lb VOC/1000 lb, 75% of product
+# 0.5(0.25) + 6.5(0.75) = 
+#   5 lb VOC/1000 lb mixed product
+# assume 70 lb of bread per person per year
+# 
+# Population * 70 lb/person * 1 klb/1000 lb * 5 lb VOC/ klb * 1 TPY/2000lb 
+#   Population * 70/1000*5/2000
+#   Population * 350/2,000,000
+#     Population * 1.75E-4 = TPY VOC
+scc <- 2302050000
+pollutants <- c('VOC')
+TPPPY <-(1.75E-4)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]], project_to = end_year)
+#every SCC with 302032XX. Manually inputting this one
+pt_sccs <- seq.int(30203201,30203299)
+pt_pols <- c('VOC')
+pt_table <- pull_pt_removal_table(pt_sccs,scc,raw_scc_pull_return = FALSE)
+#pt_table <- pull_pt_removal_table(pt_sccs,pt_pols,scc,raw_scc_pull_return = TRUE)
+pt_table <- project_baseline(pt_table,projection_tables[["Population"]],has_pt = TRUE)
+temp_table <- subtract_pt_sources(pt_table,temp_table)
+#no controls
+final_table <- rbind(final_table, temp_table)
+
+
+#ICI construction dust.
+#based on dollars spent on non-residential construction by county. $ used is
+#used convert to assume acres disturbed/year.
+#If you look in NOMAD, you will find a term: 'PE' that informs EFs. It has to do 
+#with rain, and I think can be targeted in the WW tool. It currently is one value 
+#for the whole state, but could be adjusted for county-by-county.
+#
+#projects with population
+scc <- 2311020000
+#NonresidentialConstruction is dollars spent on non-residential construction per county
+#now get acres by assuming 1.00885 acres/million dollars spent
+#then get acre-month by assuming 11 months of construction per project
+#  both of these conversion factors (1.00885, 11) are from NOMAD, and 
+#  could potentially be out of date.
+input_table <- projection_tables[["NonresidentialConstruction"]] %>% 
+  #filter for year and adjust units
+  filter(year==start_year) %>% mutate(unit = unit*1.00885/1E6*11)
+#pull efs from ww
+efs_table <- pull_efs_from_ww(scc,throughput_unit = 'ACRE-MONTH', all_primaries = TRUE)
+temp_table <- make_baseline(efs_table, input_table)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+#project
+#Controls: R307-309 is about fugitive dust control plans. Has an assumed 32% 
+#reduction that started in 2014.
+temp_table <- add_controls(temp_table)
+final_table <- rbind(final_table,temp_table)
+
+
+#industrial processes > mining and quarrying: SIC 14 > all processes
+scc <- 2325000000
+#all quarrying/mining should be happening on permitted sites. This SCC will simply catch all the processes that don't count as "Major Point Source" for wherever we are reporting, and it will put them in the area inventory
+#these pt sccs were manually pulled on 2021/04/22 by Michael Allen. The list of SCCs may be incomplete. I took a list of every non-retired 8 digit SCC, and then searched the layer descriptions for things like "crush", "mill", "drill", "blast" etc, and then manually filtered through the resulting ~800 sccs to take out irrelevant codes. I ended with 349 SCCs. Look in main_workbook > references > 2325000000_MiningQuarryingSCCs.xlsx for the work. My method is not comprehensive, and could be improved.
+
+#see "2325000000_Mining & quarrying NEMO 2017 FINAL_4-2" update in references. The EPA considers 4 activities for this SCC: 
+#    "overburden removal, 
+#    drilling and blasting, 
+#    loading and unloading, and 
+#    overburden replacement. 
+#Not included are the 
+#    transfer and conveyance operations, 
+#    crushing and screening operations, and 
+#    storage 
+#since the dust emissions from these activities are assumed to be well controlled."
+
+#since I have documentable emissions from transfer/conveyors/crushing/screening/storage, I included them in this SCC.
+pt_sccs <- c(
+  30300001, 30300003, 30300307, 30300309, 30300310, 30300311, 30300312, 30300316, 30300318,
+  30300336, 30300609, 30300610, 30300613, 30300614, 30300615, 30300616, 30300623, 30300624,
+  30301002, 30301004, 30301010, 30301012, 30301013, 30301015, 30301016, 30301018, 30301019,
+  30301020, 30301021, 30301030, 30301032, 30301102, 30301302, 30302301, 30302302, 30302303,
+  30302304, 30302305, 30302306, 30302307, 30302316, 30302320, 30302325, 30302327, 30302328,
+  30302330, 30302331, 30302341, 30302344, 30302345, 30302347, 30302393, 30302395, 30302396,
+  30302397, 30302398, 30302401, 30302402, 30302403, 30302405, 30302406, 30302407, 30302409,
+  30302410, 30303009, 30303014, 30303020, 30303026, 30303101, 30303102, 30303103, 30303104,
+  30303105, 30303106, 30303107, 30304010, 30400108, 30400116, 30400117, 30400132, 30400357,
+  30400358, 30400403, 30400411, 30400421, 30400422, 30400524, 30400612, 30400723, 30400724,
+  30400736, 30400770, 30400775, 30400785, 30400812, 30401002, 30500115, 30500120, 30500121,
+  30500134, 30500135, 30500141, 30500143, 30500144, 30500145, 30500302, 30500303, 30500305,
+  30500355, 30500405, 30500406, 30500502, 30500609, 30500610, 30500611, 30500612, 30500616,
+  30500624, 30500625, 30500626, 30500627, 30500628, 30500629, 30500709, 30500710, 30500711,
+  30500712, 30500716, 30500727, 30500728, 30500729, 30500802, 30500803, 30500804, 30500806,
+  30500904, 30500905, 30500906, 30500907, 30500908, 30500910, 30501006, 30501009, 30501010,
+  30501011, 30501012, 30501014, 30501017, 30501022, 30501033, 30501034, 30501035, 30501036,
+  30501037, 30501042, 30501043, 30501045, 30501048, 30501051, 30501060, 30501061, 30501062,
+  30501104, 30501105, 30501106, 30501107, 30501114, 30501115, 30501117, 30501121, 30501122,
+  30501123, 30501124, 30501221, 30501222, 30501224, 30501315, 30501316, 30501413, 30501502,
+  30501504, 30501505, 30501506, 30501507, 30501509, 30501510, 30501513, 30501514, 30501515,
+  30501518, 30501601, 30501602, 30501607, 30501610, 30501615, 30501616, 30501624, 30501625,
+  30501629, 30501630, 30501631, 30501632, 30501710, 30501903, 30501904, 30501907, 30502001,
+  30502002, 30502003, 30502004, 30502005, 30502006, 30502007, 30502009, 30502010, 30502014,
+  30502015, 30502016, 30502017, 30502018, 30502021, 30502032, 30502104, 30502105, 30502106,
+  30502502, 30502503, 30502507, 30502510, 30502511, 30502512, 30502514, 30502522, 30502523,
+  30502701, 30502705, 30502713, 30502740, 30502760, 30503101, 30503102, 30503105, 30503106,
+  30503108, 30503201, 30503202, 30503203, 30503204, 30503205, 30503206, 30503299, 30503312,
+  30503331, 30503336, 30503341, 30503401, 30503501, 30503502, 30503503, 30503504, 30503506,
+  30503813, 30504001, 30504002, 30504021, 30504022, 30504024, 30504030, 30504031, 30504034,
+  30504102, 30504103, 30504115, 30504129, 30504151, 30504170, 30504171, 30504202, 30504203,
+  30504215, 30504270, 30504271, 30504302, 30504303, 30504315, 30504329, 30504351, 30504370,
+  30504371, 30504402, 30504403, 30504415, 30504451, 30504470, 30504471, 30504502, 30504503,
+  30504515, 30504551, 30504570, 30504571, 30504602, 30504603, 30504615, 30504629, 30504670,
+  30504671, 30505005, 30508906, 30508908, 30508911, 30508912, 30508914, 30508917, 30508949,
+  30508958, 30508985, 30509002, 30509201, 30509205, 30510101, 30510102, 30510103, 30510104,
+  30510105, 30510106, 30510107, 30510108, 30510196, 30510197, 30510198, 30510199, 30510201,
+  30510202, 30510203, 30510204, 30510205, 30510206, 30510207, 30510208, 30510209, 30510296,
+  30510297, 30510298, 30510299, 30510604, 30510808, 30510809, 30515003)
+
+real_table <- pull_pt_removal_table(pt_sccs,scc) %>% 
+  filter(is_point == FALSE) %>% 
+  select(-is_point) %>%
+  #only take PM emissions from the pull. Only do PMXX-PRI, because we assume that PM-CON is 0 and that PMXX-FIL=PMXX-PRI. For this SCC, we only are looking for dust, so we only look for PM
+  filter(pollutant %in% c("PM10-PRI", "PM25-PRI"))
+
+#There are counties with 0 emissions for this SCC. Since EPA offers default data for this SCC, if we don't explicitly put a "0" for those counties, EPA may add their default data in those counties. So we need to add "0"s for those counties.
+pollutants <- c("PM10-PRI","PM25-PRI")
+TPPPY <-c(0, 0)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+zeros_table <- make_baseline(efs_table,projection_tables[["Steady"]])
+zeros_table$year <- as.integer(zeros_table$year)
+
+#now combine the zeros data with the real data we have pulled
+temp_table <- left_join(zeros_table, real_table, by=c("FIPS","SCC","year","pollutant"))
+#reformat the real data NA's to be zeros, or else we will get errors when we add the columns
+temp_table$TPY.y <- ifelse(is.na(temp_table$TPY.y),0,temp_table$TPY.y)
+#add the columns and delete old fluff
+temp_table$TPY <- temp_table$TPY.x + temp_table$TPY.y
+temp_table <- temp_table %>% select(-c(TPY.x, TPY.y))
+
+#let's just project this to remain steady. Am open to other options
+temp_table <- project_baseline(temp_table, projection_tables[["Steady"]])
+
+# add control
+# since its time dependent and we're past the phaseinendyear (2014), no controls will be added. But if we backproject to 2012, emissions will increase a bit for years prior to 2015.
+temp_table <- add_controls(temp_table)
+
+# merge with final table
+final_table <- rbind(final_table,temp_table)
+rm( scc, pt_sccs, real_table, pollutants, TPPPY, efs_table, zeros_table, temp_table)
+
+
+```
+
+
+
+
+NOTE: For solvents, de always do pt source subtractions AFTER adding controls to the emissions estimates. We assume that our pt source emissions are already using the controls before they get phased in.
 
 ```{r solvents (24-xx-xxx-xxx)}
 # Solvent Utilization > Surface Coating > Traffic Markings > Total: All Solvent Types
@@ -1504,6 +1602,173 @@ temp_table_final <- temp_table_project
 final_table <- rbind(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, throughput, efs_table, temp_table, vmt, temp_table_project, temp_table_final)
+
+
+#FIFRA products, solvents. (Federal Insecticide, Fungicide, and Rodenticide Act)
+#1) Emission Factors and calculation methods from EPA/NOMAD (for the 2014 NEI). Note: Activity data was based on USGS report “Estimated Annual Agricultural Pesticide Use for Counties of the Conterminous United States, 2008-2012”.												
+#2) based on population
+#2) projects based on agJobs
+scc <- 2460800000
+efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH',all_primaries = FALSE)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]])
+temp_table <- project_baseline(temp_table , projection_tables[["AgJobs"]])
+#no pt subtract
+#no controls
+final_table <- rbind(final_table, temp_table)
+rm(scc, efs_table, temp_table)
+
+
+#solvent, personal care
+#based on EPA NOMAD method
+#baseline and projection on population
+#1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
+scc <- 2460100000
+efs_table <- pull_efs_from_ww(scc,throughput_unit = 'EACH',all_primaries = FALSE)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+#no pt sources
+# rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
+# "assume first product hit shelf in 2016"
+# it is not clear from rule 357 what the control efficiency is, you have to
+# look at our 2017 TSD. This applies for all 357-controlled SCCs
+temp_table <- add_controls(temp_table)
+final_table <- rbind(final_table, temp_table) 
+rm(scc, efs_table, temp_table)
+
+
+#solvent, household products
+#based on EPA NOMAD method
+#baseline and projection on population
+#1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
+scc <- 2460200000
+efs_table <- pull_efs_from_ww(scc,throughput_unit = 'EACH',all_primaries = FALSE)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+#no pt sources
+# rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
+# see 2460100000
+temp_table <- add_controls(temp_table)
+final_table <- rbind(final_table, temp_table)
+rm(scc, efs_table, temp_table)
+
+
+#solvent, auto aftermarket products
+#based on EPA NOMAD method
+#baseline and projection on population
+#1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
+scc <- 2460400000
+efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+#no pt sources?
+# rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
+# see 2460100000
+# add controls, but they don't do anything because the emissions factor is much smaller than what it was when the control was created
+temp_table <- add_controls(temp_table)
+final_table <- rbind(final_table, temp_table)
+rm(scc, efs_table, temp_table)
+
+
+#solvent, coatings & related products
+#based on EPA NOMAD method
+#baseline and projection on population
+#1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
+scc <- 2460500000
+efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+#no pt sources?
+# rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
+# see 2460100000
+temp_table <- add_controls(temp_table)
+final_table <- rbind(final_table, temp_table)
+rm(scc, efs_table, temp_table)
+
+
+#solvents, adhesives and sealants
+#based on EPA NOMAD method
+#baseline and projection on population
+#1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
+scc <- 2460600000
+efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+#no pt sources
+# rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
+# see 2460100000
+temp_table <- add_controls(temp_table)
+final_table <- rbind(final_table, temp_table)
+rm(scc, efs_table, temp_table)
+
+
+#solvents, consumer use, miscellaneous 
+#based on EPA NOMAD method
+#baseline and projection on population
+scc <- 2460900000
+efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+#no pt subtract
+#no controls
+final_table <- rbind(final_table, temp_table)
+rm(scc, efs_table, temp_table)
+
+
+#surface coatings, architectural
+#pulled from WW
+#based on population
+#projects with population
+scc <- 2401001000
+efs_table <- pull_efs_from_ww(scc,'EACH',all_primaries = FALSE)
+temp_table <- make_baseline(efs_table, projection_tables[["Population"]], project_to = end_year)
+#controls are based on R307-361: "architectural coatings"
+temp_table <- add_controls(temp_table)
+#pt subs? Maybe used to be but is no longer supported in EPA crosswalk.
+final_table <- rbind(final_table,temp_table)
+
+
+#solvent use - fuel tank/drum cleaning
+#used to be 2461160000, but in 2016, was mapped to 2461100000 (see 'sccref' source)
+#Uses AP42 4.8 for tank truck cleaning. Largest EF in the document 
+#  is 0.686 lb/truck, so that's what we used. (4.8-2)
+#Federal Highway Administration Department of Motor Carriers, Bruce Holmes, 
+#  estimated that 400 cargo tanks are cleaned and purged annually in Salt Lake
+#  and Davis Counties. (No date given or citation on this number)
+#So 400 tanks with a population of 1,127,117 and 348,281, respectively, is
+#  400 tank cleanings/1,475,398 people, or:
+#    2.711E-4 tank cleanings/person.
+#with 0.686 lb/cleaning, we have 
+#    2.711E-4 * 0.686 / 2000 = 
+#    9.299E-8 Ton/person/year
+#We then extrapolate that to the rest of the state
+scc <- 2461100000
+pollutants <- c('VOC')
+TPPPY <-(9.299E-8)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+temp_table_project <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+#no pt source
+#assumed rule 307-304 for solvent cleaning applies to this SCC.
+# ends up with 28% reduction over 2017-2022
+# we need to input a current_efs table to the controls function since these emission factors don't exist in the Wagon Wheel. although we converted the above emissions factor to lb/prson, it really is lb/tank. And lb/tank is 0.686, which is the same as what it was when the rule was created. We need to create a tank_efs table with that emissions factor.
+tank_efs <- data.frame(FIPS = unique(temp_table_project$FIPS),
+                       SCC = scc,
+                       pollutant = "VOC",
+                       EmissionsFactor = 0.686,
+                       EFNumerator = "LB")
+
+# now run the function. we supplied all the needed emissions factors for adding controls in the current_efs table. we'll just set use_ww = FALSE anyway since this SCC doesn't exist in the WW.
+temp_table_controlled <- add_controls(temp_table_project, current_efs = tank_efs, use_ww = FALSE)
+final_table <- rbind(final_table, temp_table_controlled)
+
+# remove the objects we created from the environment
+rm(scc, pollutants, TPPPY, efs_table, temp_table_project, tank_efs, temp_table_controlled)
+
+
+#non-industrial commercial pesticides
+#1) Emission Factors and calculation methods from EPA/NOMAD (for the 2014 NEI). Note: Activity data was based on USGS report “Estimated Annual Agricultural Pesticide Use for Counties of the Conterminous United States, 2008-2012”.												
+#2) based on WW (agjobs p sure)
+#3) projects based on agjobs
+scc <- 2461850000
+temp_table <- pull_baseline_from_ww(scc) 
+temp_table <- project_baseline(temp_table, projection_tables[["AgJobs"]])
+#no pt subtraction
+#no controls
+final_table <- rbind(final_table, temp_table)
+
 ```
 
 ## Storage and Transport
@@ -1523,6 +1788,8 @@ all_gas <- all_gas %>%
   mutate(unit = as.numeric(unit.x) + as.numeric(unit.y)) %>% 
   #drop our old throughputs
   select(-c("unit.x","unit.y"))
+
+
 
 # Storage & Transport > Petroleum and Petroleum Product Storage > Residential Portable Gas Cans > Permeation
 #declare the SCC
@@ -1579,151 +1846,16 @@ scc <- 2501012015
 
 ```{r 3.2) pull EFs from WW}
 
-#FIFRA products, solvents. (Federal Insecticide, Fungicide, and Rodenticide Act)
-#1) Emission Factors and calculation methods from EPA/NOMAD (for the 2014 NEI). Note: Activity data was based on USGS report “Estimated Annual Agricultural Pesticide Use for Counties of the Conterminous United States, 2008-2012”.												
-#2) based on population
-#2) projects based on agJobs
-scc <- 2460800000
-efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH',all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]])
-temp_table <- project_baseline(temp_table , projection_tables[["AgJobs"]])
-#no pt subtract
-#no controls
-final_table <- rbind(final_table, temp_table)
-
-#solvent, personal care
-#based on EPA NOMAD method
-#baseline and projection on population
-#1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
-scc <- 2460100000
-efs_table <- pull_efs_from_ww(scc,throughput_unit = 'EACH',all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
-#no pt sources
-# rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
-# "assume first product hit shelf in 2016"
-# it is not clear from rule 357 what the control efficiency is, you have to
-# look at our 2017 TSD. This applies for all 357-controlled SCCs
-temp_table <- add_controls(temp_table)
-final_table <- rbind(final_table, temp_table)
-
-#solvent, household products
-#based on EPA NOMAD method
-#baseline and projection on population
-#1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
-scc <- 2460200000
-efs_table <- pull_efs_from_ww(scc,throughput_unit = 'EACH',all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
-#no pt sources
-# rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
-# see 2460100000
-temp_table <- add_controls(temp_table)
-final_table <- rbind(final_table, temp_table)
-
-#solvent, auto aftermarket products
-#based on EPA NOMAD method
-#baseline and projection on population
-#1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
-scc <- 2460400000
-efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
-#no pt sources?
-# rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
-# see 2460100000
-# add controls, but they don't do anything because the emissions factor is much smaller than what it was when the control was created
-temp_table <- add_controls(temp_table)
-final_table <- rbind(final_table, temp_table)
-
-#solvent, coatings & related products
-#based on EPA NOMAD method
-#baseline and projection on population
-#1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
-scc <- 2460500000
-efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
-#no pt sources?
-# rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
-# see 2460100000
-temp_table <- add_controls(temp_table)
-final_table <- rbind(final_table, temp_table)
-
-#solvents, adhesives and sealants
-#based on EPA NOMAD method
-#baseline and projection on population
-#1) Control percent phase in provided by Utah DAQ's Joel Karmazyn based on existing rules. Phase in was conservatively calculated to begin in 2014.						
-scc <- 2460600000
-efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
-#no pt sources
-# rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
-# see 2460100000
-temp_table <- add_controls(temp_table)
-final_table <- rbind(final_table, temp_table)
-
-#solvents, consumer use, miscellaneous 
-#based on EPA NOMAD method
-#baseline and projection on population
-scc <- 2460900000
-efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FALSE)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
-#no pt subtract
-#no controls
-final_table <- rbind(final_table, temp_table)
-
-#ICI construction dust.
-#based on dollars spent on non-residential construction by county. $ used is
-#used convert to assume acres disturbed/year.
-#If you look in NOMAD, you will find a term: 'PE' that informs EFs. It has to do 
-#with rain, and I think can be targeted in the WW tool. It currently is one value 
-#for the whole state, but could be adjusted for county-by-county.
-#
-#projects with population
-scc <- 2311020000
-#NonresidentialConstruction is dollars spent on non-residential construction per county
-#now get acres by assuming 1.00885 acres/million dollars spent
-#then get acre-month by assuming 11 months of construction per project
-#  both of these conversion factors (1.00885, 11) are from NOMAD, and 
-#  could potentially be out of date.
-input_table <- projection_tables[["NonresidentialConstruction"]] %>% 
-  #filter for year and adjust units
-  filter(year==start_year) %>% mutate(unit = unit*1.00885/1E6*11)
-#pull efs from ww
-efs_table <- pull_efs_from_ww(scc,throughput_unit = 'ACRE-MONTH', all_primaries = TRUE)
-temp_table <- make_baseline(efs_table, input_table)
-temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-#project
-#Controls: R307-309 is about fugitive dust control plans. Has an assumed 32% 
-#reduction that started in 2014.
-temp_table <- add_controls(temp_table)
-final_table <- rbind(final_table,temp_table)
 
 
-#surface coatings, architectural
-#pulled from WW
-#based on population
-#projects with population
-scc <- 2401001000
-efs_table <- pull_efs_from_ww(scc,'EACH',all_primaries = FALSE)
-temp_table <- make_baseline(efs_table, projection_tables[["Population"]], project_to = end_year)
-#controls are based on R307-361: "architectural coatings"
-temp_table <- add_controls(temp_table)
-#pt subs? Maybe used to be but is no longer supported in EPA crosswalk.
-final_table <- rbind(final_table,temp_table)
+
+
 ```
 
 
 
 ```{r 3.3) pull baseline emissions from WW, but manually project}
 
-#non-industrial commercial pesticides
-#1) Emission Factors and calculation methods from EPA/NOMAD (for the 2014 NEI). Note: Activity data was based on USGS report “Estimated Annual Agricultural Pesticide Use for Counties of the Conterminous United States, 2008-2012”.												
-#2) based on WW (agjobs p sure)
-#3) projects based on agjobs
-scc <- 2461850000
-temp_table <- pull_baseline_from_ww(scc) 
-temp_table <- project_baseline(temp_table, projection_tables[["AgJobs"]])
-#no pt subtraction
-#no controls
-final_table <- rbind(final_table, temp_table)
 
 #Open burning land clearing
 #pulled from WW.
@@ -1752,85 +1884,7 @@ temp_table <- project_baseline(temp_table,projection_tables[["AgJobs"]])
 #prioritize pt subs for this because this is a large scc
 final_table <- rbind(final_table, temp_table)
 
-#industrial processes,
-#food and kindred products, SIC 20
-#commercial cooking - charbroiling
-#conveyorized charbroiling
-#
-#NOMAD method is based on number of restaurants in each county, number of cooking
-#  devices in each restaurant, amount of meat processed on each device. elaborate.
-#projects with population
-scc <- 2302002100 
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-# add controls
-# Controls began in 2016 and are provided by Utah DAQ's Joel Karmazyn based on existing rules.
-# Rule 370-303 has a 76% reduction in emissions for VOC and PM25.
-# The workbook only controlled VOC/HAPS, but I added PM because the rule language
-# suggests PM is being controlled.
-temp_table <- add_controls(temp_table)
-#no pt subs?
-final_table <- rbind(final_table, temp_table)
 
-#industrial processes,
-#food and kindred products, SIC 20
-#commercial cooking - charbroiling
-#under-fired charbroiling
-#
-#NOMAD method is based on number of restaurants in each county, number of cooking
-#  devices in each restaurant, amount of meat processed on each device. elaborate.
-#projects with population
-scc <- 2302002200 
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-#no controls?
-#no pt subs?
-final_table <- rbind(final_table, temp_table)
-
-#industrial processes,
-#food and kindred products, SIC 20
-#commercial cooking - frying
-#deep fat frying
-#
-#NOMAD method is based on number of restaurants in each county, number of cooking
-#  devices in each restaurant, amount of meat processed on each device. elaborate.
-#projects with population
-scc <- 2302003000
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-#no controls?
-#no pt subs?
-final_table <- rbind(final_table, temp_table)
-
-#industrial processes,
-#food and kindred products, SIC 20
-#commercial cooking - frying
-#flat griddle frying
-#
-#NOMAD method is based on number of restaurants in each county, number of cooking
-#  devices in each restaurant, amount of meat processed on each device. elaborate.
-#projects with population
-scc <- 2302003100
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-#no controls?
-#no pt subs?
-final_table <- rbind(final_table, temp_table)
-
-#industrial processes,
-#food and kindred products, SIC 20
-#commercial cooking - frying
-#clamshell griddle frying
-#
-#NOMAD method is based on number of restaurants in each county, number of cooking
-#  devices in each restaurant, amount of meat processed on each device. elaborate.
-#projects with population
-scc <- 2302003200
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-#no controls
-#no pt subs?
-final_table <- rbind(final_table, temp_table)
 
 #tilling of agriculture crops
 #NOMAD looks at number of acres tilled in each county by crop type and tilling type. Looks at silt content etc.
