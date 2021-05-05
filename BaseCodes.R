@@ -982,7 +982,9 @@ add_controls <- function(raw_proj_data,
                   .groups = "drop") 
       
       # check to make sure that our ControlPct is not negative
-      if(any(control_pct$PctAppliesTo < 0)) {
+# on 20210504, this line threw up an error. I think it should be control_pct$ControlPct
+#      if(any(control_pct$PctAppliesTo < 0)) {
+      if(any(control_pct$ControlPct < 0)) {
         print("Applicable rules result in a negative ControlPct. This shoudn't happen.")
         print(control_pct)
         
