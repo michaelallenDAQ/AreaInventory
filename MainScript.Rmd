@@ -82,11 +82,10 @@ final_table <- vector()
 This is going to produce a fresh inventory for Utah's Area Source.
 This code has 5 main sections:
   1) Base Codes
-  Always run this section. 'source('basecodes.R')'. This pull functions you will use later in the script. This section should not pull any variables. It should only generate functions.
+  Always run this section. 'source('BaseCodes.R')'. This pull functions you will use later in the script. This section should not pull any variables. It should only generate functions.
   
-  2) Base tables/base_inputs
-  'source('baseTables.R')'
-  'source('base_inputs.R')'
+  2) Base Tables
+  'source('BaseTables.R')'
   This generates the fundamental tables we will work with. We till haven't started filling the inventory table yet. You probably want to run this every time.
   
   3.x)Generate data from scratch - find EFs from online sources
@@ -156,6 +155,28 @@ There are no rules (and therefore, no controls) or pt source subtractions for th
 
 ```{NEI Pulls, for SIPS/WEBSITE}
 
+
+
+#25-XX-XXX-XXX: Storage and Transport of fuels
+
+#declare an empty table to fill in with 25-XX-XXX-XXX SCCs. I can experiment with that 
+#table before I merge it with final_table if I want
+NEI_25xx <- vector()
+source(paste0(Sys.getenv('GitDir'),'25XXXXXXXX_NEI_FuelStorageAndTransport.R'))
+#merge the table with final and delete it.
+final_table <- rbind(final_table, NEI_25xx)
+rm(NEI_25xx)
+
+#27-XX-XXX-XXX: Biogenic Emissions
+#Biogenics are not human sourced. They are a huge portion of our statewide emissions, but 
+#we don't look at them too closely, because they are not in our control.
+NEI_27xx <- vector()
+source(paste0(Sys.getenv('GitDir'),'27XXXXXXXX_NEI_Biogenics.R'))
+#merge the table with final and delete it.
+final_table <- rbind(final_table, NEI_27xx)
+rm(NEI_27xx)
+
+
 #28-XX-XXX-XXX: Agricultural processes, fires/wildfires, domestic/wild animals
 
 #To calculate emissions for animal agriculture, EPA uses a complicated model. We can send them custom throughput (# of animals in each county) to go into the model if we choose to do so before each NEI inventory. However, we do not get emissions factors from the WW, etc., we just get the final resulting total emissions per county from the NEI workbook when it is released. We're just going to pull total emissions from the NEI for these agriculture sccs, and then we can project based on agricultural employment. 
@@ -169,16 +190,6 @@ source(paste0(Sys.getenv('GitDir'),'28XXXXXXXX_NEI_AgAnimalsAndFires.R'))
 final_table <- rbind(final_table, NEI_28xx)
 rm(NEI_28xx)
 
-
-#25-XX-XXX-XXX: Storage and Transport of fuels
-
-#declare an empty table to fill in with 25-XX-XXX-XXX SCCs. I can experiment with that 
-#table before I merge it with final_table if I want
-NEI_25xx <- vector()
-source(paste0(Sys.getenv('GitDir'),'25XXXXXXXX_NEI_FuelStorageAndTransport.R'))
-#merge the table with final and delete it.
-final_table <- rbind(final_table, NEI_25xx)
-rm(NEI_25xx)
 
 
 ```
@@ -405,6 +416,118 @@ temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_
 #no controls
 final_table <- rbind(final_table, temp_table)
 
+
+
+
+
+
+
+
+
+
+
+```
+
+
+```{r 22-XX, 26-XX, unpaved roads, waste disposal}
+
+#unpaved roads emissions
+#baseline from WW
+#projection based on AgJobs
+#  projection is based on agjobs because agricultural operations are anticipated to represent a large portion of unpaved road use. Agriculture is also a better projection than population growth as typically population growth results in development of agricultural lands and paving of previously unpaved roads (population growth would be more likely to be inversely related to unpaved road dust emissions). While agricultural employment will not account for recreational use of unpaved roads, this was considered moot as population increases may increase recreational uses however that same population growth also reduces the amount of unpaved roads.
+#Emission factors vary based on the unpaved road type and precipitation correction and can be tweaked in WW - this might be worth looking into
+#This SCC is huge
+scc <- 2296000000
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["AgJobs"]])
+#no controls
+#there is probably some pt source subtraction I could do here, but none for now
+#prioritize pt subs for this because this is a large scc
+final_table <- rbind(final_table, temp_table)
+
+
+#open burning - all categories
+#yard waste - leaf species unspecified
+#
+#NOMAD gets a waste/person number, and then assumes rural folks burn 28% of waste.
+#  this requires a live update of the portion of rural population per county, which
+#  WW maintains
+#The burning of yard clippings is illegal in Utah during certain times of the year.
+#If you want seasonal activity, look at EPA's Emissions Inventory Improvement Plan Table 1.4-3.
+scc <- 2610000100
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+#controls:
+#there are 17 counties (16 + SLC) that participate in the DAQ open burning permit program (established in 
+#  Utah Administrative Code  R307-202) and were, therefore, allocated a control 
+#  with 80% reduction per AirControlNet, Document No. 06.05.003/9011.002, 
+#  page III-405. (https://www.epa.gov/ground-level-ozone-pollution). 
+#    (I can not find this document)
+#  assume participating counties have a 80% control.
+#  Rule 202 was implemented late 2014 I believe, so assume fully phased in by 2015.
+#NOTE: the number of participating counties could have changed since this was updated.
+#  Salt Lake County's control was raised to 100% due to their ordinance 9.24.140 
+#  and 9.24.150 banning open burning 
+temp_table  <- add_controls(temp_table)
+#no pt subs
+final_table <- rbind(final_table,temp_table)
+
+
+#open burning - all categories
+#yard waste - brush species unspecified
+#
+#NOMAD gets a waste/person number, and then assumes rural folks burn 28% of waste
+#  this requires a live update of the portion of rural population per county.
+#The burning of yard clippings is illegal in Utah during certain times of the year.
+#If you want seasonal activity, look at EPA's Emissions Inventory Improvement Plan Table 1.4-3.
+scc <- 2610000400
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+#controls:
+#there are 17 counties (16 + SLC) that participate in the DAQ open burning permit program (established in 
+#  Utah Administrative Code  R307-202) and were, therefore, allocated a control 
+#  with 80% reduction per AirControlNet, Document No. 06.05.003/9011.002, 
+#  page III-405. (https://www.epa.gov/ground-level-ozone-pollution). 
+#    (I can not find this document)
+#  assume participating counties have a 80% control.
+#  Rule 202 was implemented late 2014 I believe, so assume fully phased in by 2015.
+#NOTE: the number of participating counties could have changed since this was updated.
+#  Salt Lake County's control was raised to 100% due to their ordinance 9.24.140 
+#  and 9.24.150 banning open burning 
+temp_table  <- add_controls(temp_table)
+#no pt subs
+final_table <- rbind(final_table,temp_table)
+
+
+#Open burning land clearing
+#pulled from WW.
+#scales with population
+#Emissions for this SCC are read, but then set to zero as this type of burning is not typically practiced in Utah and no burning of cleared debris (slash) from a  construction project was permitted in 2014 per State Fire Marshall Coy Porter. Therefore, activity data was set at zero tons of debris burned for all counties.	
+# EPA estimates emissions from this SCC on the order of 12,000 TPY of CO, so zeroing it is kind of a big deal. Do we have any methods to track illegal burning?
+scc <- 2610000500
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+counties <- seq.int(49001,49057,2)
+#here is where we turn everything into zeros
+temp_table <- add_manual_controls(temp_table,scc,counties,1900,1901,0)
+final_table <- rbind(final_table, temp_table)
+
+
+#open burning of Residential Household Waste (RHW)
+#NEMO takes a waste/person value, and then assumes that 24% of the rural 
+#  population burns a portion of their waste.
+#projects with population
+scc <- 2610030000
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
+#Rule R307-202 bans this kind of open burning. We assume 80% compliance with the rule
+#  except for Salt Lake, which we assume 100% compliance.
+#from our rule website, it looks like the rule was implemented late 2014. 
+#  (It's not in the normal control TSD). I'll assume 2015 was fully implemented.
+temp_table  <- add_controls(temp_table)
+#no pt subs. This is like, burning residential stuff. Not in permits
+final_table <- rbind(final_table,temp_table)
+
 #LUST - Leaking Underground Storage Tanks
 #baseline based on number of remediation events in a given year from DERR
 #projection based on average past 5 years
@@ -423,36 +546,6 @@ temp_table <- make_baseline(efs_table,projection_tables[["LUST"]],project_to = e
 #no controls?
 #no pt subs?
 final_table <- rbind(final_table, temp_table)
-
-
-
-
-
-
-
-
-
-
-```
-
-
-```{r 22-XX, 26-XX, 27-XX, unpaved roads, waste disposal, biogenics}
-
-#unpaved roads emissions
-#baseline from WW
-#projection based on AgJobs
-#  projection is based on agjobs because agricultural operations are anticipated to represent a large portion of unpaved road use. Agriculture is also a better projection than population growth as typically population growth results in development of agricultural lands and paving of previously unpaved roads (population growth would be more likely to be inversely related to unpaved road dust emissions). While agricultural employment will not account for recreational use of unpaved roads, this was considered moot as population increases may increase recreational uses however that same population growth also reduces the amount of unpaved roads.
-#Emission factors vary based on the unpaved road type and precipitation correction and can be tweaked in WW - this might be worth looking into
-#This SCC is huge
-scc <- 2296000000
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["AgJobs"]])
-#no controls
-#there is probably some pt source subtraction I could do here, but none for now
-#prioritize pt subs for this because this is a large scc
-final_table <- rbind(final_table, temp_table)
-
-
 
 
 ```
@@ -1566,19 +1659,6 @@ final_table <- rbind(final_table, temp_table)
 ```{r 3.3) pull baseline emissions from WW, but manually project}
 
 
-#Open burning land clearing
-#pulled from WW.
-#scales with population
-#Emissions for this SCC are read, but then set to zero as this type of burning is not typically practiced in Utah and no burning of cleared debris (slash) from a  construction project was permitted in 2014 per State Fire Marshall Coy Porter. Therefore, activity data was set at zero tons of debris burned for all counties.	
-# EPA estimates emissions from this SCC on the order of 12,000 TPY of CO, so zeroing it is kind of a big deal. Do we have any methods to track illegal burning?
-scc <- 2610000500
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-counties <- seq.int(49001,49057,2)
-#here is where we turn everything into zeros
-temp_table <- add_manual_controls(temp_table,scc,counties,1900,1901,0)
-final_table <- rbind(final_table, temp_table)
-
 
 
 #tilling of agriculture crops
@@ -1624,72 +1704,6 @@ temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no pt subs
 #no controls
 final_table <- rbind(final_table, temp_table)
-
-#open burning of Residential Household Waste (RHW)
-#NEMO takes a waste/person value, and then assumes that 24% of the rural 
-#  population burns a portion of their waste.
-#projects with population
-scc <- 2610030000
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
-#Rule R307-202 bans this kind of open burning. We assume 80% compliance with the rule
-#  except for Salt Lake, which we assume 100% compliance.
-#from our rule website, it looks like the rule was implemented late 2014. 
-#  (It's not in the normal control TSD). I'll assume 2015 was fully implemented.
-temp_table  <- add_controls(temp_table)
-#no pt subs. This is like, burning residential stuff. Not in permits
-final_table <- rbind(final_table,temp_table)
-
-#open burning - all categories
-#yard waste - leaf species unspecified
-#
-#NOMAD gets a waste/person number, and then assumes rural folks burn 28% of waste.
-#  this requires a live update of the portion of rural population per county, which
-#  WW maintains
-#The burning of yard clippings is illegal in Utah during certain times of the year.
-#If you want seasonal activity, look at EPA's Emissions Inventory Improvement Plan Table 1.4-3.
-scc <- 2610000100
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-#controls:
-#there are 17 counties (16 + SLC) that participate in the DAQ open burning permit program (established in 
-#  Utah Administrative Code  R307-202) and were, therefore, allocated a control 
-#  with 80% reduction per AirControlNet, Document No. 06.05.003/9011.002, 
-#  page III-405. (https://www.epa.gov/ground-level-ozone-pollution). 
-#    (I can not find this document)
-#  assume participating counties have a 80% control.
-#  Rule 202 was implemented late 2014 I believe, so assume fully phased in by 2015.
-#NOTE: the number of participating counties could have changed since this was updated.
-#  Salt Lake County's control was raised to 100% due to their ordinance 9.24.140 
-#  and 9.24.150 banning open burning 
-temp_table  <- add_controls(temp_table)
-#no pt subs
-final_table <- rbind(final_table,temp_table)
-
-#open burning - all categories
-#yard waste - brush species unspecified
-#
-#NOMAD gets a waste/person number, and then assumes rural folks burn 28% of waste
-#  this requires a live update of the portion of rural population per county.
-#The burning of yard clippings is illegal in Utah during certain times of the year.
-#If you want seasonal activity, look at EPA's Emissions Inventory Improvement Plan Table 1.4-3.
-scc <- 2610000400
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-#controls:
-#there are 17 counties (16 + SLC) that participate in the DAQ open burning permit program (established in 
-#  Utah Administrative Code  R307-202) and were, therefore, allocated a control 
-#  with 80% reduction per AirControlNet, Document No. 06.05.003/9011.002, 
-#  page III-405. (https://www.epa.gov/ground-level-ozone-pollution). 
-#    (I can not find this document)
-#  assume participating counties have a 80% control.
-#  Rule 202 was implemented late 2014 I believe, so assume fully phased in by 2015.
-#NOTE: the number of participating counties could have changed since this was updated.
-#  Salt Lake County's control was raised to 100% due to their ordinance 9.24.140 
-#  and 9.24.150 banning open burning 
-temp_table  <- add_controls(temp_table)
-#no pt subs
-final_table <- rbind(final_table,temp_table)
 
 
 #storage and transport of petroleum and petroleum products
