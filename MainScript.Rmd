@@ -57,12 +57,8 @@ options(scipen = 999)
 source(paste0(Sys.getenv('GitDir'),'BaseCodes.R'))
 start_year <- 2017
 end_year <- 2020
-#when we add controls to an SCC, these are the default FIPS we add controls to.
-naa_counties <- c(49003, 49005, 49011, 49035, 49045, 49049, 49057)
 #step 2
 source(paste0(Sys.getenv('GitDir'),'BaseTables.R'))
-#this one I am phasing out, so I will comment it
-#source(paste0(Sys.getenv('GitDir'),'BaseInputs.R'))
 
 #we will fill in this final table with our data
 final_table <- vector()
@@ -82,26 +78,13 @@ final_table <- vector()
 This is going to produce a fresh inventory for Utah's Area Source.
 This code has 5 main sections:
   1) Base Codes
-  Always run this section. 'source('basecodes.R')'. This pull functions you will use later in the script. This section should not pull any variables. It should only generate functions.
+  Always run this section. 'source('BaseCodes.R')'. This pull functions you will use later in the script. This section should not pull any variables. It should only generate functions.
   
-  2) Base tables/base_inputs
-  'source('baseTables.R')'
-  'source('base_inputs.R')'
+  2) Base Tables
+  'source('BaseTables.R')'
   This generates the fundamental tables we will work with. We till haven't started filling the inventory table yet. You probably want to run this every time.
   
-  3.x)Generate data from scratch - find EFs from online sources
-  If our SCC is not in the WW, we have to develop emission estimates from scratch. This is not ideal, and requires
-  lots of documentation.
-  
-  3.x) Pull EFs from WW
-  Our data can be based on whatever throughput or population, but we are pulling EFs from the WW and then
-  creating baseline emissions and projections with our own numbers.
-  
-  3.x) Pull baseline from WW
-  Pull the entire baseline of emissions from the WW. All we do from this point is project the data and 
-  maybe add controls.
-  
-  5) Merge inventories.
+  3) Merge inventories.
     Now that we have updated all of the SCCs that we can (for now), let's merge our new data into the most up-to-date complete inventory table.
     
     
@@ -140,21 +123,34 @@ project baseline
   if controls
     apply controls
 add to final table
-```{r}
 
-
-
-
-```
-
-
-
+########
 Utah currently defers to EPA for emission calculations for many SCC calculations. We do not want 
 to claim primacy when reporting these numbers for the NEI, and instead will pull the data FROM the NEI and use them for projections. If we accidentally run and submit this section for NEI reporting, we will over-write whatever EPA comes up with, which would be bad. This section should only be run/added to the inventory when we are reporting for SIP projections or WEBSITE projections. For projections only.
 
 There are no rules (and therefore, no controls) or pt source subtractions for these sccs.
 
 ```{NEI Pulls, for SIPS/WEBSITE}
+#25-XX-XXX-XXX: Storage and Transport of fuels
+
+#declare an empty table to fill in with 25-XX-XXX-XXX SCCs. I can experiment with that 
+#table before I merge it with final_table if I want
+NEI_25xx <- vector()
+source(paste0(Sys.getenv('GitDir'),'25XXXXXXXX_NEI_FuelStorageAndTransport.R'))
+#merge the table with final and delete it.
+final_table <- rbind(final_table, NEI_25xx)
+rm(NEI_25xx)
+
+
+#27-XX-XXX-XXX: Biogenic Emissions
+#Biogenics are not human sourced. They are a huge portion of our statewide emissions, but 
+#we don't look at them too closely, because they are not in our control.
+NEI_27xx <- vector()
+source(paste0(Sys.getenv('GitDir'),'27XXXXXXXX_NEI_Biogenics.R'))
+#merge the table with final and delete it.
+final_table <- rbind(final_table, NEI_27xx)
+rm(NEI_27xx)
+
 
 #28-XX-XXX-XXX: Agricultural processes, fires/wildfires, domestic/wild animals
 
@@ -168,242 +164,107 @@ source(paste0(Sys.getenv('GitDir'),'28XXXXXXXX_NEI_AgAnimalsAndFires.R'))
 #merge the table with final and delete it.
 final_table <- rbind(final_table, NEI_28xx)
 rm(NEI_28xx)
-
-
-#25-XX-XXX-XXX: Storage and Transport of fuels
-
-#declare an empty table to fill in with 25-XX-XXX-XXX SCCs. I can experiment with that 
-#table before I merge it with final_table if I want
-NEI_25xx <- vector()
-source(paste0(Sys.getenv('GitDir'),'25XXXXXXXX_NEI_FuelStorageAndTransport.R'))
-#merge the table with final and delete it.
-final_table <- rbind(final_table, NEI_25xx)
-rm(NEI_25xx)
-
-
 ```
 
 
+```{r 22-XX, 26-XX, unpaved roads, waste disposal}
 
-2810010000 - perspiration - report? find citation?
-switch projection methods to the new 'project baseline with same input' function to
-drop a line of code from most SCCs
-```{r 3.1) create our own EFs - not ideal, as references can go bad}
-
-#Misc sources > aircraft/rocket engine firing and testing > total
-#this scc used to assume emissions from rocket firing and testing were "estimated to be one percent of aircraft emissions at all Utah airports. This was determined by a 1992 Division of Air Quality phone survey of aircraft maintenance staff."
-#it is now focused on actual rocket testing/firing, like we would find at the ATK Promontory/Thiokol site (10009) or the ATK Bacchus plant (10402). We can eventually add inspection/maintenance of aircraft on airports, but that will be a more complex process, and they might not even apply to this scc.
-scc <- 2810040000
-#these pt sccs were manually pulled on 2021/04/08 by Michael Allen. I looked at sites 10009, 10402 in SLEIS and pulled every SCC that looked like it could apply to test fuel combustion. My method is sketchy, and could be improved.
-#I left out 30101010 - TNT manufacturing, because it didn't seem like test rocket fuel
-pt_sccs <- c(50300205,20400201)
-#We assume there is no test rocket fuel burning on nonpermitted sites, so the only emissions captured in this SCC are permitted emissions that do not count as "Major Point Sources" (is_point == FALSE) for wherever we are reporting our data. All of the other processes will be captured by the point source inventory
-temp_table <- pull_pt_removal_table(pt_sccs,scc) %>% filter(is_point == FALSE) %>% select(-is_point)
-#project as steady. These are permitted emissions so they may not radically change over time.
-temp_table <- project_baseline(temp_table,projection_tables[["Steady"]])
+#unpaved roads emissions
+#baseline from WW
+#projection based on AgJobs
+#  projection is based on agjobs because agricultural operations are anticipated to represent a large portion of unpaved road use. Agriculture is also a better projection than population growth as typically population growth results in development of agricultural lands and paving of previously unpaved roads (population growth would be more likely to be inversely related to unpaved road dust emissions). While agricultural employment will not account for recreational use of unpaved roads, this was considered moot as population increases may increase recreational uses however that same population growth also reduces the amount of unpaved roads.
+#Emission factors vary based on the unpaved road type and precipitation correction and can be tweaked in WW - this might be worth looking into
+#This SCC is huge
+scc <- 2296000000
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["AgJobs"]])
 #no controls
+#there is probably some pt source subtraction I could do here, but none for now
+#prioritize pt subs for this because this is a large scc
+final_table <- rbind(final_table, temp_table)
+
+
+#open burning - all categories
+#yard waste - leaf species unspecified
+#
+#NOMAD gets a waste/person number, and then assumes rural folks burn 28% of waste.
+#  this requires a live update of the portion of rural population per county, which
+#  WW maintains
+#The burning of yard clippings is illegal in Utah during certain times of the year.
+#If you want seasonal activity, look at EPA's Emissions Inventory Improvement Plan Table 1.4-3.
+scc <- 2610000100
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+#controls:
+#there are 17 counties (16 + SLC) that participate in the DAQ open burning permit program (established in 
+#  Utah Administrative Code  R307-202) and were, therefore, allocated a control 
+#  with 80% reduction per AirControlNet, Document No. 06.05.003/9011.002, 
+#  page III-405. (https://www.epa.gov/ground-level-ozone-pollution). 
+#    (I can not find this document)
+#  assume participating counties have a 80% control.
+#  Rule 202 was implemented late 2014 I believe, so assume fully phased in by 2015.
+#NOTE: the number of participating counties could have changed since this was updated.
+#  Salt Lake County's control was raised to 100% due to their ordinance 9.24.140 
+#  and 9.24.150 banning open burning 
+temp_table  <- add_controls(temp_table)
+#no pt subs
 final_table <- rbind(final_table,temp_table)
 
 
-
-
-#                               manually calculate
-
-# misc > ag crop harvesting
-# we came up with emissions calculations for this SCC by ourselves. EPA does not offer any methodologies for it. Wheat, Corn, Hay, and Barley are like 99.3% of the particulate matter from harvesting in our state.
-# The emission factors and calculation method is from chapter 10, Agricultural Harvesting of the "WRAP Fugitive Dust Handbook," dated September 7, 2006.									
-# Acres harvested is from the US agricultural census for 2017.
-
-scc <- 2801000005
-pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
-#given in lb of dust per acre harvested. PM25 is assumed to be 15% of PM10
-TPPPY <-c(1.68/2000, 1.68/2000*0.15, 1.68/2000, 1.68/2000*0.15)
-efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-#projection table contains acres harvested of the given agricultural product
-hay_table <- make_baseline(efs_table,projection_tables[["Hay"]], project_to = end_year)
-
-pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
-#given in lb of dust per acre harvested. PM25 is assumed to be 15% of PM10
-TPPPY <-c(5.8/2000, 5.8/2000*0.15, 5.8/2000, 5.8/2000*0.15)
-efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-#projection table contains acres harvested of the given agricultural product
-wheat_table <- make_baseline(efs_table,projection_tables[["Wheat"]], project_to = end_year)
-
-pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
-#given in lb of dust per acre harvested. PM25 is assumed to be 15% of PM10
-TPPPY <-c(1.70/2000, 1.70/2000*0.15, 1.70/2000, 1.70/2000*0.15)
-efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-#projection table contains acres harvested of the given agricultural product
-corn_table <- make_baseline(efs_table,projection_tables[["Corn"]], project_to = end_year)
-
-pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
-#given in lb of dust per acre harvested. PM25 is assumed to be 15% of PM10
-TPPPY <-c(5.8/2000, 5.8/2000*0.15, 5.8/2000, 5.8/2000*0.15)
-efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-#projection table contains acres harvested of the given agricultural product
-barley_table <- make_baseline(efs_table,projection_tables[["Barley"]], project_to = end_year)
-
-#declare temp table as hay table, arbitrarily, to get the table with the right format
-temp_table <- hay_table
-#add together the 4 crops that produce dust when harvested.
-temp_table$TPY <- hay_table$TPY + wheat_table$TPY + corn_table$TPY + barley_table$TPY
-
+#open burning - all categories
+#yard waste - brush species unspecified
+#
+#NOMAD gets a waste/person number, and then assumes rural folks burn 28% of waste
+#  this requires a live update of the portion of rural population per county.
+#The burning of yard clippings is illegal in Utah during certain times of the year.
+#If you want seasonal activity, look at EPA's Emissions Inventory Improvement Plan Table 1.4-3.
+scc <- 2610000400
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+#controls:
+#there are 17 counties (16 + SLC) that participate in the DAQ open burning permit program (established in 
+#  Utah Administrative Code  R307-202) and were, therefore, allocated a control 
+#  with 80% reduction per AirControlNet, Document No. 06.05.003/9011.002, 
+#  page III-405. (https://www.epa.gov/ground-level-ozone-pollution). 
+#    (I can not find this document)
+#  assume participating counties have a 80% control.
+#  Rule 202 was implemented late 2014 I believe, so assume fully phased in by 2015.
+#NOTE: the number of participating counties could have changed since this was updated.
+#  Salt Lake County's control was raised to 100% due to their ordinance 9.24.140 
+#  and 9.24.150 banning open burning 
+temp_table  <- add_controls(temp_table)
+#no pt subs
 final_table <- rbind(final_table,temp_table)
-rm(hay_table, wheat_table, corn_table, barley_table, temp_table, TPPPY, efs_table, pollutants, scc)
 
 
-
-
-#percent of households that own pets is from American Veterinary Medical 
-#  Association 2018 report. (main_workbook/references/2806XXXXXX)
-#  24.7% of households own cats in Utah
-#
-#googled people per household in utah, ballpark is sufficient, but got from Kem Gardner
-#  people/household for utah
-#  https://gardner.utah.edu/wp-content/uploads/UtahAtAGlance_20180207.pdf
-#  3.19 people/household
-#
-#The emission factor is from, "Development of an Updated Gridded Ammonia Emission Inventory for the South Coast Air Basin."
-#  0.348 lb/cat/year
-#
-#ammonia, domestic cats
-#based on, and projects with population
-#  3.19 people/house
-#  24.7% of houses own cats
-#  0.348 lb/cat/year = 1.74 E-4 T/cat/year
-#    population * 1 house/3.19 population * 0.247 cat/house * 1.74E-4Ton/cat/year
-#    1/3.19*.247*1.74E-4
-# 1.35E-5 TPPPY
-scc <- 2806010000
-pollutants <- c('NH3')
-TPPPY <-(1.35E-5)
-efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
-#no pt source
-#no controls
+#Open burning land clearing
+#pulled from WW.
+#scales with population
+#Emissions for this SCC are read, but then set to zero as this type of burning is not typically practiced in Utah and no burning of cleared debris (slash) from a  construction project was permitted in 2014 per State Fire Marshall Coy Porter. Therefore, activity data was set at zero tons of debris burned for all counties.	
+# EPA estimates emissions from this SCC on the order of 12,000 TPY of CO, so zeroing it is kind of a big deal. Do we have any methods to track illegal burning?
+scc <- 2610000500
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
+counties <- seq.int(49001,49057,2)
+#here is where we turn everything into zeros
+temp_table <- add_manual_controls(temp_table,scc,counties,1900,1901,0)
 final_table <- rbind(final_table, temp_table)
 
-#percent of households that own pets is from American Veterinary Medical 
-#  Association 2018 report. (main_workbook/references/2806XXXXXX)
-#  36.2% of households own dogs in Utah
-#
-#googled people per household in utah, ballpark is sufficient, but got from Kem Gardner
-#  people/household for utah
-#  https://gardner.utah.edu/wp-content/uploads/UtahAtAGlance_20180207.pdf
-#  3.19 people/household
-#
-#The emission factor is from, "Development of an Updated Gridded Ammonia Emission Inventory for the South Coast Air Basin."
-#  2.17 lb/dog/year
-#
-#based on, and projects with population
-#  3.19 people/house
-#  36.2% of houses own cats
-#  2.17 lb/dog/year = 1.085E-3 T/dog/year
-#    population * 1 house/3.19 population * 0.362 dog/house * 1.085E-3Ton/dog/year
-#    1/3.19*.362*1.085E-3
-# 1.23E-4 TPPPY
-scc <- 2806015000
-pollutants <- c('NH3')
-TPPPY <-(1.23E-4)
-efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
-#no pt source
-#no controls
-final_table <- rbind(final_table, temp_table)
 
-#human perspiration, respiration, cigarette smoking
-#all ammonia
-#confusing. SAYS this is no longer reported due to lack of documentation,
-#but it IS reported. It also says to contact Maine. So I did... We will see. Maine could not help haha.
-#1) Emission factors from SCAQS, appendix G, pages G2 through G-3.
-#2) SCAQS is an abbreviation for the document entitled "Development of the Ammonia Emission Inventory for the Southern California Air Quality Study."
-#3) That document was prepared by the Radian Corporation, September 1991.
-#4) Human Perspiration is estimated at 0.55 lbs ammonia per person per year.
-#5) Human Respiration is estimated at 0.0035 lbs ammonia per person per year.
-#6) Cigarette smoking is estimated at 0.022 lbs ammonia per person per year.
-#7) Sum of the above 3 factors is 0.5755 lbs ammonia per person per year.
-#2.88E-4 TPPPY
-scc <- 2810010000
-pollutants <- c('NH3')
-TPPPY <-(2.88E-4)
-efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
-#no pt subtraction
-#no controls
-final_table <- rbind(final_table, temp_table)
-
-#structure fires
-#1) Guidance used is from the "Emission Inventory Improvement Program (EIIP)," Vol. III, (1/31/01 ed.), Chapter 18, "Structure Fires."
-#2) Emission factors are from EIIP, Vol. III, Chapter 18, "Structure Fires," (1/31/01 ed.), Table 18.4-1.
-#3) Calculations include fires in buildings and other fixed structures of all types.
-#4) Fires are indexed to human population; counties with more people equates to more fires.
-#5) HAPs emission factors are from "Documentation for the 1999 Base Year Nonpoint Area Source National Emission Inventory for Hazardous Air Pollutants."
-#6) Seasonal activity factors are from EPA's Emissions Inventory Improvement Plan Table 1.4-3.
-
-#2.3 fires/1000 people
-#1.2 tons burned per fire
-#  so 2.76 tons burned per 1000 people
-#  0.00276 tons per person
-#
-#VOC 11 lb/ton burned
-#  1.52E-5 TPPPY
-#PM (10 and 2.5) 10.8 lb/ton
-#  1.49E-5 TPPPY
-#CO 60 lb/ton
-#  8.28E-5 TPPPY
-#NOx 1.4 lb/ton
-#  1.93E-6 TPPPY
-#Acrolein (107028) 4.414 lb/ton
-#  6.09E-6 TPPPY
-#Hydrogen Cyanide (74908) 35.486 lb/ton
-#  4.90E-5 TPPPY
-#Hydrogen Chloride (7647010) 15.112 lb/ton
-#  2.09E-5 TPPPY
-#Formaldehyde (50000) 1.023 lb/ton
-#  1.41E-6 TPPPY
-scc <- 2810030000
-pollutants <- c('VOC','PM10','PM25','CO','NOX','107028','74908','7647010','50000')
-TPPPY <-c(1.52E-5,1.49E-5,1.49E-5,8.28E-5,1.93E-6,6.09E-6,4.90E-5,2.09E-5,1.41E-6)
-efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
-#no pt subtract
-#no controls
-final_table <- rbind(final_table, temp_table)
-
-#vehicle fires
-#1) EPA's "Emission Inventory Improvement Program (EIIP)," Volume III, "Area Sources Category Method Abstract - Vehicle Fires," (5/15/00 edition) is used. Material burned is in the text on page 1.
-#2) The EIIP gives emission factors for PM, CO, NOx, nonmethane total organic compounds, and methane.
-#3) The "nonmethane total organic compounds" is assumed equal to VOC. Methane is ignored.
-#5) Fires per 1000 people derived by averaging 2010-2013 summary & "by FDID" data on the Utah Fire Incident Reporting System, Utah Fire Marshal's Office at: https://site.utah.gov/publicsafety/firemarshal/nfirs.html. NOTE: To conform with EIIP methods, water, rail and aircraft vehicle fires were excluded, only fire codes 130-132, and 136-138 were summed each year.
-
-#Vehicle Fire Data
-#*Note in 2012, only summary data is available and water/rail/air fires could not be excluded.	
-#Year	              2010 2011	2012*	2013						
-#Incidents	        804  758  702	  646						
-#Avg Yearly Fires   727.5						
-#Per 1000 people		0.232903894						
-
-#0.2329 fires/1000 ppl
-#2.33E-4 fires/person
-#0.25 Tons burned per car
-#  5.825E-5 Tons burned per person
-
-#PM (10 and 2.5) 100 lb/ton
-#  2.91E-6 TPPPY
-#NMOC (assumed to be VOC) 32 lb/ton
-#  9.32E-7 TPPPY
-#CO 125 lb/ton 
-#  3.64E-6 TPPPY
-#NOx 4 lb/ton
-#  1.16E-7 TPPPY
-scc <- 2810050000
-pollutants <- c('PM10','PM25','VOC','CO','NOX')
-TPPPY <- c(2.91E-6,2.91E-6,9.32E-7,3.64E-6,1.16E-7)
-efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
-temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
-#no pt subtract
-#no controls
-final_table <- rbind(final_table, temp_table)
+#open burning of Residential Household Waste (RHW)
+#NEMO takes a waste/person value, and then assumes that 24% of the rural 
+#  population burns a portion of their waste.
+#projects with population
+scc <- 2610030000
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
+#Rule R307-202 bans this kind of open burning. We assume 80% compliance with the rule
+#  except for Salt Lake, which we assume 100% compliance.
+#from our rule website, it looks like the rule was implemented late 2014. 
+#  (It's not in the normal control TSD). I'll assume 2015 was fully implemented.
+temp_table  <- add_controls(temp_table)
+#no pt subs. This is like, burning residential stuff. Not in permits
+final_table <- rbind(final_table,temp_table)
 
 #LUST - Leaking Underground Storage Tanks
 #baseline based on number of remediation events in a given year from DERR
@@ -425,18 +286,10 @@ temp_table <- make_baseline(efs_table,projection_tables[["LUST"]],project_to = e
 final_table <- rbind(final_table, temp_table)
 
 
-
-
-
-
-
-
-
-
 ```
 
 
-```{r food, construction, mining (23-xx-xxx-xxx)}
+```{r 23-xx-xxx-xxx: food, construction, mining }
 
 #industrial processes,
 #food and kindred products, SIC 20
@@ -677,10 +530,9 @@ rm( scc, pt_sccs, real_table, pollutants, TPPPY, efs_table, zeros_table, temp_ta
 ```
 
 
-
 NOTE: For solvents, we always do pt source subtractions AFTER adding controls to the emissions estimates. We assume that our pt source emissions are already using the controls before they get phased in, so we want to subtract [controlled] vs. [controlled]
 
-```{r solvents (24-xx-xxx-xxx)}
+```{r 24-xx-xxx-xxx: solvents)}
 # Solvent Utilization > Surface Coating > Traffic Markings > Total: All Solvent Types
 # INCOMPLETE - WE DO NOT HAVE 2017 UDOT DATA. 
 # TO DO FOR 2020 NEI - GET 2020 LANE MILES DATA FROM UDOT
@@ -830,7 +682,7 @@ temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_control
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
 # remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_controlled, test, pt_sccs, pt_subs, temp_table_final)
+rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 
 # Solvent Utilization > Surface Coating > Metal Cans: SIC 341 > Total: All Solvent Types
@@ -1534,41 +1386,61 @@ final_table <- rbind(final_table, temp_table)
 ```
 
 
+```{r 25-xx-xxx-xxx: storage and transport of fuel}
+#some of these SCCs project with the same data: statewide fuel usage. It is the combination of 
+#"GovGas" and "Gasoline" tables, which sum up to total gasoline and gasohol consumption in the state.
+gasoline <- projection_tables[["Gasoline"]]
+govgas <- projection_tables[["GovGas"]]
+
+#combine govgas and gasoline
+all_gas<- left_join(gasoline, govgas, by = c("county", "year"))
+all_gas <- all_gas %>% 
+  #add together the two throughput columns
+  mutate(unit = as.numeric(unit.x) + as.numeric(unit.y)) %>% 
+  #drop our old throughputs
+  select(-c("unit.x","unit.y"))
 
 
+#storage and transport > petroleum and petroleum products ...
+# ... > bulk plants: all evaporative losses > gasoline
 
-
-
-```{r 3.3) pull baseline emissions from WW, but manually project}
-
-
-#Open burning land clearing
-#pulled from WW.
-#scales with population
-#Emissions for this SCC are read, but then set to zero as this type of burning is not typically practiced in Utah and no burning of cleared debris (slash) from a  construction project was permitted in 2014 per State Fire Marshall Coy Porter. Therefore, activity data was set at zero tons of debris burned for all counties.	
-# EPA estimates emissions from this SCC on the order of 12,000 TPY of CO, so zeroing it is kind of a big deal. Do we have any methods to track illegal burning?
-scc <- 2610000500
+#EPA has noted that there is a potential for overlap with point sources for SCCs: 2501055120 (likely with Bulk Terminals) and 2505040120
+scc <- 2501055120
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-counties <- seq.int(49001,49057,2)
-#here is where we turn everything into zeros
-temp_table <- add_manual_controls(temp_table,scc,counties,1900,1901,0)
-final_table <- rbind(final_table, temp_table)
+#project the baseline based on all_gas fuel consumption
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = all_gas)
+# No controls
+# No pt source subtractions
+temp_table_final <- temp_table_project
+# add to final table
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
 
-#unpaved roads emissions
-#baseline from WW
-#projection based on AgJobs
-#  projection is based on agjobs because agricultural operations are anticipated to represent a large portion of unpaved road use. Agriculture is also a better projection than population growth as typically population growth results in development of agricultural lands and paving of previously unpaved roads (population growth would be more likely to be inversely related to unpaved road dust emissions). While agricultural employment will not account for recreational use of unpaved roads, this was considered moot as population increases may increase recreational uses however that same population growth also reduces the amount of unpaved roads.
-#Emission factors vary based on the unpaved road type and precipitation correction and can be tweaked in WW - this might be worth looking into
-#This SCC is huge
-scc <- 2296000000
+
+#storage and transport > petroleum and petroleum products ...
+# ... > pipeline > gasoline
+
+#EPA has noted that there is a potential for overlap with point sources for 
+#SCCs: 2501055120 (likely with Bulk Terminals) and 2505040120
+scc <- 2505040120
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["AgJobs"]])
-#no controls
-#there is probably some pt source subtraction I could do here, but none for now
-#prioritize pt subs for this because this is a large scc
-final_table <- rbind(final_table, temp_table)
+#project the baseline based on all_gas fuel consumption
+temp_table_project <- project_baseline(base_table = temp_table, projection_table = all_gas)
+# No controls
+# No pt source subtractions
+temp_table_final <- temp_table_project
+# add to final table
+final_table <- rbind(final_table, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
 
+
+```
+
+
+2810010000 - perspiration - report? find citation?
+```{r 28-xxx-xxx-xxx: Agriculture, animals, fires}
 
 
 #tilling of agriculture crops
@@ -1615,72 +1487,6 @@ temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no controls
 final_table <- rbind(final_table, temp_table)
 
-#open burning of Residential Household Waste (RHW)
-#NEMO takes a waste/person value, and then assumes that 24% of the rural 
-#  population burns a portion of their waste.
-#projects with population
-scc <- 2610030000
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
-#Rule R307-202 bans this kind of open burning. We assume 80% compliance with the rule
-#  except for Salt Lake, which we assume 100% compliance.
-#from our rule website, it looks like the rule was implemented late 2014. 
-#  (It's not in the normal control TSD). I'll assume 2015 was fully implemented.
-temp_table  <- add_controls(temp_table)
-#no pt subs. This is like, burning residential stuff. Not in permits
-final_table <- rbind(final_table,temp_table)
-
-#open burning - all categories
-#yard waste - leaf species unspecified
-#
-#NOMAD gets a waste/person number, and then assumes rural folks burn 28% of waste.
-#  this requires a live update of the portion of rural population per county, which
-#  WW maintains
-#The burning of yard clippings is illegal in Utah during certain times of the year.
-#If you want seasonal activity, look at EPA's Emissions Inventory Improvement Plan Table 1.4-3.
-scc <- 2610000100
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-#controls:
-#there are 17 counties (16 + SLC) that participate in the DAQ open burning permit program (established in 
-#  Utah Administrative Code  R307-202) and were, therefore, allocated a control 
-#  with 80% reduction per AirControlNet, Document No. 06.05.003/9011.002, 
-#  page III-405. (https://www.epa.gov/ground-level-ozone-pollution). 
-#    (I can not find this document)
-#  assume participating counties have a 80% control.
-#  Rule 202 was implemented late 2014 I believe, so assume fully phased in by 2015.
-#NOTE: the number of participating counties could have changed since this was updated.
-#  Salt Lake County's control was raised to 100% due to their ordinance 9.24.140 
-#  and 9.24.150 banning open burning 
-temp_table  <- add_controls(temp_table)
-#no pt subs
-final_table <- rbind(final_table,temp_table)
-
-#open burning - all categories
-#yard waste - brush species unspecified
-#
-#NOMAD gets a waste/person number, and then assumes rural folks burn 28% of waste
-#  this requires a live update of the portion of rural population per county.
-#The burning of yard clippings is illegal in Utah during certain times of the year.
-#If you want seasonal activity, look at EPA's Emissions Inventory Improvement Plan Table 1.4-3.
-scc <- 2610000400
-temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
-#controls:
-#there are 17 counties (16 + SLC) that participate in the DAQ open burning permit program (established in 
-#  Utah Administrative Code  R307-202) and were, therefore, allocated a control 
-#  with 80% reduction per AirControlNet, Document No. 06.05.003/9011.002, 
-#  page III-405. (https://www.epa.gov/ground-level-ozone-pollution). 
-#    (I can not find this document)
-#  assume participating counties have a 80% control.
-#  Rule 202 was implemented late 2014 I believe, so assume fully phased in by 2015.
-#NOTE: the number of participating counties could have changed since this was updated.
-#  Salt Lake County's control was raised to 100% due to their ordinance 9.24.140 
-#  and 9.24.150 banning open burning 
-temp_table  <- add_controls(temp_table)
-#no pt subs
-final_table <- rbind(final_table,temp_table)
-
 
 #storage and transport of petroleum and petroleum products
 #bulk plants, all evaporative losses - gasoline
@@ -1688,15 +1494,242 @@ final_table <- rbind(final_table,temp_table)
 #EPA has noted that there is a potential for overlap with point sources for 
 #SCCs: 2501055120 (likely with Bulk Terminals) and 2505040120
 
-scc <- 2501055120
-temp_table <- pull_baseline_from_ww(scc)
 
-#EPA has noted that there is a potential for overlap with point sources for 
-#SCCs: 2501055120 (likely with Bulk Terminals) and 2505040120
-scc <- 2505040120
-test <- pull_baseline_from_ww(scc)
+#Misc sources > aircraft/rocket engine firing and testing > total
+#this scc used to assume emissions from rocket firing and testing were "estimated to be one percent of aircraft emissions at all Utah airports. This was determined by a 1992 Division of Air Quality phone survey of aircraft maintenance staff."
+#it is now focused on actual rocket testing/firing, like we would find at the ATK Promontory/Thiokol site (10009) or the ATK Bacchus plant (10402). We can eventually add inspection/maintenance of aircraft on airports, but that will be a more complex process, and they might not even apply to this scc.
+scc <- 2810040000
+#these pt sccs were manually pulled on 2021/04/08 by Michael Allen. I looked at sites 10009, 10402 in SLEIS and pulled every SCC that looked like it could apply to test fuel combustion. My method is sketchy, and could be improved.
+#I left out 30101010 - TNT manufacturing, because it didn't seem like test rocket fuel
+pt_sccs <- c(50300205,20400201)
+#We assume there is no test rocket fuel burning on nonpermitted sites, so the only emissions captured in this SCC are permitted emissions that do not count as "Major Point Sources" (is_point == FALSE) for wherever we are reporting our data. All of the other processes will be captured by the point source inventory
+temp_table <- pull_pt_removal_table(pt_sccs,scc) %>% filter(is_point == FALSE) %>% select(-is_point)
+
+#If we pull nothing, then let's not project/add this scc to the table. This could happen
+#if all of the SCCs happen on permitted major pt sites. This would be the case for our WEBSITE
+#reporting. As of 20210506, EPA does not offer default numbers for this SCC, so we don't have to
+#worry about them filling in any blanks.
+if(dim(temp_table)!=0) {
+  #project as steady. These are permitted emissions so they may not radically change over time.
+  temp_table <-
+    project_baseline(temp_table, projection_tables[["Steady"]])
+  #no controls
+  final_table <- rbind(final_table, temp_table)
+}
+rm(scc, temp_table)
+
+# misc > ag crop harvesting
+# we came up with emissions calculations for this SCC by ourselves. EPA does not offer any methodologies for it. Wheat, Corn, Hay, and Barley are like 99.3% of the particulate matter from harvesting in our state, so those were the crops we focused on.
+# The emission factors and calculation method is from chapter 10, Agricultural Harvesting of the "WRAP Fugitive Dust Handbook," dated September 7, 2006.									
+# Acres harvested is from the US agricultural census for 2017.
+
+scc <- 2801000005
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in lb of dust per acre harvested. PM25 is assumed to be 15% of PM10
+TPPPY <-c(1.68/2000, 1.68/2000*0.15, 1.68/2000, 1.68/2000*0.15)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#projection table contains acres harvested of the given agricultural product
+hay_table <- make_baseline(efs_table,projection_tables[["Hay"]], project_to = end_year)
+
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in lb of dust per acre harvested. PM25 is assumed to be 15% of PM10
+TPPPY <-c(5.8/2000, 5.8/2000*0.15, 5.8/2000, 5.8/2000*0.15)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#projection table contains acres harvested of the given agricultural product
+wheat_table <- make_baseline(efs_table,projection_tables[["Wheat"]], project_to = end_year)
+
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in lb of dust per acre harvested. PM25 is assumed to be 15% of PM10
+TPPPY <-c(1.70/2000, 1.70/2000*0.15, 1.70/2000, 1.70/2000*0.15)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#projection table contains acres harvested of the given agricultural product
+corn_table <- make_baseline(efs_table,projection_tables[["Corn"]], project_to = end_year)
+
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in lb of dust per acre harvested. PM25 is assumed to be 15% of PM10
+TPPPY <-c(5.8/2000, 5.8/2000*0.15, 5.8/2000, 5.8/2000*0.15)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#projection table contains acres harvested of the given agricultural product
+barley_table <- make_baseline(efs_table,projection_tables[["Barley"]], project_to = end_year)
+
+#declare temp table as hay table, arbitrarily, to get the table with the right format
+temp_table <- hay_table
+#add together the 4 crops that produce dust when harvested.
+temp_table$TPY <- hay_table$TPY + wheat_table$TPY + corn_table$TPY + barley_table$TPY
+
+final_table <- rbind(final_table,temp_table)
+rm(hay_table, wheat_table, corn_table, barley_table, temp_table, TPPPY, efs_table, pollutants, scc)
+
+
+#percent of households that own pets is from American Veterinary Medical 
+#  Association 2018 report. (main_workbook/references/2806XXXXXX)
+#  24.7% of households own cats in Utah
+#
+#googled people per household in utah, ballpark is sufficient, but got from Kem Gardner
+#  people/household for utah
+#  https://gardner.utah.edu/wp-content/uploads/UtahAtAGlance_20180207.pdf
+#  3.19 people/household
+#
+#The emission factor is from, "Development of an Updated Gridded Ammonia Emission Inventory for the South Coast Air Basin."
+#  0.348 lb/cat/year
+#
+#ammonia, domestic cats
+#based on, and projects with population
+#  3.19 people/house
+#  24.7% of houses own cats
+#  0.348 lb/cat/year = 1.74 E-4 T/cat/year
+#    population * 1 house/3.19 population * 0.247 cat/house * 1.74E-4Ton/cat/year
+#    1/3.19*.247*1.74E-4
+# 1.35E-5 TPPPY
+scc <- 2806010000
+pollutants <- c('NH3')
+TPPPY <-(1.35E-5)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+#no pt source
+#no controls
+final_table <- rbind(final_table, temp_table)
+
+
+#percent of households that own pets is from American Veterinary Medical 
+#  Association 2018 report. (main_workbook/references/2806XXXXXX)
+#  36.2% of households own dogs in Utah
+#
+#googled people per household in utah, ballpark is sufficient, but got from Kem Gardner
+#  people/household for utah
+#  https://gardner.utah.edu/wp-content/uploads/UtahAtAGlance_20180207.pdf
+#  3.19 people/household
+#
+#The emission factor is from, "Development of an Updated Gridded Ammonia Emission Inventory for the South Coast Air Basin."
+#  2.17 lb/dog/year
+#
+#based on, and projects with population
+#  3.19 people/house
+#  36.2% of houses own cats
+#  2.17 lb/dog/year = 1.085E-3 T/dog/year
+#    population * 1 house/3.19 population * 0.362 dog/house * 1.085E-3Ton/dog/year
+#    1/3.19*.362*1.085E-3
+# 1.23E-4 TPPPY
+scc <- 2806015000
+pollutants <- c('NH3')
+TPPPY <-(1.23E-4)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+#no pt source
+#no controls
+final_table <- rbind(final_table, temp_table)
+
+
+#human perspiration, respiration, cigarette smoking
+#all ammonia
+#confusing. SAYS this is no longer reported due to lack of documentation,
+#but it IS reported. It also says to contact Maine. So I did... We will see. Maine could not help haha.
+#1) Emission factors from SCAQS, appendix G, pages G2 through G-3.
+#2) SCAQS is an abbreviation for the document entitled "Development of the Ammonia Emission Inventory for the Southern California Air Quality Study."
+#3) That document was prepared by the Radian Corporation, September 1991.
+#4) Human Perspiration is estimated at 0.55 lbs ammonia per person per year.
+#5) Human Respiration is estimated at 0.0035 lbs ammonia per person per year.
+#6) Cigarette smoking is estimated at 0.022 lbs ammonia per person per year.
+#7) Sum of the above 3 factors is 0.5755 lbs ammonia per person per year.
+#2.88E-4 TPPPY
+scc <- 2810010000
+pollutants <- c('NH3')
+TPPPY <-(2.88E-4)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+#no pt subtraction
+#no controls
+final_table <- rbind(final_table, temp_table)
+
+
+#structure fires
+#1) Guidance used is from the "Emission Inventory Improvement Program (EIIP)," Vol. III, (1/31/01 ed.), Chapter 18, "Structure Fires."
+#2) Emission factors are from EIIP, Vol. III, Chapter 18, "Structure Fires," (1/31/01 ed.), Table 18.4-1.
+#3) Calculations include fires in buildings and other fixed structures of all types.
+#4) Fires are indexed to human population; counties with more people equates to more fires.
+#5) HAPs emission factors are from "Documentation for the 1999 Base Year Nonpoint Area Source National Emission Inventory for Hazardous Air Pollutants."
+#6) Seasonal activity factors are from EPA's Emissions Inventory Improvement Plan Table 1.4-3.
+
+#2.3 fires/1000 people
+#1.2 tons burned per fire
+#  so 2.76 tons burned per 1000 people
+#  0.00276 tons per person
+#
+#VOC 11 lb/ton burned
+#  1.52E-5 TPPPY
+#PM (10 and 2.5) 10.8 lb/ton
+#  1.49E-5 TPPPY
+#CO 60 lb/ton
+#  8.28E-5 TPPPY
+#NOx 1.4 lb/ton
+#  1.93E-6 TPPPY
+#Acrolein (107028) 4.414 lb/ton
+#  6.09E-6 TPPPY
+#Hydrogen Cyanide (74908) 35.486 lb/ton
+#  4.90E-5 TPPPY
+#Hydrogen Chloride (7647010) 15.112 lb/ton
+#  2.09E-5 TPPPY
+#Formaldehyde (50000) 1.023 lb/ton
+#  1.41E-6 TPPPY
+scc <- 2810030000
+pollutants <- c('VOC','PM10','PM25','CO','NOX','107028','74908','7647010','50000')
+TPPPY <-c(1.52E-5,1.49E-5,1.49E-5,8.28E-5,1.93E-6,6.09E-6,4.90E-5,2.09E-5,1.41E-6)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+#no pt subtract
+#no controls
+final_table <- rbind(final_table, temp_table)
+
+
+#vehicle fires
+#1) EPA's "Emission Inventory Improvement Program (EIIP)," Volume III, "Area Sources Category Method Abstract - Vehicle Fires," (5/15/00 edition) is used. Material burned is in the text on page 1.
+#2) The EIIP gives emission factors for PM, CO, NOx, nonmethane total organic compounds, and methane.
+#3) The "nonmethane total organic compounds" is assumed equal to VOC. Methane is ignored.
+#5) Fires per 1000 people derived by averaging 2010-2013 summary & "by FDID" data on the Utah Fire Incident Reporting System, Utah Fire Marshal's Office at: https://site.utah.gov/publicsafety/firemarshal/nfirs.html. NOTE: To conform with EIIP methods, water, rail and aircraft vehicle fires were excluded, only fire codes 130-132, and 136-138 were summed each year.
+
+#Vehicle Fire Data
+#*Note in 2012, only summary data is available and water/rail/air fires could not be excluded.	
+#Year	              2010 2011	2012*	2013						
+#Incidents	        804  758  702	  646						
+#Avg Yearly Fires   727.5						
+#Per 1000 people		0.232903894						
+
+#0.2329 fires/1000 ppl
+#2.33E-4 fires/person
+#0.25 Tons burned per car
+#  5.825E-5 Tons burned per person
+
+#PM (10 and 2.5) 100 lb/ton
+#  2.91E-6 TPPPY
+#NMOC (assumed to be VOC) 32 lb/ton
+#  9.32E-7 TPPPY
+#CO 125 lb/ton 
+#  3.64E-6 TPPPY
+#NOx 4 lb/ton
+#  1.16E-7 TPPPY
+scc <- 2810050000
+pollutants <- c('PM10','PM25','VOC','CO','NOX')
+TPPPY <- c(2.91E-6,2.91E-6,9.32E-7,3.64E-6,1.16E-7)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
+#no pt subtract
+#no controls
+final_table <- rbind(final_table, temp_table)
+
+#misc > health services > dental alloy production > overall process
+#previously not in our reporting. Only a very small amount of mercury, but let's add it.
+scc <- 2850001000
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
+#no pt sub
+#no controls
+final_table <- rbind(final_table, temp_table)
+rm(scc, temp_table)
+
 
 ```
+
+
 
 I put wood burning stuff in its own section - it has some complex control methods.
 THIS NEEDS TO SCALE WITH RESIDENTIAL WOOD FROM 'WOODBTU'. THE OLD WOOD TABLE IS NOT NEEDED.
@@ -1842,20 +1875,6 @@ final_table <- rbind(final_table,temp_table)
 
 ```
 
-
-need to add these SCCs
-```{r} 
-describe(scc)
-          
-#stationary fuel combustion
-#residential distillate oil - all types
-#do later
-scc <- 2104004000
-temp_table <- pull_baseline_from_ww(scc)
-
-
-
-```
 
 ```{r old sccs that I had to adjust HAPS for comparisons}
 raw_sccs_from_ww <- consolidate_xylenes(raw_sccs_from_ww, c(2104008210, 2104008230, 2104008310, 2104008330, 2810025000))
