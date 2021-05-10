@@ -1507,6 +1507,7 @@ pull_baseline_from_ww <- function(scc,ww_table = ww, st_year = start_year){
   temp_table <- temp_table %>%
     select(StateAndCountyFIPSCode,SourceClassificationCode,year,PollutantCode,TotalEmissions)
   colnames(temp_table) <- c('FIPS','SCC','year','pollutant','TPY')
+  temp_table$year <- as.double(temp_table$year)
   return(temp_table)
 }
 

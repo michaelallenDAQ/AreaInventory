@@ -166,6 +166,47 @@ final_table <- rbind(final_table, NEI_28xx)
 rm(NEI_28xx)
 ```
 
+this one is a doozy, lol
+```{r 21-xxx-xxx-xxx: Stationary source fuel combustion}
+
+#INDUSTRIAL 
+#bituminous/subbituminous coal combustion - all boiler types 
+
+#1) The "Commercial & Government Employment" provides employment figures for a given county and is provided from the Governor's Office of Management and Budget.							
+#2) The column, "Employment Distribution Ratio" is the ratio of the total number of employees within individual counties to the statewide number of employees.							
+#3) The "Housing Units" shows the number of housing units that heated with coal in a given year.Beinning with 2013, data is from the US Census, American Community Survey (see Input file for details).							
+#4) The column, "Housing Distribution Ratio" is the ratio of the number of units within individual counties to the total number of units burning coal.							
+#5) "Coal Burned" gives the amount of the state coal total presumed burned by residential and commercial users inside each county.							
+#6) Industrial/Commercial emission factors and methodology are from the EPA/NOMAD 2014 ICI Combustion Tool  (based on 2011 ERTAC emission factors) available at: ftp://ftp.epa.gov/EmisInventory/2014/doc/nonpoint/ICI%20Tool%20v1_4.zip. See Table A-3 in the documentation.							
+#7) Residential emission factors and methods are from EPA's "2008 National Emissions Inventory Data & Documentation." HAPS factors were NOT fully updated in 2014 as there were no emissions.							
+#8) Coal consumption tonnages are from Data is from US Energy Information Administration's (EIA) Utah SEDS csv file of "All Consumption Estimates" which can be downloaded and combined with a "Codes and Descriptions" file, both available at: http://www.eia.gov/state/seds/seds-data-complete.cfm?sid=US#stateSelection (see input table and Input appendix). EIA MSN codes used: CLCCP, CLEIP, CLICP, CLKCP, CLOCP, CLRCP							
+#9) Coal burned by point sources is assumed to be included in the industrial category except for Brigham Young University which is considered commercial per Michael Vanden Berg of the Utah Geological Survey Office. 							
+#10) Seasonal activity factors are from EPA's Emissions Inventory Improvement Plan Table 1.4-3.							
+#11) Industrial (2102002000) NOT submitted/used! Calculations indicate emissions based on EIA estimates (see Input file) but EIA estimates appear to be overestimating consumption. In past, industrial always assumed to be fully accounted for by pt. sources. See note below.							
+#"12) Due to  exceptionally high level of nonpoint industrial coal combustion to allocate to the counties, Utah DAQ's Compliance section (Jay Morris) was consulted and they stated that this amount of combustion would not go unnoticed and no ""minor sources"" (emitting of 5-100 tons criteria pollutants/year) are listed as having coal combustion as part of their Utah permits.
+#
+#It appears that the EIA may be overestimating the amount of coal burned in Utah by industrial sources (a similar overestimate by EIA for coal burned by electrical sources which are all point sources in Utah was also observed). Based on the above, EPA (Jenefer Snyder) were consulted and it was determined that it would be best to reflect the 2011 NEI and zero emissions for industrial nonpoint coal combustion as it appears that there are not any industrials/manufacturers burning coal that don't already have a permit (accounted for in Utah's point inventory) and we are just seeing an overestimate by EIA. See Greg Mortensen email to Jennifer Snyder on January 25, 2016 with final response on January 27, 2016."							
+
+scc <- 2102002000
+#the EFs for this SCC are given in the WW. The rest of our calculations are to get throughputs.
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "TON", all_primaries = TRUE)
+
+#next we find the total area source industrial coal burnt in Utah. Area = TOTAL - PT SOURCE
+total_coal <- projection_tables[["Coal_Industrial"]] %>% filter(year == start_year)
+pt_coal <- projection_tables[["PtCoal_Industrial"]] %>% filter(year == start_year)
+#set up area coal with the same format as total, but then subtract pt_coal from it
+area_coal <- total_coal
+#subtract pt values from total. The 'unit' column is still the statewide value of area coal, 
+#meaning we need to distribute the values on a per-county basis
+area_coal$unit <- total_coal$unit - pt_coal$unit
+#turn negative values to 0
+area_coal$unit[area_coal$unit<0] <-0
+
+
+
+
+
+```
 
 ```{r 22-XX, 26-XX, unpaved roads, waste disposal}
 
