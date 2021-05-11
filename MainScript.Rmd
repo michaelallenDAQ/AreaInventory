@@ -166,7 +166,6 @@ final_table <- rbind(final_table, NEI_28xx)
 rm(NEI_28xx)
 ```
 
-this one is a doozy, lol
 ```{r 21-xxx-xxx-xxx: Stationary source fuel combustion}
 
 #this section often distributes a statewide throughput to each county based on some other value like manufacturing employment, or commercial/government employment. I will set up those tables at the beginning of the chunk, and refer to them throughout:
@@ -181,7 +180,9 @@ com_emp <- com_emp %>% mutate(fraction = unit/sum(unit))
 
 
 
-
+##### 
+#Coal
+ 
 #INDUSTRIAL 
 #bituminous/subbituminous coal combustion - all boiler types 
 #EPA offers default calculations for this SCC, but we assume that all industrial combustion is happening on permitted sites, so after calculating this SCC... for now, we will reduce all values to 0 and then report that.
@@ -270,6 +271,8 @@ rm(scc, temp_table)
 
 
 
+##### 
+#kerosene
 
 # industrial
 #combustion: kerosene > all boiler types
@@ -380,6 +383,90 @@ final_table <- rbind(final_table, projected_temp_table)
 rm(efs_table, residential_kerosene, housingKero, temp_table, projected_temp_table)
 
 
+#####
+#LPG
+
+#industrial
+#LPG > all boiler types
+# Industrial and Commercial LPG consumption data is based on EIA's Utah SEDS csv file of "All Consumption Estimates" (see above) which is then adjusted to remove fuel potentially accounted for by mobile/other non-nonpoint categories and also adjusted for feedstock use (see Input file for details).
+scc <- 2102007000
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE)
+
+#get area source lpg statewide:
+all_lpg <- projection_tables[["LPG_Industrial"]] %>% filter(year == start_year)
+pt_lpg <- projection_tables[["PtLPG_LPG, Industrial"]] %>% filter(year == start_year)
+#subtract pt from total to get area
+area_lpg <- all_lpg
+area_lpg$unit <- all_lpg$unit - pt_lpg$unit
+#turn negative values to 0
+area_lpg$unit[area_lpg$unit < 0] <- 0
+#adjust kbbl into kgal
+area_lpg$unit <- area_lpg$unit * 42
+
+#now distribute statewide lpg use per county based on manufacturing employment
+area_lpg$unit <- area_lpg$unit * man_emp$fraction
+
+#both units are in kgal, so let's combine EFs with throughputs
+temp_table <- make_baseline(efs_table, area_lpg)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["LPG_Industrial"]])
+#no controls
+final_table <- rbind(final_table,projected_temp_table)
+rm(scc, efs_table, all_lpg, pt_lpg, area_lpg, temp_table, projected_temp_table)
+
+
+# commercial
+# lpg, all combustor types
+# Industrial and Commercial LPG consumption data is based on EIA's Utah SEDS csv file of "All Consumption Estimates" (see above) which is then adjusted to remove fuel potentially accounted for by mobile/other non-nonpoint categories and also adjusted for feedstock use (see Input file for details).
+scc <- 2103007000
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE)
+
+#get area source lpg statewide:
+all_lpg <- projection_tables[["LPG_Commercial"]] %>% filter(year == start_year)
+pt_lpg <- projection_tables[["PtLPG_LPG, Commercial"]] %>% filter(year == start_year)
+#subtract pt from total to get area
+area_lpg <- all_lpg
+area_lpg$unit <- all_lpg$unit - pt_lpg$unit
+#turn negative values to 0
+area_lpg$unit[area_lpg$unit < 0] <- 0
+#adjust kbbl into kgal
+area_lpg$unit <- area_lpg$unit * 42
+
+#now distribute statewide lpg use per county based on commercial/government employment
+area_lpg$unit <- area_lpg$unit * com_emp$fraction
+
+#both units are in kgal, so let's combine EFs with throughputs
+temp_table <- make_baseline(efs_table, area_lpg)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["LPG_Commercial"]])
+#no controls
+final_table <- rbind(final_table,projected_temp_table)
+rm(scc, efs_table, all_lpg, pt_lpg, area_lpg, temp_table, projected_temp_table)
+
+
+
+#residential
+# lpg > all combustor types
+# Residential LPG consumption data is from EIA's Utah SEDS csv file of "All Consumption Estimates" which can be downloaded and combined with a "Codes and Descriptions" file, both available at: http://www.eia.gov/state/seds/seds-data-complete.cfm?sid=US#stateSelection (see Input file for details).									
+scc <- 2104007000
+#for some reason WW throughput is in kbbl, not kgal
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3BBL", all_primaries = TRUE)
+
+#pull statewide LPG usage for residents (in kbbl)
+residential_lpg <- projection_tables[["LPG_Residential"]] %>% filter(year == start_year)
+#pull number of houses per county that use LPG
+housingLPG <- projection_tables[["HousingLPG"]] %>% filter(year == start_year)
+housingLPG <- housingLPG %>% mutate(fraction = unit/sum(unit))
+
+#distribute statewide LPG per county
+residential_lpg$unit <- residential_lpg$unit * housingLPG$fraction
+
+#since EF and throughput are both in KBBL, let's combine them to form a baseline
+temp_table <- make_baseline(efs_table, residential_lpg)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["LPG_Residential"]])
+
+#no controls.
+#add to final_table
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, efs_table, residential_lpg, housingLPG, temp_table, projected_temp_table)
 
 ```
 
