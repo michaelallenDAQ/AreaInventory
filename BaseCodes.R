@@ -1323,6 +1323,7 @@ project_baseline <-
       #add to the final table
       final_table <- rbind(final_table, intermediate_table)
     }
+    final_table$year <- as.double(final_table$year)
     return(final_table)
   }
 
@@ -1398,7 +1399,7 @@ pull_pt_removal_table <-
       mutate(SCC = area_scc)
     colnames(return_table)<- c('year','FIPS','pollutant','TPY','is_point','SCC')
     return_table <- return_table %>% select(c('FIPS','SCC','year','pollutant','TPY','is_point'))
-    
+    return_table$year <- as.double(return_table$year)
     return(return_table)
   }
 

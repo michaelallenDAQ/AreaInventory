@@ -383,7 +383,7 @@ final_table <- rbind(final_table, projected_temp_table)
 rm(efs_table, residential_kerosene, housingKero, temp_table, projected_temp_table)
 
 
-#####
+##### 
 #LPG
 
 #industrial
@@ -467,7 +467,67 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #add to final_table
 final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, residential_lpg, housingLPG, temp_table, projected_temp_table)
+ 
+#####
+#Natural Gas
 
+#industrial
+#nat gas > total: boilers and IC engines
+
+# Natural gas consumption is reported directly by gas suppliers on the county level.								
+# Questar's Dave Landward (dave.landward@questar.com or 801-324-5722) provided Questar's 2014 usage consumption proportions by sector (1/27/16 email) used to distribute non-residential natural gas usage. Proportions were: Residential - 36%, Commercial - 22%, Industrial - 19% and Electric - 23%.  The residential proportion was removed and non-residential proportions adjusted accordingly to determine each sector's proportion of non-residential MMCF. For example, Commercial proportion =  Commercial% / (Commercial%+Industrial%+Electric%) = 22%/(22%+19%+23%) = 30%.										
+# For commercial and industrial sources, Questar's natural gas non-residential consumption data are adjusted for feedstock use. Per Dave Landward (conversation on 1/26/16), Questar Gas does not track end-use of delivered gas, thus, natural gas may be used as a feedstock by commercial/industrial sources in Utah.										
+# Note: Questar does not track cubic feet. Rather, they convert decatherms to cubic feet by a current system BTU average of 1036 per cubic foot (see Questar data source in the relevent Input Appendix of the input table workbook). Be aware that this average may change over time based on their gas source characteristics.										
+# Future improvement: Look for means of adjusting Industrial/Commercial combusted natural gas MMCF to remove mobile (CNG cars) use (possibly accounted for by mobile).										
+#Change NH3 to 3.2 per Rich Mason! OR Note: (10/16/17) Ammonia emission factor was changed to zero based on industry feedback (Frank Stanonick, Air Conditioning, Heating & Refrigeration Institute call with Joel Karmazyn)  which also reflects that AP42 has no emission factor for ammonia.	
+
+scc <- 2102006000
+#most up-to-date emission factors can be pulled from WW
+#note that units are in MMCF, or million cubit feet
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6FT3", all_primaries = TRUE)
+
+#now get throughput. Start by pulling the Electrical/Industrial/Commercial NG use for all of Utah. Basically all of the nonresidential NG use in Utah. Units MMCF
+nonresNG <- projection_tables[["NonResNGMMCF_All State, UTAH"]] %>% filter(year == start_year)
+#now we break out the industrial portion of the statewide gas usage.
+#Based on correspondence we had with Dave Landward of Questar Gas (Now Dominion Energy) in 2014, NG use in the state was as follows:
+#   Residential:  36%
+#   Commercial:   22%
+#   Industrial:   19%
+#   Electric:     23%
+#Since the table we just pulled was for Electrical/Industrial/Commercial NG, we can ignore the residential portion of distribution. The industrial portion would then be (19)/(19+22+23)
+industrialNG <- nonresNG %>% mutate(unit = unit*(19)/(19+22+23))
+#these percentages could be revisited for accuracy in the future.
+
+#now we pull all pt source industrial NG use (MMCF)
+PtindustrialNG <- projection_tables[["PtNG_Industrial"]] %>% filter(year == start_year)
+
+#now subtract pt sources from the total NG use to get area source NG
+#might make things 0
+AreaindustrialNG <- industrialNG %>% 
+  mutate(unit = unit - PtindustrialNG$unit) %>%
+  #adjust negative values to be 0
+  mutate(unit = ifelse(unit<0,0,unit))
+
+#the final subtraction we do for NG is NG used for "Feedstock".
+#EPA Feedstock adjustment (proportion used for feedstock - divide feedstock use by total industrial nonfuel use)											
+
+
+
+
+
+
+
+
+
+#commercial/institutional 
+#nat gas > total
+scc <- 2103006000
+
+
+
+#residential
+#nat gas > all combustor types
+scc <- 2104006000
 ```
 
 ```{r 22-XX, 26-XX, unpaved roads, waste disposal}
