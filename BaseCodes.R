@@ -1132,6 +1132,7 @@ make_baseline <-
     final_table <- final_table %>%
       select(county, SCC, year, pollutant, TPY) %>%
       rename('FIPS' = county)
+    final_table$year <- as.double(final_table$year)
     
     return(final_table)
   }
