@@ -106,5 +106,6 @@ project_tables <- c("Wheat","Corn","Hay","Barley","EnergyBySector","PetroleumFor
                     "USAviationFuel","AgJobs","ManEmp","VMT","WoodBTU","LUST",
                     "NonresidentialConstruction", "Coal","PtCoal","CommercialEmployment",
                     "Kerosene","PtKerosene","HousingKero", "LPG", "PtLPG", "HousingLPG",
-                    "NonResNGMMCF", "PtNG", "NonResNGDecatherm","ResNGMMCF","ResNGDecatherm")
+                    "NonResNGMMCF", "PtNG", "NonResNGDecatherm","ResNGMMCF","ResNGDecatherm",
+                    "DistillateOil", "PtDistillateOil")
 projection_tables <- pull_projection_tables(table_names = project_tables)
