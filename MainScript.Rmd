@@ -651,9 +651,13 @@ final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, res_distillateOil, housing_distillate, temp_table, projected_temp_table)
 
 
+```
+
+
+```{r 21-xx Eric fuel combustion}
+
 #industrial
 #distillate oil > all boiler types
-# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine and Commercial - 95% Boiler, 5% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).									
 
 scc <- 2102004001
 #pull emission factors from ww in kgal
@@ -662,10 +666,41 @@ efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TR
 #In Utah, S = 0.3%; therefore, 142 x 0.3 = 42.6 lbs/kgal. (I have not verified the 0.3% utah limit as of 20210511)									
   mutate(TPUPY = ifelse(pollutant =="SO2",42.6/2000,TPUPY))
 
+#both of these are in kbbl
+all_distoil <- projection_tables[["DistillateOil_Industrial"]] %>% filter(year == start_year)
+pt_distoil <- projection_tables[["PtDistillateOil_Industrial"]] %>% filter(year == start_year)
+
+#this will be in kgal
+area_distoil <- all_distoil %>% 
+  mutate(unit = all_distoil$unit - pt_distoil$unit) %>%
+  #zero out negative numbers
+  mutate(unit = ifelse(unit<0, 0, unit)) %>%
+  #convert from kbbl to kgal
+  mutate(unit = unit*42)
+# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine and Commercial - 95% Boiler, 5% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
+#now distribute area source distillate oil use to only the portion used on boilers
+#this distribution was done incorrectly in the old workbook.
+area_distoil <- area_distoil %>% mutate(unit = unit*0.60)
+
+#now that we have statewide area use of distillate oil used on boilers, we distribute it to each county based on manufacturing employment
+area_distoil <- area_distoil %>% mutate(unit = unit*man_emp$fraction)
+
+#now we have oil used per county, combine it with our emission factors
+temp_table <- make_baseline(efs_table, area_distoil)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["DistillateOil_Industrial"]])
+#no controls
+
+#add to final table and remove old variables
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, efs_table, all_distoil, pt_distoil, area_distoil, temp_table, projected_temp_table)
 
 
+
+scc <- 2102004002
 
 ```
+
+
 
 ```{r 22-XX, 26-XX, unpaved roads, waste disposal}
 
@@ -1934,6 +1969,12 @@ temp_table_final <- temp_table_project
 final_table <- rbind(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
+
+
+
+
+
+
 
 
 ```

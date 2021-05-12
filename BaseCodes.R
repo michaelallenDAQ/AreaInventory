@@ -380,12 +380,16 @@ consolidate_xylenes <- function(pollutant_table, sccs) {
 #again, for comparisons. This pulls the model data from any given
 #inventory workbook
 pull_excel_model_data <- function(model_path, base_year = start_year) {
+  #read in the sheet
   model_pols <-
     read_xlsx(model_path, sheet = 'PM25ModelData', skip = 3)
+  #add a column for year
   model_pols <- mutate(model_pols, year = base_year)
+  #rename TPY column and pollutants column
   model_pols <- model_pols %>%
     rename(TPY = 'Tons/year') %>%
     rename(pollutant = Pollutant)
+  #rename all cols and turn SOx into SO2
   model_pols <- model_pols[c('FIPS', 'SCC', 'year', 'pollutant', 'TPY')]
   model_pols$pollutant[model_pols$pollutant == 'SOX'] <- 'SO2'
   return(model_pols)
