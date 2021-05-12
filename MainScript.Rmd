@@ -2050,7 +2050,7 @@ temp_table <- pull_pt_removal_table(pt_sccs,scc) %>% filter(is_point == FALSE) %
 #if all of the SCCs happen on permitted major pt sites. This would be the case for our WEBSITE
 #reporting. As of 20210506, EPA does not offer default numbers for this SCC, so we don't have to
 #worry about them filling in any blanks.
-if(dim(temp_table)!=0) {
+if(dim(temp_table)[1]!=0) {
   #project as steady. These are permitted emissions so they may not radically change over time.
   temp_table <-
     project_baseline(temp_table, projection_tables[["Steady"]])
@@ -2266,6 +2266,8 @@ temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
 #no controls
 final_table <- rbind(final_table, temp_table)
 rm(scc, temp_table)
+
+
 
 
 ```
