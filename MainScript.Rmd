@@ -166,6 +166,438 @@ final_table <- rbind(final_table, NEI_28xx)
 rm(NEI_28xx)
 ```
 
+```{r 21-xxx-xxx-xxx: Stationary source fuel combustion}
+
+#this section often distributes a statewide throughput to each county based on some other value like manufacturing employment, or commercial/government employment. I will set up those tables at the beginning of the chunk, and refer to them throughout:
+
+man_emp <- projection_tables[["ManEmp"]] %>% filter(year==start_year)
+#add a "fraction" column that consists of a single county's portion of employment vs the state.
+man_emp <- man_emp %>% mutate(fraction = unit/sum(unit))
+
+com_emp <- projection_tables[["CommercialEmployment"]] %>% filter(year==start_year)
+#add a "fraction" column that consists of a single county's portion of employment vs the state.
+com_emp <- com_emp %>% mutate(fraction = unit/sum(unit))
+
+
+
+##### 
+#Coal
+ 
+#INDUSTRIAL 
+#bituminous/subbituminous coal combustion - all boiler types 
+#EPA offers default calculations for this SCC, but we assume that all industrial combustion is happening on permitted sites, so after calculating this SCC... for now, we will reduce all values to 0 and then report that.
+#ALL ZEROS
+
+# Coal burned by point sources is assumed to be included in the industrial category except for Brigham Young University which is considered commercial per Michael Vanden Berg of the Utah Geological Survey Office. 							
+#
+#old note: It appears that the EIA may be overestimating the amount of coal burned in Utah by industrial sources (a similar overestimate by EIA for coal burned by electrical sources which are all point sources in Utah was also observed). Based on the above, EPA (Jenefer Snyder) were consulted and it was determined that it would be best to reflect the 2011 NEI and zero emissions for industrial nonpoint coal combustion as it appears that there are not any industrials/manufacturers burning coal that don't already have a permit (accounted for in Utah's point inventory) and we are just seeing an overestimate by EIA. See Greg Mortensen email to Jennifer Snyder on January 25, 2016 with final response on January 27, 2016."							
+
+scc <- 2102002000
+#the EFs for this SCC are given in the WW. The rest of our calculations are to get throughputs.
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "TON", all_primaries = TRUE)
+
+#next we find the total area source industrial coal burnt in Utah. Area = TOTAL - PT SOURCE
+total_coal <- projection_tables[["Coal_Industrial"]] %>% filter(year == start_year)
+pt_coal <- projection_tables[["PtCoal_Industrial"]] %>% filter(year == start_year)
+#set up area coal with the same format as total, but then subtract pt_coal from it
+area_coal <- total_coal
+#subtract pt values from total. The 'unit' column is still the statewide value of area coal, 
+#meaning we need to distribute the values on a per-county basis
+area_coal$unit <- total_coal$unit - pt_coal$unit
+#turn negative values to 0
+area_coal$unit[area_coal$unit<0] <-0
+
+#okay, now we have statewide industrial coal use. We need to distribute this coal on a per-county
+#basis. For industrial coal, we distribute according to manufacturing employment
+#units in tons
+area_coal$unit <- area_coal$unit * man_emp$fraction
+
+#now we have TONS of coal burned per county, and we have emission factors, in TPUPY (tons per unit per year). Combine the two tables
+temp_table <- make_baseline(efs_table, area_coal)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["Coal_Industrial"]])
+
+#control this to reduce to 0 lol. Assume all industrial coal combustion is on permits, assume EPA is overcounting
+projected_temp_table <- add_manual_controls(projected_temp_table, scc, counties, 1900, 1901, 0)
+#add to final_table
+final_table <- rbind(final_table, projected_temp_table)
+rm(efs_table, total_coal, pt_coal, area_coal, temp_table, projected_temp_table)
+
+
+#commercial/institutional
+# Coal burned by point sources is assumed to be included in the industrial category except for Brigham Young University which is considered commercial per Michael Vanden Berg of the Utah Geological Survey Office. 							
+#bituminous/subbituminous coal - all boiler types
+#HISTORICALLY HAS BEEN ZEROS
+scc <- 2103002000
+#the EFs for this SCC are given in the WW. The rest of our calculations are to get throughputs.
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "TON", all_primaries = TRUE)
+
+#next we find the total area source industrial coal burnt in Utah. Area = TOTAL - PT SOURCE
+total_coal <- projection_tables[["Coal_Commercial"]] %>% filter(year == start_year)
+pt_coal <- projection_tables[["PtCoal_Commercial"]] %>% filter(year == start_year)
+#set up area coal with the same format as total, but then subtract pt_coal from it
+area_coal <- total_coal
+#subtract pt values from total. The 'unit' column is still the statewide value of area coal, 
+#meaning we need to distribute the values on a per-county basis
+area_coal$unit <- total_coal$unit - pt_coal$unit
+#turn negative values to 0
+area_coal$unit[area_coal$unit<0] <-0
+
+#okay, now we have statewide industrial coal use. We need to distribute this coal on a per-county
+#basis. For commercial/institutional coal, we distribute according to commercial employment
+#units in tons
+area_coal$unit <- area_coal$unit * com_emp$fraction
+
+#now we have TONS of coal burned per county, and we have emission factors, in TPUPY (tons per unit per year). Combine the two tables
+#again, this is probably zero
+temp_table <- make_baseline(efs_table, area_coal)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["Coal_Commercial"]])
+
+#no controls.
+#add to final_table
+final_table <- rbind(final_table, projected_temp_table)
+rm(efs_table, total_coal, pt_coal, area_coal, temp_table, projected_temp_table)
+
+
+#Residential
+# bituminous/subbituminous coal > all combustor types
+# this scc could be calculated the same as 2103002000 and 2102002000 (we might need to pull in an extra table), but it's all zeros.
+# WW says it's all zeros, too, so we're just gonna pull from WW.
+scc <- 2104002000
+temp_table <- pull_baseline_from_ww(scc)
+temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
+#no pt subs, no controls
+final_table <- rbind(final_table,temp_table)
+rm(scc, temp_table)
+
+
+
+##### 
+#kerosene
+
+# industrial
+#combustion: kerosene > all boiler types
+# It is assumed that industrial fuel combustion is included in the point source inventory. 2014 data indicated this to be the case
+# If you look in the NEMO, the SO2 EF is "142S", where : "S indicates that the weight % of sulfur in the oil should be multiplied by the value given. For example, if the fuel is 1% sulfur, then S = 1"
+#In Utah, S = 0.3%; therefore, 142 x 0.3 = 42.6 lbs/kgal. (I have not verified the 0.3% utah limit as of 20210511)									
+
+#probably all zeros
+#consider just pulling this one from WW, as it's often zero, and even if it isn't, it's small, EPA could take care of it.
+scc <- 2102011000
+#efs for kerosene can be pulled from WW. Throughput is per KGal.
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE)
+#convert SO2 EF to reflect Utah's sulfur content. See notes on SCC
+efs_table <- efs_table %>% mutate(TPUPY = ifelse(pollutant=="SO2",0.0213,TPUPY))
+
+#throughputs are in KBBL!!!
+total_kerosene <- projection_tables[["Kerosene_Industrial"]] %>% filter(year == start_year)
+pt_kerosene <- projection_tables[["PtKerosene_Kerosene, Industrial"]] %>% filter(year == start_year)
+#set up area kerosene with the same format as total, but then subtract pt_kerosene from it
+area_kerosene <- total_kerosene
+#subtract pt values from total. The 'unit' column is still the statewide value of area kerosene,
+#meaning we need to distribute the values on a per-county basis
+area_kerosene$unit <- total_kerosene$unit - pt_kerosene$unit
+#turn negative values to 0
+area_kerosene$unit[area_kerosene$unit<0] <-0
+#adjust KBBL throughput into KGal
+area_kerosene$unit <- area_kerosene$unit * 42
+
+#okay, now distribute kerosene per county based on manufacturing employment
+area_kerosene$unit <- area_kerosene$unit * man_emp$fraction
+#since our units all match, let's combine these throughputs with our EFs
+#again, probs all zeros
+temp_table <- make_baseline(efs_table, area_kerosene)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["Kerosene_Industrial"]])
+
+#no controls.
+#add to final_table
+final_table <- rbind(final_table, projected_temp_table)
+rm(efs_table, total_kerosene, pt_kerosene, area_kerosene, temp_table, projected_temp_table)
+
+
+#commercial/institutional
+#kerosene > all combustor types
+# It is assumed that industrial fuel combustion is included in the point source inventory. 2014 data indicated this to be the case
+# If you look in the NEMO, the SO2 EF is "142S", where : "S indicates that the weight % of sulfur in the oil should be multiplied by the value given. For example, if the fuel is 1% sulfur, then S = 1"
+#In Utah, S = 0.3%; therefore, 142 x 0.3 = 42.6 lbs/kgal. (I have not verified the 0.3% utah limit as of 20210511)									
+
+scc <- 2103011000
+#efs for kerosene can be pulled from WW. Throughput is per KGal.
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE)
+#convert SO2 EF to reflect Utah's sulfur content. See notes on SCC
+efs_table <- efs_table %>% mutate(TPUPY = ifelse(pollutant=="SO2",0.0213,TPUPY))
+
+#throughputs are in KBBL!!!
+total_kerosene <- projection_tables[["Kerosene_Commercial"]] %>% filter(year == start_year)
+pt_kerosene <- projection_tables[["PtKerosene_Kerosene, Commercial"]] %>% filter(year == start_year)
+#set up area kerosene with the same format as total, but then subtract pt_kerosene from it
+area_kerosene <- total_kerosene
+#subtract pt values from total. The 'unit' column is still the statewide value of area kerosene,
+#meaning we need to distribute the values on a per-county basis
+area_kerosene$unit <- total_kerosene$unit - pt_kerosene$unit
+#turn negative values to 0
+area_kerosene$unit[area_kerosene$unit<0] <-0
+#adjust KBBL throughput into KGal
+area_kerosene$unit <- area_kerosene$unit * 42
+
+#okay, now distribute kerosene per county based on commmercial employment
+area_kerosene$unit <- area_kerosene$unit * com_emp$fraction
+#since our units all match, let's combine these throughputs with our EFs
+#again, probs all zeros
+temp_table <- make_baseline(efs_table, area_kerosene)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["Kerosene_Commercial"]])
+
+#no controls.
+#add to final_table
+final_table <- rbind(final_table, projected_temp_table)
+rm(efs_table, total_kerosene, pt_kerosene, area_kerosene, temp_table, projected_temp_table)
+
+
+#residential
+# kerosene > all heater types
+#there are no pt subs for this one.
+#EFs are given per kbbl instead of kgal?
+# If you look in the NEMO, the SO2 EF is "142S", where : "S indicates that the weight % of sulfur in the oil should be multiplied by the value given. For example, if the fuel is 1% sulfur, then S = 1". 
+#In Utah, S = 0.3%; therefore, 142 x 0.3 = 42.6 lbs/kgal. (I have not verified the 0.3% utah limit as of 20210511)									
+#Since EFs are in bbl, and not gal, I will multiply the SO2 EF by 42
+scc <- 2104011000
+#efs for kerosene can be pulled from WW. Throughput is per Kbbl
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3BBL", all_primaries = TRUE)
+#convert SO2 EF to reflect Utah's sulfur content. See notes on SCC. Add 42x for gal->bbl adjustment
+efs_table <- efs_table %>% mutate(TPUPY = ifelse(pollutant=="SO2",0.0213*42,TPUPY))
+
+#now we find residential kerosene used in the state, and distribute it per county based on number of houses that report using kerosene.
+residential_kerosene <- projection_tables[["Kerosene_Residential"]] %>% filter(year == start_year)
+housingKero <- projection_tables[["HousingKero"]] %>% filter(year==start_year)
+#add a "fraction" column that consists of a single county's portion of employment vs the state.
+housingKero <- housingKero %>% mutate(fraction = unit/sum(unit))
+
+#okay, now distribute kerosene per county based on houses that use kerosene
+residential_kerosene$unit <- residential_kerosene$unit * housingKero$fraction
+#since our units all match, let's combine these throughputs with our EFs
+temp_table <- make_baseline(efs_table, residential_kerosene)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["Kerosene_Residential"]])
+
+#no controls.
+#add to final_table
+final_table <- rbind(final_table, projected_temp_table)
+rm(efs_table, residential_kerosene, housingKero, temp_table, projected_temp_table)
+
+
+##### 
+#LPG
+
+#industrial
+#LPG > all boiler types
+# Industrial and Commercial LPG consumption data is based on EIA's Utah SEDS csv file of "All Consumption Estimates" (see above) which is then adjusted to remove fuel potentially accounted for by mobile/other non-nonpoint categories and also adjusted for feedstock use (see Input file for details).
+scc <- 2102007000
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE)
+
+#get area source lpg statewide:
+all_lpg <- projection_tables[["LPG_Industrial"]] %>% filter(year == start_year)
+pt_lpg <- projection_tables[["PtLPG_LPG, Industrial"]] %>% filter(year == start_year)
+#subtract pt from total to get area
+area_lpg <- all_lpg
+area_lpg$unit <- all_lpg$unit - pt_lpg$unit
+#turn negative values to 0
+area_lpg$unit[area_lpg$unit < 0] <- 0
+#adjust kbbl into kgal
+area_lpg$unit <- area_lpg$unit * 42
+
+#now distribute statewide lpg use per county based on manufacturing employment
+area_lpg$unit <- area_lpg$unit * man_emp$fraction
+
+#both units are in kgal, so let's combine EFs with throughputs
+temp_table <- make_baseline(efs_table, area_lpg)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["LPG_Industrial"]])
+#no controls
+final_table <- rbind(final_table,projected_temp_table)
+rm(scc, efs_table, all_lpg, pt_lpg, area_lpg, temp_table, projected_temp_table)
+
+
+# commercial
+# lpg, all combustor types
+# Industrial and Commercial LPG consumption data is based on EIA's Utah SEDS csv file of "All Consumption Estimates" (see above) which is then adjusted to remove fuel potentially accounted for by mobile/other non-nonpoint categories and also adjusted for feedstock use (see Input file for details).
+scc <- 2103007000
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE)
+
+#get area source lpg statewide:
+all_lpg <- projection_tables[["LPG_Commercial"]] %>% filter(year == start_year)
+pt_lpg <- projection_tables[["PtLPG_LPG, Commercial"]] %>% filter(year == start_year)
+#subtract pt from total to get area
+area_lpg <- all_lpg
+area_lpg$unit <- all_lpg$unit - pt_lpg$unit
+#turn negative values to 0
+area_lpg$unit[area_lpg$unit < 0] <- 0
+#adjust kbbl into kgal
+area_lpg$unit <- area_lpg$unit * 42
+
+#now distribute statewide lpg use per county based on commercial/government employment
+area_lpg$unit <- area_lpg$unit * com_emp$fraction
+
+#both units are in kgal, so let's combine EFs with throughputs
+temp_table <- make_baseline(efs_table, area_lpg)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["LPG_Commercial"]])
+#no controls
+final_table <- rbind(final_table,projected_temp_table)
+rm(scc, efs_table, all_lpg, pt_lpg, area_lpg, temp_table, projected_temp_table)
+
+
+
+#residential
+# lpg > all combustor types
+# Residential LPG consumption data is from EIA's Utah SEDS csv file of "All Consumption Estimates" which can be downloaded and combined with a "Codes and Descriptions" file, both available at: http://www.eia.gov/state/seds/seds-data-complete.cfm?sid=US#stateSelection (see Input file for details).									
+scc <- 2104007000
+#for some reason WW throughput is in kbbl, not kgal
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3BBL", all_primaries = TRUE)
+
+#pull statewide LPG usage for residents (in kbbl)
+residential_lpg <- projection_tables[["LPG_Residential"]] %>% filter(year == start_year)
+#pull number of houses per county that use LPG
+housingLPG <- projection_tables[["HousingLPG"]] %>% filter(year == start_year)
+housingLPG <- housingLPG %>% mutate(fraction = unit/sum(unit))
+
+#distribute statewide LPG per county
+residential_lpg$unit <- residential_lpg$unit * housingLPG$fraction
+
+#since EF and throughput are both in KBBL, let's combine them to form a baseline
+temp_table <- make_baseline(efs_table, residential_lpg)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["LPG_Residential"]])
+
+#no controls.
+#add to final_table
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, efs_table, residential_lpg, housingLPG, temp_table, projected_temp_table)
+ 
+#####
+#Natural Gas
+
+
+#industrial
+#nat gas > total: boilers and IC engines
+# Future improvement: Look for means of adjusting Industrial/Commercial combusted natural gas MMCF to remove mobile (CNG cars) use (possibly accounted for by mobile).										
+#(10/16/17) Ammonia emission factor was changed to zero based on industry feedback (Frank Stanonick, Air Conditioning, Heating & Refrigeration Institute call with Joel Karmazyn)  which also reflects that AP42 has no emission factor for ammonia. - I AM IGNORING THIS COMMENT 2021/05/11. EPA does give documentation for their ammonia EF., and we also never reduced the EF to 0 on the workbook.
+scc <- 2102006000
+#most up-to-date emission factors can be pulled from WW
+#note that units are in MMCF, or million cubit feet
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6FT3", all_primaries = TRUE)
+
+#now that we have EFs, get throughput. Start by pulling the Electrical/Industrial/Commercial NG use for all of Utah. Basically all of the nonresidential NG use in Utah. Units MMCF
+nonresNG <- projection_tables[["NonResNGMMCF_All State, UTAH"]] %>% filter(year == start_year)
+# Questar's Dave Landward (dave.landward@questar.com or 801-324-5722) provided Questar's 2014 usage consumption proportions by sector (1/27/16 email):
+#   Residential:  36%
+#   Commercial:   22%
+#   Industrial:   19%
+#   Electric:     23%
+#Since the table we just pulled was for Electrical/Industrial/Commercial NG, we can ignore the residential portion of distribution. The industrial portion would then be (19)/(19+22+23)
+industrialNG <- nonresNG %>% mutate(unit = unit*(19)/(19+22+23))
+#these percentages could be revisited for accuracy in the future.
+
+#now we pull all pt source industrial NG use (MMCF)
+PtindustrialNG <- projection_tables[["PtNG_Industrial"]] %>% filter(year == start_year)
+
+#now subtract pt sources from the total NG use to get area source NG
+#might make things 0
+AreaindustrialNG <- industrialNG %>% 
+  mutate(unit = unit - PtindustrialNG$unit) %>%
+  #adjust negative values to be 0
+  mutate(unit = ifelse(unit<0,0,unit))
+
+#the final subtraction we do for NG is NG used for "Feedstock".
+#I (Michael) don't understand this section, but am copying it from the workbook:
+# For commercial and industrial sources, Questar's natural gas non-residential consumption data are adjusted for feedstock use. Per Dave Landward (conversation on 1/26/16), Questar Gas does not track end-use of delivered gas, thus, natural gas may be used as a feedstock by commercial/industrial sources in Utah.
+
+#EPA Feedstock adjustment (proportion used for feedstock - divide feedstock use by total industrial nonfuel use)											
+#Based on EIA Data: MECS (Manufacturing Energy Consumption Survey) http://www.eia.gov/consumption/manufacturing/data/2010/
+#Divide West Census Region feedstock use (Table 2.1) by total industrial nonfuel use (Table 1.1)
+#Data only available every four years.
+#MECS Year        2010
+#Feedstock use    14    *Note: EPA/NOMAD uses 0.25 units for all MECS <0.5. 
+#Nonfuel use      611
+#So what this means is 14/611 units of gas are used for feedstock? So we want to remove that from our combustion throughput.
+AreaindustrialNG <- AreaindustrialNG %>% mutate(unit = unit*(1-(14/611)))
+
+#okay, so now we have true statewide industrial NG usage for area source. We now distribute it to each county based on NG use in each county. The data we have on natural gas usage per county is measured in Decatherms (not in MMCF), so that is how we split things up.
+nonresNGDecatherm <- projection_tables[["NonResNGDecatherm"]] %>% filter(year == start_year) %>%
+  mutate(fraction = unit/sum(unit))
+AreaindustrialNG <- AreaindustrialNG %>% mutate(unit = unit*nonresNGDecatherm$fraction)
+
+#now we have area NG use by county in MMCF, and EFs in MMCF. Combine them
+temp_table <- make_baseline(efs_table, AreaindustrialNG)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["NonResNGMMCF_All State, UTAH"]])
+#add to final_table and delete residual variables
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, efs_table, nonresNG, industrialNG, PtindustrialNG, AreaindustrialNG, nonresNGDecatherm, temp_table, projected_temp_table)
+
+
+
+#commercial/institutional 
+#nat gas > total
+# Future improvement: Look for means of adjusting Industrial/Commercial combusted natural gas MMCF to remove mobile (CNG cars) use (possibly accounted for by mobile).										
+#(10/16/17) Ammonia emission factor was changed to zero based on industry feedback (Frank Stanonick, Air Conditioning, Heating & Refrigeration Institute call with Joel Karmazyn)  which also reflects that AP42 has no emission factor for ammonia. - I AM IGNORING THIS COMMENT 2021/05/11. EPA does give documentation for their ammonia EF., and we also never reduced the EF to 0 on the workbook.
+scc <- 2103006000
+#most up-to-date emission factors can be pulled from WW
+#note that units are in MMCF, or million cubit feet
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6FT3", all_primaries = TRUE)
+
+#now that we have EFs, get throughput. Start by pulling the Electrical/Industrial/Commercial NG use for all of Utah. Basically all of the nonresidential NG use in Utah. Units MMCF
+nonresNG <- projection_tables[["NonResNGMMCF_All State, UTAH"]] %>% filter(year == start_year)
+# Questar's Dave Landward (dave.landward@questar.com or 801-324-5722) provided Questar's 2014 usage consumption proportions by sector (1/27/16 email):
+#   Residential:  36%
+#   Commercial:   22%
+#   Industrial:   19%
+#   Electric:     23%
+#Since the table we just pulled was for Electrical/Industrial/Commercial NG, we can ignore the residential portion of distribution. The industrial portion would then be (19)/(19+22+23)
+commercialNG <- nonresNG %>% mutate(unit = unit*(22)/(19+22+23))
+#these percentages could be revisited for accuracy in the future.
+
+#now we pull all pt source industrial NG use (MMCF)
+PtcommercialNG <- projection_tables[["PtNG_Commercial"]] %>% filter(year == start_year)
+
+#now subtract pt sources from the total NG use to get area source NG
+AreacommercialNG <- commercialNG %>% 
+  mutate(unit = unit - PtcommercialNG$unit) %>%
+  #adjust negative values to be 0
+  mutate(unit = ifelse(unit<0,0,unit))
+
+#the final subtraction we do for NG is NG used for "Feedstock".
+#I (Michael) don't understand this section, but am copying it from the workbook:
+# For commercial and industrial sources, Questar's natural gas non-residential consumption data are adjusted for feedstock use. Per Dave Landward (conversation on 1/26/16), Questar Gas does not track end-use of delivered gas, thus, natural gas may be used as a feedstock by commercial/industrial sources in Utah.
+
+#EPA Feedstock adjustment (proportion used for feedstock - divide feedstock use by total industrial nonfuel use)											
+#Based on EIA Data: MECS (Manufacturing Energy Consumption Survey) http://www.eia.gov/consumption/manufacturing/data/2010/
+#Divide West Census Region feedstock use (Table 2.1) by total industrial nonfuel use (Table 1.1)
+#Data only available every four years.
+#MECS Year        2010
+#Feedstock use    14    *Note: EPA/NOMAD uses 0.25 units for all MECS <0.5. 
+#Nonfuel use      611
+#So what this means is 14/611 units of gas are used for feedstock? So we want to remove that from our combustion throughput.
+AreacommercialNG <- AreacommercialNG %>% mutate(unit = unit*(1-(14/611)))
+
+#okay, so now we have true statewide industrial NG usage for area source. We now distribute it to each county based on NG use in each county. The data we have on natural gas usage per county is measured in Decatherms (not in MMCF), so that is how we split things up.
+nonresNGDecatherm <- projection_tables[["NonResNGDecatherm"]] %>% filter(year == start_year) %>%
+  mutate(fraction = unit/sum(unit))
+AreacommercialNG <- AreacommercialNG %>% mutate(unit = unit*nonresNGDecatherm$fraction)
+
+#now we have area NG use by county in MMCF, and EFs in MMCF. Combine them
+temp_table <- make_baseline(efs_table, AreacommercialNG)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["NonResNGMMCF_All State, UTAH"]])
+#add controls
+projected_temp_table <- add_controls(projected_temp_table)
+#add to final_table and delete residual variables
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, efs_table, nonresNG, commercialNG, PtcommercialNG, AreacommercialNG, nonresNGDecatherm, temp_table, projected_temp_table)
+
+
+
+
+#residential
+#nat gas > all combustor types
+scc <- 2104006000
+
+
+#add controls
+
+```
 
 ```{r 22-XX, 26-XX, unpaved roads, waste disposal}
 

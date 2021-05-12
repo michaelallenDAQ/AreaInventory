@@ -1132,6 +1132,7 @@ make_baseline <-
     final_table <- final_table %>%
       select(county, SCC, year, pollutant, TPY) %>%
       rename('FIPS' = county)
+    final_table$year <- as.double(final_table$year)
     
     return(final_table)
   }
@@ -1322,6 +1323,7 @@ project_baseline <-
       #add to the final table
       final_table <- rbind(final_table, intermediate_table)
     }
+    final_table$year <- as.double(final_table$year)
     return(final_table)
   }
 
@@ -1397,7 +1399,7 @@ pull_pt_removal_table <-
       mutate(SCC = area_scc)
     colnames(return_table)<- c('year','FIPS','pollutant','TPY','is_point','SCC')
     return_table <- return_table %>% select(c('FIPS','SCC','year','pollutant','TPY','is_point'))
-    
+    return_table$year <- as.double(return_table$year)
     return(return_table)
   }
 
@@ -1441,6 +1443,9 @@ compare_inventories <-
   function(oinv, ninv, hide_pct = TRUE) {
     oinv <- oinv %>% rename(old_tpy = TPY)
     ninv <- ninv %>% rename(new_tpy = TPY)
+    
+    oinv$year <- as.numeric(oinv$year)
+    ninv$year <- as.numeric(ninv$year)
     #make sure I capture pollutants missing in the old inventory that are
     #in the new inventory
     missing_in_old_inventory <-
@@ -1507,6 +1512,7 @@ pull_baseline_from_ww <- function(scc,ww_table = ww, st_year = start_year){
   temp_table <- temp_table %>%
     select(StateAndCountyFIPSCode,SourceClassificationCode,year,PollutantCode,TotalEmissions)
   colnames(temp_table) <- c('FIPS','SCC','year','pollutant','TPY')
+  temp_table$year <- as.double(temp_table$year)
   return(temp_table)
 }
 
