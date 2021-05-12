@@ -582,10 +582,10 @@ AreacommercialNG <- AreacommercialNG %>% mutate(unit = unit*nonresNGDecatherm$fr
 temp_table <- make_baseline(efs_table, AreacommercialNG)
 projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["NonResNGMMCF_All State, UTAH"]])
 #add controls
-projected_temp_table <- add_controls(projected_temp_table)
+controlled_projected <- add_controls(projected_temp_table)
 #add to final_table and delete residual variables
-final_table <- rbind(final_table, projected_temp_table)
-rm(scc, efs_table, nonresNG, commercialNG, PtcommercialNG, AreacommercialNG, nonresNGDecatherm, temp_table, projected_temp_table)
+final_table <- rbind(final_table, controlled_projected)
+rm(scc, efs_table, nonresNG, commercialNG, PtcommercialNG, AreacommercialNG, nonresNGDecatherm, temp_table, projected_temp_table, controlled_projected)
 
 
 
@@ -593,9 +593,29 @@ rm(scc, efs_table, nonresNG, commercialNG, PtcommercialNG, AreacommercialNG, non
 #residential
 #nat gas > all combustor types
 scc <- 2104006000
+#first, pull EFs from WW
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6FT3", all_primaries = TRUE)
 
+#now pull statewide residential NG use, in MMCF
+resNGMMCF <- projection_tables[["ResNGMMCF_All State, UTAH"]] %>% filter(year == start_year)
 
+#now distribute MMCF per county based on residential decatherm usage per county
+resNGDecatherm <- projection_tables[["ResNGDecatherm"]] %>%
+  filter(year == start_year) %>%
+  mutate(fraction = unit/sum(unit))
+resNGMMCF$unit <- resNGMMCF$unit * resNGDecatherm$fraction
+
+#now apply emission factors, all units in MMCF
+temp_table <- make_baseline(efs_table, resNGMMCF)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ResNGMMCF_All State, UTAH"]])
 #add controls
+controlled_projected <- add_controls(projected_temp_table)
+
+final_table <- rbind(final_table, controlled_projected)
+rm(scc, efs_table, resNGMMCF, resNGDecatherm, temp_table, projected_temp_table, controlled_projected)
+
+
+
 
 ```
 
