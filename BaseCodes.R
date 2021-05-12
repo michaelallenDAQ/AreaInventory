@@ -1443,6 +1443,9 @@ compare_inventories <-
   function(oinv, ninv, hide_pct = TRUE) {
     oinv <- oinv %>% rename(old_tpy = TPY)
     ninv <- ninv %>% rename(new_tpy = TPY)
+    
+    oinv$year <- as.numeric(oinv$year)
+    ninv$year <- as.numeric(ninv$year)
     #make sure I capture pollutants missing in the old inventory that are
     #in the new inventory
     missing_in_old_inventory <-

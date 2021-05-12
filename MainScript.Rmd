@@ -471,25 +471,19 @@ rm(scc, efs_table, residential_lpg, housingLPG, temp_table, projected_temp_table
 #####
 #Natural Gas
 
+
 #industrial
 #nat gas > total: boilers and IC engines
-
-# Natural gas consumption is reported directly by gas suppliers on the county level.								
-# Questar's Dave Landward (dave.landward@questar.com or 801-324-5722) provided Questar's 2014 usage consumption proportions by sector (1/27/16 email) used to distribute non-residential natural gas usage. Proportions were: Residential - 36%, Commercial - 22%, Industrial - 19% and Electric - 23%.  The residential proportion was removed and non-residential proportions adjusted accordingly to determine each sector's proportion of non-residential MMCF. For example, Commercial proportion =  Commercial% / (Commercial%+Industrial%+Electric%) = 22%/(22%+19%+23%) = 30%.										
-# For commercial and industrial sources, Questar's natural gas non-residential consumption data are adjusted for feedstock use. Per Dave Landward (conversation on 1/26/16), Questar Gas does not track end-use of delivered gas, thus, natural gas may be used as a feedstock by commercial/industrial sources in Utah.										
-# Note: Questar does not track cubic feet. Rather, they convert decatherms to cubic feet by a current system BTU average of 1036 per cubic foot (see Questar data source in the relevent Input Appendix of the input table workbook). Be aware that this average may change over time based on their gas source characteristics.										
 # Future improvement: Look for means of adjusting Industrial/Commercial combusted natural gas MMCF to remove mobile (CNG cars) use (possibly accounted for by mobile).										
-#Change NH3 to 3.2 per Rich Mason! OR Note: (10/16/17) Ammonia emission factor was changed to zero based on industry feedback (Frank Stanonick, Air Conditioning, Heating & Refrigeration Institute call with Joel Karmazyn)  which also reflects that AP42 has no emission factor for ammonia.	
-
+#(10/16/17) Ammonia emission factor was changed to zero based on industry feedback (Frank Stanonick, Air Conditioning, Heating & Refrigeration Institute call with Joel Karmazyn)  which also reflects that AP42 has no emission factor for ammonia. - I AM IGNORING THIS COMMENT 2021/05/11. EPA does give documentation for their ammonia EF., and we also never reduced the EF to 0 on the workbook.
 scc <- 2102006000
 #most up-to-date emission factors can be pulled from WW
 #note that units are in MMCF, or million cubit feet
 efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6FT3", all_primaries = TRUE)
 
-#now get throughput. Start by pulling the Electrical/Industrial/Commercial NG use for all of Utah. Basically all of the nonresidential NG use in Utah. Units MMCF
+#now that we have EFs, get throughput. Start by pulling the Electrical/Industrial/Commercial NG use for all of Utah. Basically all of the nonresidential NG use in Utah. Units MMCF
 nonresNG <- projection_tables[["NonResNGMMCF_All State, UTAH"]] %>% filter(year == start_year)
-#now we break out the industrial portion of the statewide gas usage.
-#Based on correspondence we had with Dave Landward of Questar Gas (Now Dominion Energy) in 2014, NG use in the state was as follows:
+# Questar's Dave Landward (dave.landward@questar.com or 801-324-5722) provided Questar's 2014 usage consumption proportions by sector (1/27/16 email):
 #   Residential:  36%
 #   Commercial:   22%
 #   Industrial:   19%
@@ -509,25 +503,100 @@ AreaindustrialNG <- industrialNG %>%
   mutate(unit = ifelse(unit<0,0,unit))
 
 #the final subtraction we do for NG is NG used for "Feedstock".
+#I (Michael) don't understand this section, but am copying it from the workbook:
+# For commercial and industrial sources, Questar's natural gas non-residential consumption data are adjusted for feedstock use. Per Dave Landward (conversation on 1/26/16), Questar Gas does not track end-use of delivered gas, thus, natural gas may be used as a feedstock by commercial/industrial sources in Utah.
+
 #EPA Feedstock adjustment (proportion used for feedstock - divide feedstock use by total industrial nonfuel use)											
+#Based on EIA Data: MECS (Manufacturing Energy Consumption Survey) http://www.eia.gov/consumption/manufacturing/data/2010/
+#Divide West Census Region feedstock use (Table 2.1) by total industrial nonfuel use (Table 1.1)
+#Data only available every four years.
+#MECS Year        2010
+#Feedstock use    14    *Note: EPA/NOMAD uses 0.25 units for all MECS <0.5. 
+#Nonfuel use      611
+#So what this means is 14/611 units of gas are used for feedstock? So we want to remove that from our combustion throughput.
+AreaindustrialNG <- AreaindustrialNG %>% mutate(unit = unit*(1-(14/611)))
 
+#okay, so now we have true statewide industrial NG usage for area source. We now distribute it to each county based on NG use in each county. The data we have on natural gas usage per county is measured in Decatherms (not in MMCF), so that is how we split things up.
+nonresNGDecatherm <- projection_tables[["NonResNGDecatherm"]] %>% filter(year == start_year) %>%
+  mutate(fraction = unit/sum(unit))
+AreaindustrialNG <- AreaindustrialNG %>% mutate(unit = unit*nonresNGDecatherm$fraction)
 
-
-
-
-
+#now we have area NG use by county in MMCF, and EFs in MMCF. Combine them
+temp_table <- make_baseline(efs_table, AreaindustrialNG)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["NonResNGMMCF_All State, UTAH"]])
+#add to final_table and delete residual variables
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, efs_table, nonresNG, industrialNG, PtindustrialNG, AreaindustrialNG, nonresNGDecatherm, temp_table, projected_temp_table)
 
 
 
 #commercial/institutional 
 #nat gas > total
+# Future improvement: Look for means of adjusting Industrial/Commercial combusted natural gas MMCF to remove mobile (CNG cars) use (possibly accounted for by mobile).										
+#(10/16/17) Ammonia emission factor was changed to zero based on industry feedback (Frank Stanonick, Air Conditioning, Heating & Refrigeration Institute call with Joel Karmazyn)  which also reflects that AP42 has no emission factor for ammonia. - I AM IGNORING THIS COMMENT 2021/05/11. EPA does give documentation for their ammonia EF., and we also never reduced the EF to 0 on the workbook.
 scc <- 2103006000
+#most up-to-date emission factors can be pulled from WW
+#note that units are in MMCF, or million cubit feet
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6FT3", all_primaries = TRUE)
+
+#now that we have EFs, get throughput. Start by pulling the Electrical/Industrial/Commercial NG use for all of Utah. Basically all of the nonresidential NG use in Utah. Units MMCF
+nonresNG <- projection_tables[["NonResNGMMCF_All State, UTAH"]] %>% filter(year == start_year)
+# Questar's Dave Landward (dave.landward@questar.com or 801-324-5722) provided Questar's 2014 usage consumption proportions by sector (1/27/16 email):
+#   Residential:  36%
+#   Commercial:   22%
+#   Industrial:   19%
+#   Electric:     23%
+#Since the table we just pulled was for Electrical/Industrial/Commercial NG, we can ignore the residential portion of distribution. The industrial portion would then be (19)/(19+22+23)
+commercialNG <- nonresNG %>% mutate(unit = unit*(22)/(19+22+23))
+#these percentages could be revisited for accuracy in the future.
+
+#now we pull all pt source industrial NG use (MMCF)
+PtcommercialNG <- projection_tables[["PtNG_Commercial"]] %>% filter(year == start_year)
+
+#now subtract pt sources from the total NG use to get area source NG
+AreacommercialNG <- commercialNG %>% 
+  mutate(unit = unit - PtcommercialNG$unit) %>%
+  #adjust negative values to be 0
+  mutate(unit = ifelse(unit<0,0,unit))
+
+#the final subtraction we do for NG is NG used for "Feedstock".
+#I (Michael) don't understand this section, but am copying it from the workbook:
+# For commercial and industrial sources, Questar's natural gas non-residential consumption data are adjusted for feedstock use. Per Dave Landward (conversation on 1/26/16), Questar Gas does not track end-use of delivered gas, thus, natural gas may be used as a feedstock by commercial/industrial sources in Utah.
+
+#EPA Feedstock adjustment (proportion used for feedstock - divide feedstock use by total industrial nonfuel use)											
+#Based on EIA Data: MECS (Manufacturing Energy Consumption Survey) http://www.eia.gov/consumption/manufacturing/data/2010/
+#Divide West Census Region feedstock use (Table 2.1) by total industrial nonfuel use (Table 1.1)
+#Data only available every four years.
+#MECS Year        2010
+#Feedstock use    14    *Note: EPA/NOMAD uses 0.25 units for all MECS <0.5. 
+#Nonfuel use      611
+#So what this means is 14/611 units of gas are used for feedstock? So we want to remove that from our combustion throughput.
+AreacommercialNG <- AreacommercialNG %>% mutate(unit = unit*(1-(14/611)))
+
+#okay, so now we have true statewide industrial NG usage for area source. We now distribute it to each county based on NG use in each county. The data we have on natural gas usage per county is measured in Decatherms (not in MMCF), so that is how we split things up.
+nonresNGDecatherm <- projection_tables[["NonResNGDecatherm"]] %>% filter(year == start_year) %>%
+  mutate(fraction = unit/sum(unit))
+AreacommercialNG <- AreacommercialNG %>% mutate(unit = unit*nonresNGDecatherm$fraction)
+
+#now we have area NG use by county in MMCF, and EFs in MMCF. Combine them
+temp_table <- make_baseline(efs_table, AreacommercialNG)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["NonResNGMMCF_All State, UTAH"]])
+#add controls
+projected_temp_table <- add_controls(projected_temp_table)
+#add to final_table and delete residual variables
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, efs_table, nonresNG, commercialNG, PtcommercialNG, AreacommercialNG, nonresNGDecatherm, temp_table, projected_temp_table)
+
 
 
 
 #residential
 #nat gas > all combustor types
 scc <- 2104006000
+
+
+#add controls
+
 ```
 
 ```{r 22-XX, 26-XX, unpaved roads, waste disposal}
