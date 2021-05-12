@@ -57,6 +57,7 @@ options(scipen = 999)
 source(paste0(Sys.getenv('GitDir'),'BaseCodes.R'))
 start_year <- 2017
 end_year <- 2020
+counties <- seq.int(49001,49057,2)
 #step 2
 source(paste0(Sys.getenv('GitDir'),'BaseTables.R'))
 
@@ -130,7 +131,8 @@ to claim primacy when reporting these numbers for the NEI, and instead will pull
 
 There are no rules (and therefore, no controls) or pt source subtractions for these sccs.
 
-```{NEI Pulls, for SIPS/WEBSITE}
+```{r NEI Pulls, for SIPS and WEBSITE}
+
 #25-XX-XXX-XXX: Storage and Transport of fuels
 
 #declare an empty table to fill in with 25-XX-XXX-XXX SCCs. I can experiment with that 
@@ -290,7 +292,7 @@ efs_table <- efs_table %>% mutate(TPUPY = ifelse(pollutant=="SO2",0.0213,TPUPY))
 
 #throughputs are in KBBL!!!
 total_kerosene <- projection_tables[["Kerosene_Industrial"]] %>% filter(year == start_year)
-pt_kerosene <- projection_tables[["PtKerosene_Kerosene, Industrial"]] %>% filter(year == start_year)
+pt_kerosene <- projection_tables[["PtKerosene_Industrial"]] %>% filter(year == start_year)
 #set up area kerosene with the same format as total, but then subtract pt_kerosene from it
 area_kerosene <- total_kerosene
 #subtract pt values from total. The 'unit' column is still the statewide value of area kerosene,
@@ -328,7 +330,7 @@ efs_table <- efs_table %>% mutate(TPUPY = ifelse(pollutant=="SO2",0.0213,TPUPY))
 
 #throughputs are in KBBL!!!
 total_kerosene <- projection_tables[["Kerosene_Commercial"]] %>% filter(year == start_year)
-pt_kerosene <- projection_tables[["PtKerosene_Kerosene, Commercial"]] %>% filter(year == start_year)
+pt_kerosene <- projection_tables[["PtKerosene_Commercial"]] %>% filter(year == start_year)
 #set up area kerosene with the same format as total, but then subtract pt_kerosene from it
 area_kerosene <- total_kerosene
 #subtract pt values from total. The 'unit' column is still the statewide value of area kerosene,
@@ -394,7 +396,7 @@ efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TR
 
 #get area source lpg statewide:
 all_lpg <- projection_tables[["LPG_Industrial"]] %>% filter(year == start_year)
-pt_lpg <- projection_tables[["PtLPG_LPG, Industrial"]] %>% filter(year == start_year)
+pt_lpg <- projection_tables[["PtLPG_Industrial"]] %>% filter(year == start_year)
 #subtract pt from total to get area
 area_lpg <- all_lpg
 area_lpg$unit <- all_lpg$unit - pt_lpg$unit
@@ -422,7 +424,7 @@ efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TR
 
 #get area source lpg statewide:
 all_lpg <- projection_tables[["LPG_Commercial"]] %>% filter(year == start_year)
-pt_lpg <- projection_tables[["PtLPG_LPG, Commercial"]] %>% filter(year == start_year)
+pt_lpg <- projection_tables[["PtLPG_Commercial"]] %>% filter(year == start_year)
 #subtract pt from total to get area
 area_lpg <- all_lpg
 area_lpg$unit <- all_lpg$unit - pt_lpg$unit
@@ -482,7 +484,7 @@ scc <- 2102006000
 efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6FT3", all_primaries = TRUE)
 
 #now that we have EFs, get throughput. Start by pulling the Electrical/Industrial/Commercial NG use for all of Utah. Basically all of the nonresidential NG use in Utah. Units MMCF
-nonresNG <- projection_tables[["NonResNGMMCF_All State, UTAH"]] %>% filter(year == start_year)
+nonresNG <- projection_tables[["NonResNGMMCF_Utah"]] %>% filter(year == start_year)
 # Questar's Dave Landward (dave.landward@questar.com or 801-324-5722) provided Questar's 2014 usage consumption proportions by sector (1/27/16 email):
 #   Residential:  36%
 #   Commercial:   22%
@@ -523,7 +525,7 @@ AreaindustrialNG <- AreaindustrialNG %>% mutate(unit = unit*nonresNGDecatherm$fr
 
 #now we have area NG use by county in MMCF, and EFs in MMCF. Combine them
 temp_table <- make_baseline(efs_table, AreaindustrialNG)
-projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["NonResNGMMCF_All State, UTAH"]])
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["NonResNGMMCF_Utah"]])
 #add to final_table and delete residual variables
 final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, nonresNG, industrialNG, PtindustrialNG, AreaindustrialNG, nonresNGDecatherm, temp_table, projected_temp_table)
@@ -540,7 +542,7 @@ scc <- 2103006000
 efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6FT3", all_primaries = TRUE)
 
 #now that we have EFs, get throughput. Start by pulling the Electrical/Industrial/Commercial NG use for all of Utah. Basically all of the nonresidential NG use in Utah. Units MMCF
-nonresNG <- projection_tables[["NonResNGMMCF_All State, UTAH"]] %>% filter(year == start_year)
+nonresNG <- projection_tables[["NonResNGMMCF_Utah"]] %>% filter(year == start_year)
 # Questar's Dave Landward (dave.landward@questar.com or 801-324-5722) provided Questar's 2014 usage consumption proportions by sector (1/27/16 email):
 #   Residential:  36%
 #   Commercial:   22%
@@ -580,7 +582,7 @@ AreacommercialNG <- AreacommercialNG %>% mutate(unit = unit*nonresNGDecatherm$fr
 
 #now we have area NG use by county in MMCF, and EFs in MMCF. Combine them
 temp_table <- make_baseline(efs_table, AreacommercialNG)
-projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["NonResNGMMCF_All State, UTAH"]])
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["NonResNGMMCF_Utah"]])
 #add controls
 controlled_projected <- add_controls(projected_temp_table)
 #add to final_table and delete residual variables
@@ -597,7 +599,7 @@ scc <- 2104006000
 efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6FT3", all_primaries = TRUE)
 
 #now pull statewide residential NG use, in MMCF
-resNGMMCF <- projection_tables[["ResNGMMCF_All State, UTAH"]] %>% filter(year == start_year)
+resNGMMCF <- projection_tables[["ResNGMMCF_Utah"]] %>% filter(year == start_year)
 
 #now distribute MMCF per county based on residential decatherm usage per county
 resNGDecatherm <- projection_tables[["ResNGDecatherm"]] %>%
@@ -607,7 +609,7 @@ resNGMMCF$unit <- resNGMMCF$unit * resNGDecatherm$fraction
 
 #now apply emission factors, all units in MMCF
 temp_table <- make_baseline(efs_table, resNGMMCF)
-projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ResNGMMCF_All State, UTAH"]])
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ResNGMMCF_Utah"]])
 #add controls
 controlled_projected <- add_controls(projected_temp_table)
 
@@ -647,6 +649,21 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #no controls
 final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, res_distillateOil, housing_distillate, temp_table, projected_temp_table)
+
+
+#industrial
+#distillate oil > all boiler types
+# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine and Commercial - 95% Boiler, 5% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).									
+
+scc <- 2102004001
+#pull emission factors from ww in kgal
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) %>%
+# If you look in the NEMO, the SO2 EF is "142S", where : "S indicates that the weight % of sulfur in the oil should be multiplied by the value given. For example, if the fuel is 1% sulfur, then S = 1"
+#In Utah, S = 0.3%; therefore, 142 x 0.3 = 42.6 lbs/kgal. (I have not verified the 0.3% utah limit as of 20210511)									
+  mutate(TPUPY = ifelse(pollutant =="SO2",42.6/2000,TPUPY))
+
+
+
 
 ```
 
