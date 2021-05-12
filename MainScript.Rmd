@@ -615,7 +615,38 @@ final_table <- rbind(final_table, controlled_projected)
 rm(scc, efs_table, resNGMMCF, resNGDecatherm, temp_table, projected_temp_table, controlled_projected)
 
 
+#####
+#distillate oil
 
+
+
+#residential
+# distillate oil > total: all combustor types
+#5) Residential oil consumption data is from EIA's Utah SEDS csv file of "All Consumption Estimates" which can be downloaded and combined with a "Codes and Descriptions" file, both available at: http://www.eia.gov/state/seds/seds-data-complete.cfm?sid=US#stateSelection (see Input file for details).									
+scc <- 2104004000
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) %>%
+# If you look in the NEMO, the SO2 EF is "142S", where : "S indicates that the weight % of sulfur in the oil should be multiplied by the value given. For example, if the fuel is 1% sulfur, then S = 1"
+#In Utah, S = 0.3%; therefore, 142 x 0.3 = 42.6 lbs/kgal. (I have not verified the 0.3% utah limit as of 20210511)									
+  mutate(TPUPY = ifelse(pollutant =="SO2",42.6/2000,TPUPY))
+
+#now get state throughput in kgal
+res_distillateOil <- projection_tables[["DistillateOil_Residential"]] %>% 
+  filter(year == start_year) %>%
+  #adjust units from kbbl to kgal
+  mutate(unit = unit*42)
+
+#now distribute the statewide number to each county based on number of houses that report using KEROSENE? interesting... I'll just leave it.
+housing_distillate <- projection_tables[["HousingKero"]] %>%
+  filter(year == start_year) %>%
+  mutate(fraction = unit/sum(unit))
+res_distillateOil$unit <- res_distillateOil$unit * housing_distillate$fraction
+
+#now we have throughput and EF in kgal. Combine them.
+temp_table <- make_baseline(efs_table, res_distillateOil)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["DistillateOil_Residential"]])
+#no controls
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, efs_table, res_distillateOil, housing_distillate, temp_table, projected_temp_table)
 
 ```
 
