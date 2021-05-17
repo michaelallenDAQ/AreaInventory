@@ -1062,6 +1062,160 @@ final_table <- rbind(final_table,temp_table)
 rm( scc, pt_sccs, real_table, pollutants, TPPPY, efs_table, zeros_table, temp_table)
 
 
+
+
+#construction: SIC 15-17 > residential > totals
+#WW has calculations on this, but we pull our own housing construction data, so we do things ourselves.
+scc <- 2311010000
+#we will define EFs independently for each type of construction
+#each county has its own adjustment factor to its EF, based on statewide precipitation, but also
+#county average silt percent. These numbers/equations are from the NEMO/WW inputs
+utah_precipitation_evaporation_value <- 29.6
+county_silt_percentages <- 
+  data.frame(county = counties, 
+             silt_percent = c(42.94, 45.26, 49.25, 41.15, 39.2, 51.23, 28.63, 24.18, 30.57,
+                              18, 33.4, 37.66, 29.1, 36.12, 38.52, 38.19, 38.5, 46.82, 21.04,
+                              45.12, 36.9, 37.53, 43.69, 37.35, 41.22, 43.18, 24.59, 18.72, 39.8)) %>%
+  mutate(adjustment_factor = 
+           24/utah_precipitation_evaporation_value * 
+           silt_percent/100/0.09)
+
+
+#now I need to pull the acre-months per year for each county.
+# for residential construction, there are several buildings that each have different acreages and timescales of construction. 
+#we get our calculation assumptions from the NOMAD/NEMO
+#   Apartments
+#   Single-family units
+#   Two-family units
+
+      #apartments
+#we assume apartment construction disturbs 0.5 acres, and that it lasts 12 months.
+apartments <- projection_tables[["Apartments"]] %>% filter(year == start_year) %>%
+  #we pull new units constructed, so multiply by (0.5*12) to get acre months
+  mutate(unit = unit*0.5*12)
+
+#EFs for apartment construction are in the NOMAD - you will have to check that these are up to date
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in TON per ACRE-MONTH. PM25 is assumed to be 10% of PM10
+TPPPY <-c(0.11, 0.11*0.1, 0.11, 0.11*0.1)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#now I need to adjust the EF for each county based on the county_silt_percentages adjustment factors
+efs_table <- left_join(efs_table, county_silt_percentages, by="county") %>%
+  mutate(TPUPY = TPUPY * adjustment_factor) %>%
+  #drop unwanted columns
+  select(-c("silt_percent", "adjustment_factor"))
+#make emissions table for apartments, then later combine it with the rest
+apartments_table <- make_baseline(efs_table, apartments)
+
+
+      #single-family units
+#we assume single-family units take up 1/4 of an acre and last 6 months
+#single family units with basements have different emission factors than no basements
+basement_pct <- 0.2681
+single_units <- projection_tables[["SingleUnits"]] %>% filter(year == start_year) %>%
+  #we pull new units constructed, so multiply by (0.25*6) to get acre months
+  mutate(unit = unit*0.25*6)
+
+single_nobasement <- single_units %>% mutate(unit = unit*(1-basement_pct))
+single_basement <- single_units %>% mutate(unit = unit*basement_pct)
+
+#EFs for single unit construction are in the NOMAD - you will have to check that these are up to date
+#no basements:
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in TON per ACRE-MONTH. PM25 is assumed to be 10% of PM10
+TPPPY <-c(0.032, 0.032*0.1, 0.032, 0.032*0.1)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#now I need to adjust the EF for each county based on the county_silt_percentages adjustment factors
+efs_table <- left_join(efs_table, county_silt_percentages, by="county") %>%
+  mutate(TPUPY = TPUPY * adjustment_factor) %>%
+  #drop unwanted columns
+  select(-c("silt_percent", "adjustment_factor"))
+#make emissions table for no-basement 1-units, then later combine it with the rest
+nobasement <- make_baseline(efs_table, single_nobasement)
+
+#yes basements:
+#we also have to calculate emissions for the dirt displaced:
+#emissions are dust per 1,000 cubic yards of dirt displaced.
+#651.9 cubic yards per basement
+kcubic_yards <- 0.651852
+basement_dusts <- projection_tables[["SingleUnits"]] %>%
+  filter(year == start_year) %>%
+  mutate(unit = unit*basement_pct) %>%
+  mutate(unit = unit*kcubic_yards)
+
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in TON per ACRE-MONTH. PM25 is assumed to be 10% of PM10
+TPPPY <-c(0.059, 0.059*0.1, 0.059, 0.059*0.1)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#now I need to adjust the EF for each county based on the county_silt_percentages adjustment factors
+efs_table <- left_join(efs_table, county_silt_percentages, by="county") %>%
+  mutate(TPUPY = TPUPY * adjustment_factor) %>%
+  #drop unwanted columns
+  select(-c("silt_percent", "adjustment_factor"))
+#make emissions table for yes-basement 1-units, then later combine it with the rest
+basement_dirt <- make_baseline(efs_table, basement_dusts)
+
+
+#now that we did the basement dirt displaced, we will do the actual construction emissions
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in TON per ACRE-MONTH. PM25 is assumed to be 10% of PM10
+TPPPY <-c(0.011, 0.011*0.1, 0.011, 0.011*0.1)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#now I need to adjust the EF for each county based on the county_silt_percentages adjustment factors
+efs_table <- left_join(efs_table, county_silt_percentages, by="county") %>%
+  mutate(TPUPY = TPUPY * adjustment_factor) %>%
+  #drop unwanted columns
+  select(-c("silt_percent", "adjustment_factor"))
+#make emissions table for yes-basement 1-units, then later combine it with the rest
+yesbasement <- make_baseline(efs_table, single_basement)
+
+#add together emissions from no basements, yes basements, and then the dirt displaced for basements
+all_single_unit <- nobasement %>% 
+  mutate(TPY = nobasement$TPY + yesbasement$TPY + basement_dirt$TPY)
+
+
+      #2-family unit construction
+#we assume two-family units take up 1/3 of an acre and last 6 months.
+two_family_units <- projection_tables[["TwoFamilyUnits"]] %>% filter(year == start_year) %>%
+  #we pull new units constructed, so multiply by (1/3*6) to get acre months
+  mutate(unit = unit*1/3*6)
+#EFs for two-family unit construction are in the NOMAD - you will have to check that these are up to date
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in TON per ACRE-MONTH. PM25 is assumed to be 10% of PM10
+TPPPY <-c(0.032, 0.032*0.1, 0.032, 0.032*0.1)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#now I need to adjust the EF for each county based on the county_silt_percentages adjustment factors
+efs_table <- left_join(efs_table, county_silt_percentages, by="county") %>%
+  mutate(TPUPY = TPUPY * adjustment_factor) %>%
+  #drop unwanted columns
+  select(-c("silt_percent", "adjustment_factor"))
+#make emissions table for apartments, then later combine it with the rest
+two_family_units_table <- make_baseline(efs_table, two_family_units)
+
+
+      #now combine them
+all_res_construction <- apartments_table %>%
+  mutate(TPY = apartments_table$TPY + all_single_unit$TPY + two_family_units_table$TPY)
+#project and add controls
+projected_temp_table <- project_baseline(base_table = all_res_construction, projection_table = projection_tables[["Population"]])
+
+controlled_projected <- add_controls(projected_temp_table)
+final_table <- rbind(final_table, controlled_projected)
+
+rm(utah_precipitation_evaporation_value, county_silt_percentages, apartments, apartments_table)
+rm(basement_pct, single_units, single_nobasement, single_basement, kcubic_yards, basement_dusts, basement_dirt, yesbasement, all_single_unit)
+rm(two_family_units, two_family_units_table)
+rm(scc, pollutants, TPPPY, efs_table, projected_temp_table, controlled_projected, all_res_construction)
+
+#industrial processes > construction: SIC 15-17...
+#... road construction > total
+#used to replicate WW, now we just pull from it. but we DO add controls
+scc <- 2311030000
+temp_table <- pull_baseline_from_ww(scc)
+projected_temp_table <- project_baseline(temp_table, projection_table = projection_tables[["VMT"]])
+controlled_projected <- add_controls(projected_temp_table)
+final_table <- rbind(final_table, controlled_projected)
+rm(scc, temp_table, projected_temp_table, controlled_projected)
 ```
 
 
@@ -1969,9 +2123,6 @@ temp_table_final <- temp_table_project
 final_table <- rbind(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
-
-
-
 
 
 
