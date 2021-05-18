@@ -76,30 +76,6 @@ final_table <- vector()
 ```
 
 
-This is going to produce a fresh inventory for Utah's Area Source.
-This code has 5 main sections:
-  1) Base Codes
-  Always run this section. 'source('BaseCodes.R')'. This pull functions you will use later in the script. This section should not pull any variables. It should only generate functions.
-  
-  2) Base Tables
-  'source('BaseTables.R')'
-  This generates the fundamental tables we will work with. We till haven't started filling the inventory table yet. You probably want to run this every time.
-  
-  3) Merge inventories.
-    Now that we have updated all of the SCCs that we can (for now), let's merge our new data into the most up-to-date complete inventory table.
-    
-    
-########################################################################################
-########################################################################################
-########################################################################################
-########################################################################################
-Steps 1 and 2 are executed by sourcing scripts above.
-
-3)Population-based data
-  A) this is population-based emissions where we pull EFs from the WW and population from Kem gardner. ALL OF THESE EVENTUALLY CAN COMPLETELY BE CALCULATED BY ENTERING OUR POPULATION DATA AS INPUTS FOR WW. WE WILL ONLY NEED THE BASE NUMBERS FOR WHEN WE WANT TO PROJECT OUR DATA INTO THE FUTURE.
-  
-  B) population-based emissions where we made our own EFs.
-Both A and B could potentially have Pt source subtraction and controls applied.
 
 
 TPY values will be calculated as follows:
@@ -114,18 +90,8 @@ TPY values will be calculated as follows:
     3.4.2) OPTIONAL: Apply controls. Select which counties to control, the starting year, ending year, and starting and ending control values for any control phase-in. Ideally, we add controls after subtracting pt sources.
   3.5) Add this new projected, controlled, pt_subtracted emission data to our final table.
   
-make scc
-get efs
-make baseline
-project baseline
-  if pt subtract
-    make pt subtract baseline
-    project pt subtraction
-  if controls
-    apply controls
-add to final table
-
 ########
+First chunk, for projections. DO NOT RUN THIS SECTION FOR NEI REPORTING!!!
 Utah currently defers to EPA for emission calculations for many SCC calculations. We do not want 
 to claim primacy when reporting these numbers for the NEI, and instead will pull the data FROM the NEI and use them for projections. If we accidentally run and submit this section for NEI reporting, we will over-write whatever EPA comes up with, which would be bad. This section should only be run/added to the inventory when we are reporting for SIP projections or WEBSITE projections. For projections only.
 
@@ -1068,6 +1034,41 @@ temp_table <- make_baseline(efs_table,projection_tables[["LUST"]],project_to = e
 final_table <- rbind(final_table, temp_table)
 
 
+
+
+#waste disposal, treatment, and recovery
+#landfills > municipal > total
+#1) This is a list of landfill sites contained in the DAQ database. Several of these landfills submit inventories. The listing of landfills and inventories can be found in relevent appendix of the Input Appendices.
+#2) Counties with municipal landfills was derived from a list from the Utah Division of Waste Management  (point of contact: Allan Moore, allanmoore@utah.gov or 536-0211) and is available in relevent appendix of the Input Appendices. Each county's tons of waste was also adjusted using this dataset to remove tons of waste from the point source landfills present in each county (avoid double count with point source landfill emission submission).									
+#3) Emissions are included from current inventories.									
+#4) Information from the Division of Waste Management shows that every county has a municipal landfill except Morgan and Wasatch.									
+#5) It is assumed that Landfill PM includes the act of daily soil coverage (see below notes on landfill emission factors as well).									
+#6) Landfill VOC, NH3, PM10, and PM2.5 emission factors were calculated based on inventoried point source landfills emissions per ton of waste accepted in 2014, then projected to other landfills based on the waste accepted by the landfills in each county.									
+#7) Point landfill emissions are derived from data in Form 6a or Form 11b of their inventory submission to Utah DAQ (Scott Hanks or Deb McMurtrie) or adjusted from summaries to remove PM10/2.5 generated from haul roads, engines etc (accounted for in "Unpaved Roads" and combustion categories) and limited to emissions from landfill operations (eg Wasatch Integrated Waste's incinderator emissions are removed). Note: submitted inventories must be used as Tempo summaries do not provide the detail required to limit emissions to soil covering operations. VOCs are adjusted by excluding tailpipe and other non-landfill emission sources. In the future, it would be better to be able to use inventory data (if available) to create an average of emission/ton waste rather than using a single year's data.									
+#8) The above factors will be used in conjunction with individual county landfill tons of waste accepted to calculate uninventoried landfill emissions.									
+#9) The "1997 Gridded Ammonia Emission Inventory, Update for the South Coast Air Basin," by Charles W. Botsford, et al., page A-43, proposes a correlation of 0.007 to 1 ammonia to methane.  For this use, methane and VOC are assumed equal.									
+
+scc <- 2620030000
+
+
+#efs were pulled from looking at permitted landfills. We took their throughputs and emissions and back-calculated to find the throughputs. For documentation, look in 
+pollutants <- c("VOC", "NH3", "PM10-PRI", "PM10-FIL", "PM25-PRI", "PM25-FIL")
+TPPPY <- c(5.07E-5, 5.86E-7, 1.11E-5, 1.11E-5, 4.03E-6, 4.03E-6)
+efs_table <- make_simple_efs_table(scc, pollutants, TPPPY)
+
+
+
+
+#waste disposal, treatment, and recovery
+#wastewater treatment > public owned > total processed
+scc <- 2630020000
+
+
+#waste disposal, treatment, and recovery
+#composting > 100% green waste (e.g. residential/municipal yard wastes) > all processes
+scc <- 2680003000
+
+describe(scc)
 ```
 
 
@@ -1309,6 +1310,161 @@ final_table <- rbind(final_table,temp_table)
 rm( scc, pt_sccs, real_table, pollutants, TPPPY, efs_table, zeros_table, temp_table)
 
 
+
+
+#construction: SIC 15-17 > residential > totals
+#WW has calculations on this, but we pull our own housing construction data, so we do things ourselves.
+scc <- 2311010000
+#we will define EFs independently for each type of construction
+#each county has its own adjustment factor to its EF, based on statewide precipitation, but also
+#county average silt percent. These numbers/equations are from the NEMO/WW inputs
+utah_precipitation_evaporation_value <- 29.6
+county_silt_percentages <- 
+  data.frame(county = counties, 
+             silt_percent = c(42.94, 45.26, 49.25, 41.15, 39.2, 51.23, 28.63, 24.18, 30.57,
+                              18, 33.4, 37.66, 29.1, 36.12, 38.52, 38.19, 38.5, 46.82, 21.04,
+                              45.12, 36.9, 37.53, 43.69, 37.35, 41.22, 43.18, 24.59, 18.72, 39.8)) %>%
+  mutate(adjustment_factor = 
+           24/utah_precipitation_evaporation_value * 
+           silt_percent/100/0.09)
+
+
+#now I need to pull the acre-months per year for each county.
+# for residential construction, there are several buildings that each have different acreages and timescales of construction. 
+#we get our calculation assumptions from the NOMAD/NEMO
+#   Apartments
+#   Single-family units
+#   Two-family units
+
+      #apartments
+#we assume apartment construction disturbs 0.5 acres, and that it lasts 12 months.
+apartments <- projection_tables[["Apartments"]] %>% filter(year == start_year) %>%
+  #we pull new units constructed, so multiply by (0.5*12) to get acre months
+  mutate(unit = unit*0.5*12)
+
+#EFs for apartment construction are in the NOMAD - you will have to check that these are up to date
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in TON per ACRE-MONTH. PM25 is assumed to be 10% of PM10
+TPPPY <-c(0.11, 0.11*0.1, 0.11, 0.11*0.1)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#now I need to adjust the EF for each county based on the county_silt_percentages adjustment factors
+efs_table <- left_join(efs_table, county_silt_percentages, by="county") %>%
+  mutate(TPUPY = TPUPY * adjustment_factor) %>%
+  #drop unwanted columns
+  select(-c("silt_percent", "adjustment_factor"))
+#make emissions table for apartments, then later combine it with the rest
+apartments_table <- make_baseline(efs_table, apartments)
+
+
+      #single-family units
+#we assume single-family units take up 1/4 of an acre and last 6 months
+#single family units with basements have different emission factors than no basements
+basement_pct <- 0.2681
+single_units <- projection_tables[["SingleUnits"]] %>% filter(year == start_year) %>%
+  #we pull new units constructed, so multiply by (0.25*6) to get acre months
+  mutate(unit = unit*0.25*6)
+
+single_nobasement <- single_units %>% mutate(unit = unit*(1-basement_pct))
+single_basement <- single_units %>% mutate(unit = unit*basement_pct)
+
+#EFs for single unit construction are in the NOMAD - you will have to check that these are up to date
+#no basements:
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in TON per ACRE-MONTH. PM25 is assumed to be 10% of PM10
+TPPPY <-c(0.032, 0.032*0.1, 0.032, 0.032*0.1)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#now I need to adjust the EF for each county based on the county_silt_percentages adjustment factors
+efs_table <- left_join(efs_table, county_silt_percentages, by="county") %>%
+  mutate(TPUPY = TPUPY * adjustment_factor) %>%
+  #drop unwanted columns
+  select(-c("silt_percent", "adjustment_factor"))
+#make emissions table for no-basement 1-units, then later combine it with the rest
+nobasement <- make_baseline(efs_table, single_nobasement)
+
+#yes basements:
+#we also have to calculate emissions for the dirt displaced:
+#emissions are dust per 1,000 cubic yards of dirt displaced.
+#651.9 cubic yards per basement
+kcubic_yards <- 0.651852
+basement_dusts <- projection_tables[["SingleUnits"]] %>%
+  filter(year == start_year) %>%
+  mutate(unit = unit*basement_pct) %>%
+  mutate(unit = unit*kcubic_yards)
+
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in TON per ACRE-MONTH. PM25 is assumed to be 10% of PM10
+TPPPY <-c(0.059, 0.059*0.1, 0.059, 0.059*0.1)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#now I need to adjust the EF for each county based on the county_silt_percentages adjustment factors
+efs_table <- left_join(efs_table, county_silt_percentages, by="county") %>%
+  mutate(TPUPY = TPUPY * adjustment_factor) %>%
+  #drop unwanted columns
+  select(-c("silt_percent", "adjustment_factor"))
+#make emissions table for yes-basement 1-units, then later combine it with the rest
+basement_dirt <- make_baseline(efs_table, basement_dusts)
+
+
+#now that we did the basement dirt displaced, we will do the actual construction emissions
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in TON per ACRE-MONTH. PM25 is assumed to be 10% of PM10
+TPPPY <-c(0.011, 0.011*0.1, 0.011, 0.011*0.1)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#now I need to adjust the EF for each county based on the county_silt_percentages adjustment factors
+efs_table <- left_join(efs_table, county_silt_percentages, by="county") %>%
+  mutate(TPUPY = TPUPY * adjustment_factor) %>%
+  #drop unwanted columns
+  select(-c("silt_percent", "adjustment_factor"))
+#make emissions table for yes-basement 1-units, then later combine it with the rest
+yesbasement <- make_baseline(efs_table, single_basement)
+
+#add together emissions from no basements, yes basements, and then the dirt displaced for basements
+all_single_unit <- nobasement %>% 
+  mutate(TPY = nobasement$TPY + yesbasement$TPY + basement_dirt$TPY)
+
+
+      #2-family unit construction
+#we assume two-family units take up 1/3 of an acre and last 6 months.
+two_family_units <- projection_tables[["TwoFamilyUnits"]] %>% filter(year == start_year) %>%
+  #we pull new units constructed, so multiply by (1/3*6) to get acre months
+  mutate(unit = unit*1/3*6)
+#EFs for two-family unit construction are in the NOMAD - you will have to check that these are up to date
+pollutants <- c('PM10-PRI','PM25-PRI','PM10-FIL','PM25-FIL')
+#given in TON per ACRE-MONTH. PM25 is assumed to be 10% of PM10
+TPPPY <-c(0.032, 0.032*0.1, 0.032, 0.032*0.1)
+efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
+#now I need to adjust the EF for each county based on the county_silt_percentages adjustment factors
+efs_table <- left_join(efs_table, county_silt_percentages, by="county") %>%
+  mutate(TPUPY = TPUPY * adjustment_factor) %>%
+  #drop unwanted columns
+  select(-c("silt_percent", "adjustment_factor"))
+#make emissions table for apartments, then later combine it with the rest
+two_family_units_table <- make_baseline(efs_table, two_family_units)
+
+
+      #now combine them
+all_res_construction <- apartments_table %>%
+  mutate(TPY = apartments_table$TPY + all_single_unit$TPY + two_family_units_table$TPY)
+#project and add controls
+projected_temp_table <- project_baseline(base_table = all_res_construction, projection_table = projection_tables[["Population"]])
+
+controlled_projected <- add_controls(projected_temp_table)
+final_table <- rbind(final_table, controlled_projected)
+
+rm(utah_precipitation_evaporation_value, county_silt_percentages, apartments, apartments_table)
+rm(basement_pct, single_units, single_nobasement, single_basement, kcubic_yards, basement_dusts, basement_dirt, yesbasement, all_single_unit)
+rm(two_family_units, two_family_units_table)
+rm(scc, pollutants, TPPPY, efs_table, projected_temp_table, controlled_projected, all_res_construction)
+
+#industrial processes > construction: SIC 15-17...
+#... road construction > total
+#used to replicate WW, now we just pull from it. but we DO add controls
+scc <- 2311030000
+temp_table <- pull_baseline_from_ww(scc)
+projected_temp_table <- project_baseline(temp_table, projection_table = projection_tables[["VMT"]])
+#add controls
+controlled_projected <- add_controls(projected_temp_table)
+final_table <- rbind(final_table, controlled_projected)
+rm(scc, temp_table, projected_temp_table, controlled_projected)
 ```
 
 
@@ -2221,9 +2377,6 @@ rm(scc, temp_table, temp_table_project, temp_table_final)
 
 
 
-
-
-
 ```
 
 
@@ -2297,7 +2450,7 @@ temp_table <- pull_pt_removal_table(pt_sccs,scc) %>% filter(is_point == FALSE) %
 #if all of the SCCs happen on permitted major pt sites. This would be the case for our WEBSITE
 #reporting. As of 20210506, EPA does not offer default numbers for this SCC, so we don't have to
 #worry about them filling in any blanks.
-if(dim(temp_table)!=0) {
+if(dim(temp_table)[1]!=0) {
   #project as steady. These are permitted emissions so they may not radically change over time.
   temp_table <-
     project_baseline(temp_table, projection_tables[["Steady"]])
@@ -2513,6 +2666,8 @@ temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
 #no controls
 final_table <- rbind(final_table, temp_table)
 rm(scc, temp_table)
+
+
 
 
 ```
