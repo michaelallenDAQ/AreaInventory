@@ -76,30 +76,6 @@ final_table <- vector()
 ```
 
 
-This is going to produce a fresh inventory for Utah's Area Source.
-This code has 5 main sections:
-  1) Base Codes
-  Always run this section. 'source('BaseCodes.R')'. This pull functions you will use later in the script. This section should not pull any variables. It should only generate functions.
-  
-  2) Base Tables
-  'source('BaseTables.R')'
-  This generates the fundamental tables we will work with. We till haven't started filling the inventory table yet. You probably want to run this every time.
-  
-  3) Merge inventories.
-    Now that we have updated all of the SCCs that we can (for now), let's merge our new data into the most up-to-date complete inventory table.
-    
-    
-########################################################################################
-########################################################################################
-########################################################################################
-########################################################################################
-Steps 1 and 2 are executed by sourcing scripts above.
-
-3)Population-based data
-  A) this is population-based emissions where we pull EFs from the WW and population from Kem gardner. ALL OF THESE EVENTUALLY CAN COMPLETELY BE CALCULATED BY ENTERING OUR POPULATION DATA AS INPUTS FOR WW. WE WILL ONLY NEED THE BASE NUMBERS FOR WHEN WE WANT TO PROJECT OUR DATA INTO THE FUTURE.
-  
-  B) population-based emissions where we made our own EFs.
-Both A and B could potentially have Pt source subtraction and controls applied.
 
 
 TPY values will be calculated as follows:
@@ -114,18 +90,8 @@ TPY values will be calculated as follows:
     3.4.2) OPTIONAL: Apply controls. Select which counties to control, the starting year, ending year, and starting and ending control values for any control phase-in. Ideally, we add controls after subtracting pt sources.
   3.5) Add this new projected, controlled, pt_subtracted emission data to our final table.
   
-make scc
-get efs
-make baseline
-project baseline
-  if pt subtract
-    make pt subtract baseline
-    project pt subtraction
-  if controls
-    apply controls
-add to final table
-
 ########
+First chunk, for projections. DO NOT RUN THIS SECTION FOR NEI REPORTING!!!
 Utah currently defers to EPA for emission calculations for many SCC calculations. We do not want 
 to claim primacy when reporting these numbers for the NEI, and instead will pull the data FROM the NEI and use them for projections. If we accidentally run and submit this section for NEI reporting, we will over-write whatever EPA comes up with, which would be bad. This section should only be run/added to the inventory when we are reporting for SIP projections or WEBSITE projections. For projections only.
 
@@ -821,6 +787,41 @@ temp_table <- make_baseline(efs_table,projection_tables[["LUST"]],project_to = e
 final_table <- rbind(final_table, temp_table)
 
 
+
+
+#waste disposal, treatment, and recovery
+#landfills > municipal > total
+#1) This is a list of landfill sites contained in the DAQ database. Several of these landfills submit inventories. The listing of landfills and inventories can be found in relevent appendix of the Input Appendices.
+#2) Counties with municipal landfills was derived from a list from the Utah Division of Waste Management  (point of contact: Allan Moore, allanmoore@utah.gov or 536-0211) and is available in relevent appendix of the Input Appendices. Each county's tons of waste was also adjusted using this dataset to remove tons of waste from the point source landfills present in each county (avoid double count with point source landfill emission submission).									
+#3) Emissions are included from current inventories.									
+#4) Information from the Division of Waste Management shows that every county has a municipal landfill except Morgan and Wasatch.									
+#5) It is assumed that Landfill PM includes the act of daily soil coverage (see below notes on landfill emission factors as well).									
+#6) Landfill VOC, NH3, PM10, and PM2.5 emission factors were calculated based on inventoried point source landfills emissions per ton of waste accepted in 2014, then projected to other landfills based on the waste accepted by the landfills in each county.									
+#7) Point landfill emissions are derived from data in Form 6a or Form 11b of their inventory submission to Utah DAQ (Scott Hanks or Deb McMurtrie) or adjusted from summaries to remove PM10/2.5 generated from haul roads, engines etc (accounted for in "Unpaved Roads" and combustion categories) and limited to emissions from landfill operations (eg Wasatch Integrated Waste's incinderator emissions are removed). Note: submitted inventories must be used as Tempo summaries do not provide the detail required to limit emissions to soil covering operations. VOCs are adjusted by excluding tailpipe and other non-landfill emission sources. In the future, it would be better to be able to use inventory data (if available) to create an average of emission/ton waste rather than using a single year's data.									
+#8) The above factors will be used in conjunction with individual county landfill tons of waste accepted to calculate uninventoried landfill emissions.									
+#9) The "1997 Gridded Ammonia Emission Inventory, Update for the South Coast Air Basin," by Charles W. Botsford, et al., page A-43, proposes a correlation of 0.007 to 1 ammonia to methane.  For this use, methane and VOC are assumed equal.									
+
+scc <- 2620030000
+
+
+#efs were pulled from looking at permitted landfills. We took their throughputs and emissions and back-calculated to find the throughputs. For documentation, look in 
+pollutants <- c("VOC", "NH3", "PM10-PRI", "PM10-FIL", "PM25-PRI", "PM25-FIL")
+TPPPY <- c(5.07E-5, 5.86E-7, 1.11E-5, 1.11E-5, 4.03E-6, 4.03E-6)
+efs_table <- make_simple_efs_table(scc, pollutants, TPPPY)
+
+
+
+
+#waste disposal, treatment, and recovery
+#wastewater treatment > public owned > total processed
+scc <- 2630020000
+
+
+#waste disposal, treatment, and recovery
+#composting > 100% green waste (e.g. residential/municipal yard wastes) > all processes
+scc <- 2680003000
+
+describe(scc)
 ```
 
 
@@ -1213,6 +1214,7 @@ rm(scc, pollutants, TPPPY, efs_table, projected_temp_table, controlled_projected
 scc <- 2311030000
 temp_table <- pull_baseline_from_ww(scc)
 projected_temp_table <- project_baseline(temp_table, projection_table = projection_tables[["VMT"]])
+#add controls
 controlled_projected <- add_controls(projected_temp_table)
 final_table <- rbind(final_table, controlled_projected)
 rm(scc, temp_table, projected_temp_table, controlled_projected)
