@@ -914,6 +914,28 @@ final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, UtahWood, area_Wood, temp_table, projected_temp_table)
 
 
+#Industrial wood > all boilers
+scc <- 2102008000
+
+#pull EFs in MMBTU
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6BTU", all_primaries = TRUE)
+
+#pull statewide industrial wood use in Billion BTU
+UtahWood <- projection_tables[["WoodBTU_Industrial"]] %>% filter(year == start_year) %>%
+  #convert from billion BTU to MMBTU
+  mutate(unit = unit*1000)
+#distribute statewide wood use per county based on manufacturing employment
+area_wood <- UtahWood %>% mutate(unit = unit*man_emp$fraction)
+
+#now we have wood burned in each county, combine it with EFs
+temp_table <- make_baseline(efs_table, area_wood)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["WoodBTU_Industrial"]])
+#no controls
+
+#merge with final_table
+final_table <- rbind(final_table, temp_table)
+rm(scc, efs_table, UtahWood, area_wood, temp_table, projected_temp_table)
+
 ```
 
 
