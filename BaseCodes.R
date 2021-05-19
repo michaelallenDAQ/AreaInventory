@@ -1411,6 +1411,9 @@ pull_pt_removal_table <-
 #point sources for any given scc/pollutant/county/year combo from the bulk 
 #emissions table. It doesn't look for any errors or anything though.
 subtract_pt_sources <- function(base_emission_table, pt_source_table){
+  #format both tables to merge easily
+  base_emission_table$year <- as.double(base_emission_table$year)
+  pt_source_table$year <- as.double(pt_source_table$year)
   merged_table <- left_join(base_emission_table,pt_source_table,by=c('FIPS','SCC','year','pollutant')) %>%
     #subtract the pt value from the baseline
     mutate(TPY1 = ifelse(is.na(TPY.y),

@@ -166,13 +166,13 @@ efs_table <- pull_efs_from_ww(scc, throughput_unit = "TON", all_primaries = TRUE
 #next we find the total area source industrial coal burnt in Utah. Area = TOTAL - PT SOURCE
 total_coal <- projection_tables[["Coal_Industrial"]] %>% filter(year == start_year)
 pt_coal <- projection_tables[["PtCoal_Industrial"]] %>% filter(year == start_year)
+
 #set up area coal with the same format as total, but then subtract pt_coal from it
-area_coal <- total_coal
-#subtract pt values from total. The 'unit' column is still the statewide value of area coal, 
-#meaning we need to distribute the values on a per-county basis
-area_coal$unit <- total_coal$unit - pt_coal$unit
-#turn negative values to 0
-area_coal$unit[area_coal$unit<0] <-0
+area_coal <- total_coal %>% 
+  #subtract pt values from total.
+  mutate(unit = total_coal$unit - pt_coal$unit) %>%
+  #zero out negative numbers
+  mutate(unit = ifelse(unit<0,0,unit))
 
 #okay, now we have statewide industrial coal use. We need to distribute this coal on a per-county
 #basis. For industrial coal, we distribute according to manufacturing employment
@@ -202,12 +202,11 @@ efs_table <- pull_efs_from_ww(scc, throughput_unit = "TON", all_primaries = TRUE
 total_coal <- projection_tables[["Coal_Commercial"]] %>% filter(year == start_year)
 pt_coal <- projection_tables[["PtCoal_Commercial"]] %>% filter(year == start_year)
 #set up area coal with the same format as total, but then subtract pt_coal from it
-area_coal <- total_coal
-#subtract pt values from total. The 'unit' column is still the statewide value of area coal, 
-#meaning we need to distribute the values on a per-county basis
-area_coal$unit <- total_coal$unit - pt_coal$unit
-#turn negative values to 0
-area_coal$unit[area_coal$unit<0] <-0
+area_coal <- total_coal %>%
+  #subtract pt values from statewide values
+  mutate(unit = total_coal$unit - pt_coal$unit) %>%
+  #zero out negative numbers
+  mutate(unit = ifelse(unit<0,0,unit))
 
 #okay, now we have statewide industrial coal use. We need to distribute this coal on a per-county
 #basis. For commercial/institutional coal, we distribute according to commercial employment
@@ -258,14 +257,12 @@ efs_table <- efs_table %>% mutate(TPUPY = ifelse(pollutant=="SO2",0.0213,TPUPY))
 total_kerosene <- projection_tables[["Kerosene_Industrial"]] %>% filter(year == start_year)
 pt_kerosene <- projection_tables[["PtKerosene_Industrial"]] %>% filter(year == start_year)
 #set up area kerosene with the same format as total, but then subtract pt_kerosene from it
-area_kerosene <- total_kerosene
-#subtract pt values from total. The 'unit' column is still the statewide value of area kerosene,
-#meaning we need to distribute the values on a per-county basis
-area_kerosene$unit <- total_kerosene$unit - pt_kerosene$unit
-#turn negative values to 0
-area_kerosene$unit[area_kerosene$unit<0] <-0
-#adjust KBBL throughput into KGal
-area_kerosene$unit <- area_kerosene$unit * 42
+area_kerosene <- total_kerosene %>% 
+  mutate(unit = total_kerosene$unit - pt_kerosene$unit) %>%
+  #zero out negative numbers
+  mutate(unit = ifelse(unit<0,0,unit)) %>%
+  #adjust KBBL throughput into KGal
+  mutate(unit = unit * 42)
 
 #okay, now distribute kerosene per county based on manufacturing employment
 area_kerosene$unit <- area_kerosene$unit * man_emp$fraction
@@ -296,14 +293,12 @@ efs_table <- efs_table %>% mutate(TPUPY = ifelse(pollutant=="SO2",0.0213,TPUPY))
 total_kerosene <- projection_tables[["Kerosene_Commercial"]] %>% filter(year == start_year)
 pt_kerosene <- projection_tables[["PtKerosene_Commercial"]] %>% filter(year == start_year)
 #set up area kerosene with the same format as total, but then subtract pt_kerosene from it
-area_kerosene <- total_kerosene
-#subtract pt values from total. The 'unit' column is still the statewide value of area kerosene,
-#meaning we need to distribute the values on a per-county basis
-area_kerosene$unit <- total_kerosene$unit - pt_kerosene$unit
-#turn negative values to 0
-area_kerosene$unit[area_kerosene$unit<0] <-0
-#adjust KBBL throughput into KGal
-area_kerosene$unit <- area_kerosene$unit * 42
+area_kerosene <- total_kerosene %>% 
+  mutate(unit = total_kerosene$unit - pt_kerosene$unit) %>%
+  #zero out negative numbers
+  mutate(unit = ifelse(unit<0,0,unit)) %>%
+  #adjust KBBL throughput into KGal
+  mutate(unit = unit * 42)
 
 #okay, now distribute kerosene per county based on commmercial employment
 area_kerosene$unit <- area_kerosene$unit * com_emp$fraction
@@ -390,12 +385,12 @@ efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TR
 all_lpg <- projection_tables[["LPG_Commercial"]] %>% filter(year == start_year)
 pt_lpg <- projection_tables[["PtLPG_Commercial"]] %>% filter(year == start_year)
 #subtract pt from total to get area
-area_lpg <- all_lpg
-area_lpg$unit <- all_lpg$unit - pt_lpg$unit
-#turn negative values to 0
-area_lpg$unit[area_lpg$unit < 0] <- 0
-#adjust kbbl into kgal
-area_lpg$unit <- area_lpg$unit * 42
+area_lpg <- all_lpg %>%
+  mutate(unit = all_lpg$unit - pt_lpg$unit) %>%
+  #turn negative values to 0
+  mutate(unit = ifelse(unit<0, 0, unit)) %>%
+  #adjust kbbl into kgal
+  mutate(unit = unit*42)
 
 #now distribute statewide lpg use per county based on commercial/government employment
 area_lpg$unit <- area_lpg$unit * com_emp$fraction
@@ -1024,30 +1019,36 @@ final_table <- rbind(final_table, temp_table)
 
 #waste disposal, treatment, and recovery
 #landfills > municipal > total
-#1) This is a list of landfill sites contained in the DAQ database. Several of these landfills submit inventories. The listing of landfills and inventories can be found in relevent appendix of the Input Appendices.
-#2) Counties with municipal landfills was derived from a list from the Utah Division of Waste Management  (point of contact: Allan Moore, allanmoore@utah.gov or 536-0211) and is available in relevent appendix of the Input Appendices. Each county's tons of waste was also adjusted using this dataset to remove tons of waste from the point source landfills present in each county (avoid double count with point source landfill emission submission).									
-#3) Emissions are included from current inventories.									
-#4) Information from the Division of Waste Management shows that every county has a municipal landfill except Morgan and Wasatch.									
-#5) It is assumed that Landfill PM includes the act of daily soil coverage (see below notes on landfill emission factors as well).									
-#6) Landfill VOC, NH3, PM10, and PM2.5 emission factors were calculated based on inventoried point source landfills emissions per ton of waste accepted in 2014, then projected to other landfills based on the waste accepted by the landfills in each county.									
-#7) Point landfill emissions are derived from data in Form 6a or Form 11b of their inventory submission to Utah DAQ (Scott Hanks or Deb McMurtrie) or adjusted from summaries to remove PM10/2.5 generated from haul roads, engines etc (accounted for in "Unpaved Roads" and combustion categories) and limited to emissions from landfill operations (eg Wasatch Integrated Waste's incinderator emissions are removed). Note: submitted inventories must be used as Tempo summaries do not provide the detail required to limit emissions to soil covering operations. VOCs are adjusted by excluding tailpipe and other non-landfill emission sources. In the future, it would be better to be able to use inventory data (if available) to create an average of emission/ton waste rather than using a single year's data.									
-#8) The above factors will be used in conjunction with individual county landfill tons of waste accepted to calculate uninventoried landfill emissions.									
-#9) The "1997 Gridded Ammonia Emission Inventory, Update for the South Coast Air Basin," by Charles W. Botsford, et al., page A-43, proposes a correlation of 0.007 to 1 ammonia to methane.  For this use, methane and VOC are assumed equal.									
-
 scc <- 2620030000
-
-
-#efs were pulled from looking at permitted landfills. We took their throughputs and emissions and back-calculated to find the throughputs. For documentation, look in 
+#efs were pulled from looking at permitted landfills. We took their throughputs and emissions and back-calculated to find the throughputs. For documentation, look in references/2620030000_Landfills.xlsx
 pollutants <- c("VOC", "NH3", "PM10-PRI", "PM10-FIL", "PM25-PRI", "PM25-FIL")
 TPPPY <- c(5.07E-5, 5.86E-7, 1.11E-5, 1.11E-5, 4.03E-6, 4.03E-6)
 efs_table <- make_simple_efs_table(scc, pollutants, TPPPY)
 
-
+#LandfillTons is the tonnage of waste that has gone through landfills that aren't counted as "Major point sources" for whichever source we are reporting to (NEI/WEBSITE/SIP). That is the activity data we combine with the EFs.
+temp_table <- make_baseline(efs_table, projection_tables[["LandfillTons"]])
+#projects based on population
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["Population"]])
+#controls
+#Utah Rule R307-221 applied controls to waste disposal through flaring and gas capture requirements. The control is already accounted for in the above emission factor as the factor is an average of post-control emissions from landfills.										
+#merge with final table and delete old variables
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, pollutants, TPPPY, efs_table, temp_table, projected_temp_table)
 
 
 #waste disposal, treatment, and recovery
 #wastewater treatment > public owned > total processed
 scc <- 2630020000
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6GAL", all_primaries = TRUE)
+
+#now that we have EFs, we get nonpoint sewer flow. We calculate nonpoint flow by taking statewide flow, and then subtracting away the pt source flow
+#units are in million-gallons, or E6GAL
+sewerFlow <- projection_tables[["SewerFlow"]] %>% filter(year == start_year)
+ptSewer <- projection_tables[["PtSewer"]] %>% filter(year == start_year)
+
+areaSewer <- sewerFlow %>% mutate(unit = sewerFlow$unit - ptSewer$unit) %>%
+  mutate(unit = ifelse(unit<0,0,unit))
+
 
 
 #waste disposal, treatment, and recovery
