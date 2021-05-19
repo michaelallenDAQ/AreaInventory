@@ -147,7 +147,6 @@ com_emp <- projection_tables[["CommercialEmployment"]] %>% filter(year==start_ye
 com_emp <- com_emp %>% mutate(fraction = unit/sum(unit))
 
 
-
 ##### 
 #Coal
  
@@ -236,7 +235,6 @@ temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
 #no pt subs, no controls
 final_table <- rbind(final_table,temp_table)
 rm(scc, temp_table)
-
 
 
 ##### 
@@ -410,7 +408,6 @@ final_table <- rbind(final_table,projected_temp_table)
 rm(scc, efs_table, all_lpg, pt_lpg, area_lpg, temp_table, projected_temp_table)
 
 
-
 #residential
 # lpg > all combustor types
 # Residential LPG consumption data is from EIA's Utah SEDS csv file of "All Consumption Estimates" which can be downloaded and combined with a "Codes and Descriptions" file, both available at: http://www.eia.gov/state/seds/seds-data-complete.cfm?sid=US#stateSelection (see Input file for details).									
@@ -436,7 +433,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, residential_lpg, housingLPG, temp_table, projected_temp_table)
  
-#####
+##### 
 #Natural Gas
 
 
@@ -495,7 +492,6 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #add to final_table and delete residual variables
 final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, nonresNG, industrialNG, PtindustrialNG, AreaindustrialNG, nonresNGDecatherm, temp_table, projected_temp_table)
-
 
 
 #commercial/institutional 
@@ -583,10 +579,8 @@ final_table <- rbind(final_table, controlled_projected)
 rm(scc, efs_table, resNGMMCF, resNGDecatherm, temp_table, projected_temp_table, controlled_projected)
 
 
-#####
+##### 
 #distillate oil
-
-
 
 #residential
 # distillate oil > total: all combustor types
@@ -617,11 +611,6 @@ final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, res_distillateOil, housing_distillate, temp_table, projected_temp_table)
 
 
-```
-
-
-```{r 21-xx Eric fuel combustion}
-
 #industrial
 #distillate oil > all boiler types
 
@@ -643,7 +632,8 @@ area_distoil <- all_distoil %>%
   mutate(unit = ifelse(unit<0, 0, unit)) %>%
   #convert from kbbl to kgal
   mutate(unit = unit*42)
-# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine and Commercial - 95% Boiler, 5% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
+# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
+
 #now distribute area source distillate oil use to only the portion used on boilers
 #this distribution was done incorrectly in the old workbook.
 area_distoil <- area_distoil %>% mutate(unit = unit*0.60)
@@ -661,7 +651,8 @@ final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, all_distoil, pt_distoil, area_distoil, temp_table, projected_temp_table)
 
 
-#Stationary Source Fuel Combustion/Industrial/Distillate Oil/All IC Engine Types
+#Stationary Source Fuel Combustion/
+#Industrial > Distillate Oil > All IC Engine Types
 scc <- 2102004002
 #pull emission factors from ww in kgal
 efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) %>%
@@ -680,7 +671,8 @@ area_distoil <- all_distoil %>%
   mutate(unit = ifelse(unit<0, 0, unit)) %>%
   #convert from kbbl to kgal
   mutate(unit = unit*42)
-# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine and Commercial - 95% Boiler, 5% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
+# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
+
 #now distribute area source distillate oil use to only the portion used on engines
 #this distribution was done incorrectly in the old workbook.
 area_distoil <- area_distoil %>% mutate(unit = unit*0.40)
@@ -697,75 +689,15 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, all_distoil, pt_distoil, area_distoil, temp_table, projected_temp_table)
 
-#Stationary Source Fuel Combustion/Industrial/Residual Oil/Total: All Boiler Types
-scc <- 2102005000
-#pull emission factors from ww in kgal
-efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) 
 
-#both of these are in kbbl
-all_restoil <- projection_tables[["ResidualOil_Industrial"]] %>% filter(year == start_year)
-pt_restoil <- projection_tables[["PtResidualOil_Industrial"]] %>% filter(year == start_year)
-
-#this will be in kgal
-area_resoil <- all_restoil %>% 
-  mutate(unit = all_restoil$unit - pt_restoil$unit) %>%
-  #zero out negative numbers
-  mutate(unit = ifelse(unit<0, 0, unit)) %>%
-  #convert from kbbl to kgal
-  mutate(unit = unit*42)
-# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine and Commercial - 95% Boiler, 5% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
-#now distribute area source residual oil use to only the portion used on boilers
-#this distribution was done incorrectly in the old workbook.
-area_resoil <- area_resoil %>% mutate(unit = unit*0.60)
-
-#now that we have statewide area use of residual oil used on boilers, we distribute it to each county based on manufacturing employment
-area_resoil <- area_resoil %>% mutate(unit = unit*man_emp$fraction)
-
-#now we have oil used per county, combine it with our emission factors
-temp_table <- make_baseline(efs_table, area_resoil)
-projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ResidualOil_Industrial"]])
-#no controls
-
-#add to final table and remove old variables
-final_table <- rbind(final_table, projected_temp_table)
-rm(scc, efs_table, all_restoil, pt_restoil, area_resoil, temp_table, projected_temp_table)
-
-#Stationary Source Fuel Combustion/Industrial/Residual Oil/Total: All Boiler Types
-scc <- 2102005000
-#pull emission factors from ww in kgal
-efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) 
-
-#both of these are in kbbl
-all_restoil <- projection_tables[["ResidualOil_Industrial"]] %>% filter(year == start_year)
-pt_restoil <- projection_tables[["PtResidualOil_Industrial"]] %>% filter(year == start_year)
-
-#this will be in kgal
-area_resoil <- all_restoil %>% 
-  mutate(unit = all_restoil$unit - pt_restoil$unit) %>%
-  #zero out negative numbers
-  mutate(unit = ifelse(unit<0, 0, unit)) %>%
-  #convert from kbbl to kgal
-  mutate(unit = unit*42)
-# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine and Commercial - 95% Boiler, 5% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
-#now distribute area source residual oil use to only the portion used on boilers
-#this distribution was done incorrectly in the old workbook.
-area_resoil <- area_resoil %>% mutate(unit = unit*0.60)
-
-#now that we have statewide area use of residual oil used on boilers, we distribute it to each county based on manufacturing employment
-area_resoil <- area_resoil %>% mutate(unit = unit*man_emp$fraction)
-
-#now we have oil used per county, combine it with our emission factors
-temp_table <- make_baseline(efs_table, area_resoil)
-projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ResidualOil_Industrial"]])
-#no controls
-
-#add to final table and remove old variables
-final_table <- rbind(final_table, projected_temp_table)
-rm(scc, efs_table, all_restoil, pt_restoil, area_resoil, temp_table, projected_temp_table)
-
+#commercial/institutional
+#distillate oil > boilers
 scc <- 2103004001
 #pull emission factors from ww in kgal
-efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) 
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) %>%
+# If you look in the NEMO, the SO2 EF is "142S", where : "S indicates that the weight % of sulfur in the oil should be multiplied by the value given. For example, if the fuel is 1% sulfur, then S = 1"
+#In Utah, S = 0.3%; therefore, 142 x 0.3 = 42.6 lbs/kgal. (I have not verified the 0.3% utah limit as of 20210511)									
+  mutate(TPUPY = ifelse(pollutant =="SO2",42.6/2000,TPUPY))
 
 #both of these are in kbbl
 all_distoil <- projection_tables[["DistillateOil_Commercial"]] %>% filter(year == start_year)
@@ -778,9 +710,8 @@ area_distoil <- all_distoil %>%
   mutate(unit = ifelse(unit<0, 0, unit)) %>%
   #convert from kbbl to kgal
   mutate(unit = unit*42)
-# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine and Commercial - 95% Boiler, 5% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
+# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Commercial - 95% Boiler, 5% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
 #now distribute area source distillate oil use to only the portion used on boilers
-#this distribution was done incorrectly in the old workbook.
 area_distoil <- area_distoil %>% mutate(unit = unit*0.95)
 
 #now that we have statewide area use of distillate oil used on boilers, we distribute it to each county based on commercial employment
@@ -795,41 +726,15 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, all_distoil, pt_distoil, area_distoil, temp_table, projected_temp_table)
 
-scc <- 2103004001
-#pull emission factors from ww in kgal
-efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) 
 
-#both of these are in kbbl
-all_distoil <- projection_tables[["DistillateOil_Commercial"]] %>% filter(year == start_year)
-pt_distoil <- projection_tables[["PtDistillateOil_Commercial"]] %>% filter(year == start_year)
-
-#this will be in kgal
-area_distoil <- all_distoil %>% 
-  mutate(unit = all_distoil$unit - pt_distoil$unit) %>%
-  #zero out negative numbers
-  mutate(unit = ifelse(unit<0, 0, unit)) %>%
-  #convert from kbbl to kgal
-  mutate(unit = unit*42)
-# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine and Commercial - 95% Boiler, 5% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
-#now distribute area source distillate oil use to only the portion used on boilers
-#this distribution was done incorrectly in the old workbook.
-area_distoil <- area_distoil %>% mutate(unit = unit*0.95)
-
-#now that we have statewide area use of distillate oil used on boilers, we distribute it to each county based on commercial employment
-area_distoil <- area_distoil %>% mutate(unit = unit*com_emp$fraction)
-
-#now we have oil used per county, combine it with our emission factors
-temp_table <- make_baseline(efs_table, area_distoil)
-projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["DistillateOil_Commercial"]])
-#no controls
-
-#add to final table and remove old variables
-final_table <- rbind(final_table, projected_temp_table)
-rm(scc, efs_table, all_distoil, pt_distoil, area_distoil, temp_table, projected_temp_table)
-
+#commercial/institutional
+#distillate oil > IC engines
 scc <- 2103004002
 #pull emission factors from ww in kgal
-efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) 
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) %>%
+# If you look in the NEMO, the SO2 EF is "142S", where : "S indicates that the weight % of sulfur in the oil should be multiplied by the value given. For example, if the fuel is 1% sulfur, then S = 1"
+#In Utah, S = 0.3%; therefore, 142 x 0.3 = 42.6 lbs/kgal. (I have not verified the 0.3% utah limit as of 20210511)									
+  mutate(TPUPY = ifelse(pollutant =="SO2",42.6/2000,TPUPY))
 
 #both of these are in kbbl
 all_distoil <- projection_tables[["DistillateOil_Commercial"]] %>% filter(year == start_year)
@@ -842,9 +747,8 @@ area_distoil <- all_distoil %>%
   mutate(unit = ifelse(unit<0, 0, unit)) %>%
   #convert from kbbl to kgal
   mutate(unit = unit*42)
-# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine and Commercial - 95% Boiler, 5% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
+# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Commercial - 95% Boiler, 5% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
 #now distribute area source distillate oil use to only the portion used on engines
-#this distribution was done incorrectly in the old workbook.
 area_distoil <- area_distoil %>% mutate(unit = unit*0.05)
 
 #now that we have statewide area use of distillate oil used on engines, we distribute it to each county based on commercial employment
@@ -859,9 +763,65 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, all_distoil, pt_distoil, area_distoil, temp_table, projected_temp_table)
 
+
+##### 
+#residual oil
+
+#Stationary Source Fuel Combustion/
+#Industrial > Residual Oil > Total: All Boiler Types
+scc <- 2102005000
+#pull emission factors from ww in kgal
+efs_table <-
+  pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) %>%
+  #   Industrial & commercial residual oil SO2 Emission factor is adjusted as follows:
+  #   SO2=157(S), therefore SO2=157(S) where "S" is % Sulfur by wt. In Utah, S = 0.3%; therefore, 157 x 0.3 = 47.1 lbs/kgal.
+  #   Industrial PM-FIL emission factors are calculated as follows: 
+  #   PM10-FIL is 7.17*(1.12*S+0.37), thus  7.17*(1.12*0.3+0.37) = 5.06202. 
+  #   PM2.5-FIL is 4.67*(1.12*S+0.37), thus  4.67*(1.12*.3+0.37) = 3.29702.
+  mutate(TPUPY = ifelse(pollutant =="SO2",47.1/2000,TPUPY)) %>%
+  mutate(TPUPY = ifelse(pollutant =="PM10-FIL",5.06202/2000,TPUPY)) %>%
+  mutate(TPUPY = ifelse(pollutant =="PM25-FIL",3.29702/2000,TPUPY)) 
+
+#both of these are in kbbl
+all_resoil <- projection_tables[["ResidualOil_Industrial"]] %>% filter(year == start_year)
+pt_resoil <- projection_tables[["PtResidualOil_Industrial"]] %>% filter(year == start_year)
+
+#this will be in kgal
+area_resoil <- all_resoil %>% 
+  mutate(unit = all_resoil$unit - pt_resoil$unit) %>%
+  #zero out negative numbers
+  mutate(unit = ifelse(unit<0, 0, unit)) %>%
+  #convert from kbbl to kgal
+  mutate(unit = unit*42)
+# In the 2014 ICI Tool, EPA/NOMAD changed their default Engine/Boiler split from 50/50 to: Industrial - 60% Boiler, 40% Engine. This was based on national figures from MECS for the industrial split (https://www.eia.gov/consumption/manufacturing/data/2010/pdf/Table5_5.pdf) and CBECS for the commercial split (http://www.eia.gov/consumption/commercial/data/2003/pdf/e09.pdf).
+#now distribute area source residual oil use to only the portion used on boilers
+#this distribution was done incorrectly in the old workbook.
+area_resoil <- area_resoil %>% mutate(unit = unit*0.60)
+
+#now that we have statewide area use of industrial residual oil used on boilers, we distribute it to each county based on manufacturing employment
+area_resoil <- area_resoil %>% mutate(unit = unit*man_emp$fraction)
+
+#now we have oil used per county, combine it with our emission factors
+temp_table <- make_baseline(efs_table, area_resoil)
+projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ResidualOil_Industrial"]])
+#no controls
+#add to final table and remove old variables
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, efs_table, all_resoil, pt_resoil, area_resoil, temp_table, projected_temp_table)
+
+
+#commercial/institutional
+#residual oil > all boilers
 scc <- 2103005000
 #pull emission factors from ww in kgal
-efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) 
+efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE) %>%
+  #   Commercial PM-FIL emission factors are calculated as follows: 
+  #   SO2=157(S), therefore SO2=157(S) where "S" is % Sulfur by wt. In Utah, S = 0.3%; therefore, 157 x 0.3 = 47.1 lbs/kgal.
+  #   PM10-FIL is 5.17*(1.12*S+0.37), thus  5.17*(1.12*0.3+0.37) =3.65002. 
+  #   PM2.5-FIL is 1.92*(1.12*S+0.37), thus 1.92*(1.12*.3+0.37) = 1.35552.							
+  mutate(TPUPY = ifelse(pollutant =="SO2",47.1/2000,TPUPY)) %>%
+  mutate(TPUPY = ifelse(pollutant =="PM10-FIL",3.65002/2000,TPUPY)) %>%
+  mutate(TPUPY = ifelse(pollutant =="PM25-FIL",1.35552/2000,TPUPY)) 
 
 #both of these are in kbbl
 all_resoil <- projection_tables[["ResidualOil_Commercial"]] %>% filter(year == start_year)
@@ -891,17 +851,23 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, all_resoil, pt_resoil, area_resoil, temp_table, projected_temp_table)
 
-#Stationary Source Fuel Combustion/Commercial/Wood/All Boiler Types
+
+##### 
+#IC wood combustion
+
+
+#Stationary Source Fuel Combustion > 
+#Commercial > Wood > All Boiler Types
 scc <- 2103008000
 #pull emission factors from ww in MMBTU
 efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6BTU", all_primaries = TRUE) 
 
-#both of these are in MMBTU
+#pull BTU of wood combusted in Utah in billion BTU
 UtahWood <- projection_tables[["WoodBTU_Commercial"]] %>% filter(year == start_year) %>% 
   #Table is pulled in Billion BTU, switch to MMBTU
   mutate(unit=unit*1000)
 
-#now that we have statewide area use of wood used on boilers, we distribute it to each county based on county commercial employment
+#now that we have statewide area use of wood used on boilers, we distribute it to each county based on county commercial employment. We do not split this into boilers/IC engines, and instead assume all wood is used for boilers.
 area_Wood <- UtahWood %>% mutate(unit = unit*com_emp$fraction)
 
 #now we have wood used per county, combine it with our emission factors
@@ -916,7 +882,6 @@ rm(scc, efs_table, UtahWood, area_Wood, temp_table, projected_temp_table)
 
 #Industrial wood > all boilers
 scc <- 2102008000
-
 #pull EFs in MMBTU
 efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6BTU", all_primaries = TRUE)
 
@@ -931,7 +896,6 @@ area_wood <- UtahWood %>% mutate(unit = unit*man_emp$fraction)
 temp_table <- make_baseline(efs_table, area_wood)
 projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["WoodBTU_Industrial"]])
 #no controls
-
 #merge with final_table
 final_table <- rbind(final_table, temp_table)
 rm(scc, efs_table, UtahWood, area_wood, temp_table, projected_temp_table)
