@@ -8,16 +8,17 @@ editor_options:
 
 ```{r optional SIP stuff, or Website/NEI filters}
 #for the ozone SIP. This is the list of all pt sources to filter for the 2017 inventory
-#SIP_compiled <- read_xlsx(
-#    'U:/PLAN/SIP/Ozone/2015 Standard/Episodic Inventories/TSD Writeup/Area/2017 Supporting Documents/5.26.2020 New Point File for Kristy ozone marginal.xlsx')
-#SIP_ids <- sort(unique(SIP_compiled$`Site ID`))
+#I got this from a Cate Youatt email 2021/04/29. Then she messaged me May 18 and added
+#10556. For the email attachment, look in references/20210520_OzoneSIPIDs.xlsx.
 
-#I'll just declare the IDs here, but you can pull these numbers from running the code above.
 #Ozone_SIP_ids
-target_ids <- c(10007,10008,10009,10028,10096,10107,10119,10121,10122,10123,10129,10209,10210,
-                   10211,10237,10238,10259,10303,10311,10313,10327,10335,10346,10354,10355,10571,
-                   10572,10627,10676,10706,10707,10716,10725,10790,10794,10892,11284,11386,11532,
-                   11767,12495,12512,12524,12929,12948,13031,13284,14107,14185,15438,15439)
+target_ids <- c(10007,10008,10009,10028,10034,10096,10107,10119,10121,10122,
+                10123,10129,10209,10210,10211,10237,10238,10259,10303,10311,
+                10313,10327,10335,10346,10354,10355,10556,10571,10572,10627,
+                10676,10706,10707,10716,10725,10790,10794,10892,11284,11386,
+                11532,11767,12495,12512,12524,12929,12948,13031,13284,14010,
+                14107)
+
 ########################################################
 #for the 2017 NEI
 #NEI_compiled <- read_xlsx('U:/PLAN/CYOUATT/NEI/2017/2017 SLEIS EIS Facility List - Updated.xlsx')
@@ -40,7 +41,17 @@ target_ids <- NULL
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = Sys.getenv('HomeDir'))
+#this is supposed to globally set our working directory. Sometimes it doesn't work and you
+#need to type in the console:
+#   setwd(Sys.getenv("HomeDir"))
+#you can tell you need to reset the working directory if you have trouble running BaseCodes or BaseTables.
+knitr::opts_knit$set(root.dir = Sys.getenv("HomeDir"))
+
+#"HomeDir", for me, is "M:/My Drive/U_drive/main_workbook". I declared it in a file called ".Renviron". ".Renviron" contains two lines of text:
+    #HomeDir=M:/My Drive/U_drive/main_workbook
+    #GitDir=M:/My Drive/U_drive/GIT/AreaInventory/
+#Look up Sys.getenv() online to learn more about this, but basically I declared two custom file pathways on RStudio, so when I want to read a file, it reads the right location.
+
 ```
 
 
@@ -66,29 +77,24 @@ final_table <- vector()
 ```
 
 
-```{r}
-#run this line if I'm tinkering with input tables
-#input_table_path <- "ref_workbooks/new_input_tables20210305.xlsx"
-#input_tables <- pull_input_tables(paste0(Sys.getenv("HomeDir"),"/",input_table_path))
-
-#then go to BaseTables and run the 2 project_tables lines
-
-```
-
-
-
-
 TPY values will be calculated as follows:
   3.1) Identify an SCC
-  3.2) Make an emission factor table for the SCC
+  
+  3.2) Produce baseline emissions data for the SCC. This is either done from directly pulling emissions data from EPAs wagon wheel (WW) or NEI, OR we pull emission factors and throughputs and manually combine the EF and throughput to get a baseline. IF we don't just pull the baseline from the wagon wheel or NEI:
+
+   3.2.1) Make an emission factor table for the SCC
     This is done either by manually entering EFs, or pulling them from WW
     EF tables are typically given in terms of "tons of pollutant per 'unit' per year", or TPUPY. 
-  3.3) Make baseline year data. This is done by multiplying the EF table by the relevant 'unit', which is typically population or employees.
-  3.4) Project baseline data. This is done by scaling the baseline data based on a given table of growth. Again, typically population or employee data.
-    Now we have a pure, projected baseline of emissions to work with. We now apply controls and remove pt sources if relevant
-    3.4.1) OPTIONAL: Pt source subtraction. Pull all potential Pt source SCCs that would overlap with the Area source SCC. We must project out the Pt source emissions and THEN subtract them away from the Area SCC. Ideally, we subtract uncontrolled pt source emissions from uncontrolled area source emissions.
-    3.4.2) OPTIONAL: Apply controls. Select which counties to control, the starting year, ending year, and starting and ending control values for any control phase-in. Ideally, we add controls after subtracting pt sources.
-  3.5) Add this new projected, controlled, pt_subtracted emission data to our final table.
+   
+   3.2.2) Make a throughput table for the SCC
+
+   3.2.3) Produce the baseline year data. This is done by multiplying the EF table by the relevant throughput 'unit', which is typically population, employment data, or material combusted.
+
+  3.3) Project baseline data. This is done by scaling the baseline data based on a given table of growth. Again, typically population, employment data, or material combusted. Once we have a pure, projected baseline of emissions to work with. We now apply controls and remove pt sources if relevant
+   3.3.1) OPTIONAL: Pt source subtraction. Pull all potential Pt source SCCs that would overlap with the Area source SCC. We must project out the Pt source emissions and THEN subtract them away from the Area SCC. Ideally, we subtract uncontrolled pt source emissions from uncontrolled area source emissions, but in some cases we subtract controlled pt sources from our controlled area source emissions
+   3.3.2) OPTIONAL: Apply controls. Ideally, we add controls after subtracting pt sources.
+    
+  3.4) Now that we have this new projected, controlled, pt_subtracted emission data, we add it to our final table and remove all of the old variables we used to generate emissions values.
   
 ########
 First chunk, for projections. DO NOT RUN THIS SECTION FOR NEI REPORTING!!!
@@ -897,7 +903,6 @@ rm(scc, efs_table, UtahWood, area_wood, temp_table, projected_temp_table)
 
 ```
 
-
 ```{r 22-XX, 26-XX, unpaved roads, waste disposal}
 
 #unpaved roads emissions
@@ -1092,7 +1097,6 @@ final_table <- rbind(final_table, projected_temp_table)
 rm(scc, pollutants, TPPPY, efs_table, yardWaste, temp_table, projected_temp_table)
 
 ```
-
 
 ```{r 23-xx-xxx-xxx: food, construction, mining }
 
@@ -1488,7 +1492,6 @@ controlled_projected <- add_controls(projected_temp_table)
 final_table <- rbind(final_table, controlled_projected)
 rm(scc, temp_table, projected_temp_table, controlled_projected)
 ```
-
 
 NOTE: For solvents, we always do pt source subtractions AFTER adding controls to the emissions estimates. We assume that our pt source emissions are already using the controls before they get phased in, so we want to subtract [controlled] vs. [controlled]
 
@@ -2345,7 +2348,6 @@ final_table <- rbind(final_table, temp_table)
 
 ```
 
-
 ```{r 25-xx-xxx-xxx: storage and transport of fuel}
 #some of these SCCs project with the same data: statewide fuel usage. It is the combination of 
 #"GovGas" and "Gasoline" tables, which sum up to total gasoline and gasohol consumption in the state.
@@ -2375,7 +2377,7 @@ all_gas <- all_gas %>%
 #bulk terminals: all evaporative losses > gasoline
 scc <- 2501050120
 temp_table <- pull_baseline_from_nei(scc)
-temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
+#temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
 #old VOC: 285 TPY
 #new VOC: 259 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
@@ -2388,8 +2390,7 @@ rm(scc, temp_table, projected_temp_table)
 #used to be 2501060050. From what I can tell, 2501060053 directly translated to 2501060050
 scc <- 2501060053
 temp_table <- pull_baseline_from_nei(scc)
-temp_table <- pull_baseline_from_ww(scc)
-temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
+#temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
 #old VOC: 189 TPY
 #new VOC: 173 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
@@ -2401,8 +2402,7 @@ rm(scc, temp_table, projected_temp_table)
 #gasoline service stations > underground tank: breathing and emptying
 scc <- 2501060201
 temp_table <- pull_baseline_from_nei(scc)
-temp_table <- pull_baseline_from_ww(scc)
-temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
+#temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
 #old VOC: 633 TPY
 #new VOC: 576 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
@@ -2414,8 +2414,8 @@ rm(scc, temp_table, projected_temp_table)
 #airports: aviation gasoline > stage 1: total
 scc <- 2501080050
 temp_table <- pull_baseline_from_nei(scc)
-temp_table <- pull_baseline_from_ww(scc)
-temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
+#temp_table <- pull_baseline_from_ww(scc)
+#temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
 #old VOC: 165 TPY
 #new VOC: 165 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
@@ -2427,8 +2427,7 @@ rm(scc, temp_table, projected_temp_table)
 #airports: aviation gasoline > stage 2: total
 scc <- 2501080100
 temp_table <- pull_baseline_from_nei(scc)
-temp_table <- pull_baseline_from_ww(scc)
-temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
+#temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
 #old VOC: 16 TPY
 #new VOC: 16 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
@@ -2440,8 +2439,7 @@ rm(scc, temp_table, projected_temp_table)
 #truck > gasoline
 scc <- 2505030120
 temp_table <- pull_baseline_from_nei(scc)
-temp_table <- pull_baseline_from_ww(scc)
-temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
+#temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
 #old VOC: 35 TPY
 #new VOC: 32 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
@@ -2491,7 +2489,6 @@ rm(scc, temp_table, temp_table_project, temp_table_final)
 
 
 ```
-
 
 2810010000 - perspiration - report? find citation?
 ```{r 28-xxx-xxx-xxx: Agriculture, animals, fires}
@@ -2784,8 +2781,6 @@ rm(scc, temp_table)
 
 
 ```
-
-
 
 I put wood burning stuff in its own section - it has some complex control methods.
 THIS NEEDS TO SCALE WITH RESIDENTIAL WOOD FROM 'WOODBTU'. THE OLD WOOD TABLE IS NOT NEEDED.
