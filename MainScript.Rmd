@@ -1038,6 +1038,9 @@ rm(scc, pollutants, TPPPY, efs_table, temp_table, projected_temp_table)
 
 #waste disposal, treatment, and recovery
 #wastewater treatment > public owned > total processed
+# Flow rate was calculated based on publicly owned treatment works (POTW) plant data (see relevent appendix in the Input Appendicies) provided by the Utah Division of Water Quality - Kim Shelley 801-536-4385 or kshelley@utah.gov							
+# Point source flows are subtracted from flow rates prior to emission calculation							
+# For our purposes, there is no difference between a POTW, WWTP, a "Sewer Facility," and a "Water Reclamation Facility."							
 scc <- 2630020000
 efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6GAL", all_primaries = TRUE)
 
@@ -1046,16 +1049,48 @@ efs_table <- pull_efs_from_ww(scc, throughput_unit = "E6GAL", all_primaries = TR
 sewerFlow <- projection_tables[["SewerFlow"]] %>% filter(year == start_year)
 ptSewer <- projection_tables[["PtSewer"]] %>% filter(year == start_year)
 
+#get area flow by subtracting pt flow from total flow
 areaSewer <- sewerFlow %>% mutate(unit = sewerFlow$unit - ptSewer$unit) %>%
   mutate(unit = ifelse(unit<0,0,unit))
 
+#now we have area efs and area throughput, combine them
+temp_table <- make_baseline(efs_table, areaSewer)
+projected_temp_table <- project_baseline(temp_table, projection_table = projection_tables[["Population"]])
+#no controls
+
+#merge with final_table, 
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, efefs_table, sewerFlow, ptSewer, areaSewer, temp_table, projected_temp_table)
 
 
 #waste disposal, treatment, and recovery
 #composting > 100% green waste (e.g. residential/municipal yard wastes) > all processes
-scc <- 2680003000
+# Basis for calculations and emission factors are from EPA/NOMAD calculations (ftp://ftp.epa.gov/EmisInventory/2014/doc/nonpoint/). However, rather than distributing emissions based on landfill employment, population was used because landfill employment did not appear to be accurate and population would provide a better distribution. 								
+# Likely Double Count! Yard waste generated is based on the same number (0.35 lbs/person/day) used in "Open Burning & Incineation" for leaf and brush waste and not all yard waste is composted, a lot will be placed in garbage and taken to the regular landfill and accounted for in landfill emissions. Thus only a fraction of yard waste should be considered composted. Currently, that is not the case.								
 
-describe(scc)
+scc <- 2680003000
+#ideally would pull EFs from WW, but there are two "primary" pollutants in the wagon wheel EFs, and my code can't handle that. Unfortunately I will declare them manually for now. I will also skip the secondary emissions/HAPs.
+#ultimately we should pull these from WW
+pollutants <- c("VOC", "NH3")
+TPPPY <- c(4.67/2000, 0.66/2000)
+#these EFs are in lb/TON of material composted.
+efs_table <- make_simple_efs_table(scc, pollutants, TPPPY)
+
+#now for throughput. We want tons of green waste composted per county.
+#we assume 0.354004185 lb of yard waste is produced per person per day.
+yardWaste <- projection_tables[["Population"]] %>% filter(year == start_year) %>%
+  #             person  lb/person-day      day/yr   ton/lb
+  mutate(unit = unit *   0.354004185*       365     /2000)
+#units of "yardWaste" are now in tons of yard waste per year
+
+#now we have efs in tons/ton of yard waste, and we have tons of yard waste. Combine them for baseline
+temp_table <- make_baseline(efs_table, yardWaste)
+projected_temp_table <- project_baseline(temp_table, projection_table = projection_tables[["Population"]])
+#no controls
+#add to final_table
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, pollutants, TPPPY, efs_table, yardWaste, temp_table, projected_temp_table)
+
 ```
 
 
