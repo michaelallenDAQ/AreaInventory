@@ -309,3 +309,84 @@ NEI_28xx <- rbind(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
+
+
+#the following forest fire SCCs were just pulled from the old workbook. They typically are
+#pulled from the NEI, but I couldn't find them there, and I needed to generate this 
+#inventory for the Ozone SIP. These should be updated, but I don't know how to.
+#
+#For documentation, look in main_workbook/References/ForestFires/readme
+
+#all projections are steady.
+
+
+#wildfires - smoldering
+scc <- 2810001001
+suppressMessages(temp_table <- read_csv("References/ForestFires/2810001001_WildSmoldering.csv"))
+projected_temp_table <- project_baseline(temp_table, projection_tables[["Steady"]])
+# No controls & no pt source subtractions for fires
+temp_table_final <- projected_temp_table
+NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, projected_temp_table, temp_table_final)
+
+
+#wildfires - flaming
+scc <- 2810001002
+suppressMessages(temp_table <- read_csv("References/ForestFires/2810001002_WildFlaming.csv"))
+projected_temp_table <- project_baseline(temp_table, projection_tables[["Steady"]])
+# No controls & no pt source subtractions for fires
+temp_table_final <- projected_temp_table
+NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, projected_temp_table, temp_table_final)
+
+
+#prescribed burns - smoldering
+scc <- 2811015001
+suppressMessages(temp_table <- read_csv("References/ForestFires/2811015001_PrescribedSmoldering.csv"))
+projected_temp_table <- project_baseline(temp_table, projection_tables[["Steady"]])
+# No controls & no pt source subtractions for fires
+temp_table_final <- projected_temp_table
+NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, projected_temp_table, temp_table_final)
+
+
+#prescribed burns - flaming
+scc <- 2811015002
+suppressMessages(temp_table <- read_csv("References/ForestFires/2811015002_PrescribedFlaming.csv"))
+projected_temp_table <- project_baseline(temp_table, projection_tables[["Steady"]])
+# No controls & no pt source subtractions for fires
+temp_table_final <- projected_temp_table
+NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, projected_temp_table, temp_table_final)
+
+
+#here is how I generated the wildfire data
+#####
+# wild_smoldering <- old_model_data %>% filter(SCC == 2810001001) %>%
+#   mutate(pollutant = ifelse(pollutant == "PM10","PM10-PRI",pollutant)) %>%
+#   mutate(pollutant = ifelse(pollutant == "PM25","PM25-PRI",pollutant)) 
+#         
+# wild_flaming <- old_model_data %>% filter(SCC == 2810001002) %>%
+#   mutate(pollutant = ifelse(pollutant == "PM10","PM10-PRI",pollutant)) %>%
+#   mutate(pollutant = ifelse(pollutant == "PM25","PM25-PRI",pollutant)) 
+# 
+# prescribed_smoldering <- old_model_data %>% filter(SCC==2811015001) %>%
+#   mutate(pollutant = ifelse(pollutant == "PM10","PM10-PRI",pollutant)) %>%
+#   mutate(pollutant = ifelse(pollutant == "PM25","PM25-PRI",pollutant)) 
+# 
+# prescribed_flaming <- old_model_data %>% filter(SCC==2811015002) %>%
+#   mutate(pollutant = ifelse(pollutant == "PM10","PM10-PRI",pollutant)) %>%
+#   mutate(pollutant = ifelse(pollutant == "PM25","PM25-PRI",pollutant)) 
+# 
+# write_csv(wild_smoldering, "2810001001_WildSmoldering.csv")
+# write_csv(wild_flaming, "2810001002_WildFlaming.csv")
+# write_csv(prescribed_smoldering, "2811015001_PrescribedSmoldering.csv")
+# write_csv(prescribed_flaming, "2811015002_PrescribedFlaming.csv")
+
+
+
+

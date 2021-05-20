@@ -2368,16 +2368,16 @@ all_gas <- all_gas %>%
 #these 6 SCCs were maybe ~4% of area source human-made VOCs. <1% of statewide VOCs.
 
 #pulling these SCCs from the WW gets numbers very different than when pulled from the NEI.
+#Even though the WW seems like it would be better to pull from, I don't understand our calculation methods, and our numbers are VERY close to NEI numbers, so I will use the NEI because it most closely reflects our own calculations.
 
 
 #storage and transport > petroleum and petroleum product storage
 #bulk terminals: all evaporative losses > gasoline
 scc <- 2501050120
-#temp_table2 <- pull_baseline_from_nei(scc)
-temp_table <- pull_baseline_from_ww(scc)
+temp_table <- pull_baseline_from_nei(scc)
 temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
 #old VOC: 285 TPY
-#new VOC: 1278 TPY
+#new VOC: 259 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
 final_table <- rbind(final_table, projected_temp_table)
 rm(scc, temp_table, projected_temp_table)
