@@ -2361,6 +2361,97 @@ all_gas <- all_gas %>%
   select(-c("unit.x","unit.y"))
 
 
+
+#####
+#these SCCs are calculated in our old 20190502 NEI Workbook, but for now I will pull their numbers from the NEI. I could not understand and track down where the emissions come from. The calculations were too wild. Of all 130+ sccs that I transferred from the workbook into R, these are the only 6 that might suffer a loss of accuracy. NEI methods simply take 1998 data and scale it into our current year based on some proportion. Not idea. If we were to work on some SCCs, these would be a good idea to redo. Good luck. 2021/05/19
+
+#these 6 SCCs were maybe ~4% of area source human-made VOCs. <1% of statewide VOCs.
+
+#pulling these SCCs from the WW gets numbers very different than when pulled from the NEI.
+
+
+#storage and transport > petroleum and petroleum product storage
+#bulk terminals: all evaporative losses > gasoline
+scc <- 2501050120
+#temp_table2 <- pull_baseline_from_nei(scc)
+temp_table <- pull_baseline_from_ww(scc)
+temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
+#old VOC: 285 TPY
+#new VOC: 1278 TPY
+projected_temp_table <- project_baseline(temp_table, all_gas)
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, temp_table, projected_temp_table)
+
+
+#storage and transport > petroleum and petroleum product storage
+#gasoline service stations > stage 1: total
+#used to be 2501060050. From what I can tell, 2501060053 directly translated to 2501060050
+scc <- 2501060053
+temp_table <- pull_baseline_from_nei(scc)
+temp_table <- pull_baseline_from_ww(scc)
+temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
+#old VOC: 189 TPY
+#new VOC: 173 TPY
+projected_temp_table <- project_baseline(temp_table, all_gas)
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, temp_table, projected_temp_table)
+
+
+#storage and transport > petroleum and petroleum product storage
+#gasoline service stations > underground tank: breathing and emptying
+scc <- 2501060201
+temp_table <- pull_baseline_from_nei(scc)
+temp_table <- pull_baseline_from_ww(scc)
+temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
+#old VOC: 633 TPY
+#new VOC: 576 TPY
+projected_temp_table <- project_baseline(temp_table, all_gas)
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, temp_table, projected_temp_table)
+
+
+#storage and transport > petroleum and petroleum product storage
+#airports: aviation gasoline > stage 1: total
+scc <- 2501080050
+temp_table <- pull_baseline_from_nei(scc)
+temp_table <- pull_baseline_from_ww(scc)
+temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
+#old VOC: 165 TPY
+#new VOC: 165 TPY
+projected_temp_table <- project_baseline(temp_table, all_gas)
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, temp_table, projected_temp_table)
+
+
+#storage and transport > petroleum and petroleum product storage
+#airports: aviation gasoline > stage 2: total
+scc <- 2501080100
+temp_table <- pull_baseline_from_nei(scc)
+temp_table <- pull_baseline_from_ww(scc)
+temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
+#old VOC: 16 TPY
+#new VOC: 16 TPY
+projected_temp_table <- project_baseline(temp_table, all_gas)
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, temp_table, projected_temp_table)
+
+
+#storage and transport > petroleum and petroleum product transport
+#truck > gasoline
+scc <- 2505030120
+temp_table <- pull_baseline_from_nei(scc)
+temp_table <- pull_baseline_from_ww(scc)
+temp_table %>% filter(pollutant == "VOC") %>% select(TPY) %>% sum()
+#old VOC: 35 TPY
+#new VOC: 32 TPY
+projected_temp_table <- project_baseline(temp_table, all_gas)
+final_table <- rbind(final_table, projected_temp_table)
+rm(scc, temp_table, projected_temp_table)
+
+#####
+
+
+
 #storage and transport > petroleum and petroleum products ...
 # ... > bulk plants: all evaporative losses > gasoline
 

@@ -1602,7 +1602,7 @@ pull_baseline_from_nei <- function(scc, nei_table = nei) {
   # Note that the "year" column will be the year that the NEI data is from, so 
   # we need to make sure to update the NEI data every time new NEI data is 
   # available.
-  
+  temp_table$FIPS <- as.numeric(temp_table$FIPS)
   return(temp_table)
 }
 
