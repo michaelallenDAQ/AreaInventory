@@ -297,8 +297,17 @@ rm(efs_table, total_kerosene, pt_kerosene, area_kerosene, temp_table, projected_
 scc <- 2103011000
 #efs for kerosene can be pulled from WW. Throughput is per KGal.
 efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE)
-#convert SO2 EF to reflect Utah's sulfur content. See notes on SCC
-efs_table <- efs_table %>% mutate(TPUPY = ifelse(pollutant=="SO2",0.0213,TPUPY))
+#this SCC fails to put in SO2 efs in the ww, so we have to add them manually
+if(!"SO2" %in% efs_table$pollutant){
+  cat("SO2 is not in the efs table for",scc,", so we are adding it manually")
+  so2 <- make_simple_efs_table(scc,"SO2",0.0213)
+  efs_table <- rbind(efs_table, so2)
+  rm(so2)
+} else{
+  #convert SO2 EF to reflect Utah's sulfur content. See notes on SCC
+  efs_table <-
+    efs_table %>% mutate(TPUPY = ifelse(pollutant == "SO2", 0.0213, TPUPY))
+}
 
 #throughputs are in KBBL!!!
 total_kerosene <- projection_tables[["Kerosene_Commercial"]] %>% filter(year == start_year)
@@ -2943,7 +2952,20 @@ write_csv(test, "CAP_2017SIP.csv")
 
 
 all_2017 <- final_table %>% filter(year==2017)
+old_2017 <- old_model_data
 all_2023 <- final_table %>% filter(year==2023)
+
+#here we will compare my 2017 to the old 2017. first we need to filter them down to CAPs
+fil_new2017 <- all_2017 %>%
+  filter(pollutant %in% c("CO", "VOC", "NH3", "SO2", "NOX", "PM10-PRI", "PM25-PRI")) %>%
+  mutate(pollutant = ifelse(pollutant == "PM10-PRI","PM10", pollutant)) %>%
+  mutate(pollutant = ifelse(pollutant == "PM25-PRI","PM25", pollutant))
+fil_old2017 <- old_2017 %>%
+  filter(pollutant %in% c("CO", "VOC", "NH3", "SO2", "NOX", "PM10", "PM25"))
+  
+diff <- compare_inventories(fil_old2017, fil_new2017, hide_pct = FALSE)
+missing <- diff %>% filter(is.na(tpy_change))
+write_csv(missing, "missingFromOld2017.csv")
 
 zz <- compare_inventories(all_2017,all_2023 %>% mutate(year=2017), hide_pct = FALSE)
 missing <- zz %>% filter(is.na(tpy_change))
