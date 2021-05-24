@@ -41,10 +41,13 @@ target_ids <- NULL
 ```
 
 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#this is supposed to globally set our working directory. Sometimes it doesn't work and you
-#need to type in the console:
+#this is supposed to globally set our working directory. Sometimes this chunk doesn't successfully set the working directory. You'll be able to tell because R will give you an error like "No such file or directory" when it tries to read a document. If you type in the console, the following lines should have the same output:
+    #Sys.getenv("HomeDir")
+    #getwd()
+#If that isn't the case, you will need to manually set the working directory. Type in the console:
 #   setwd(Sys.getenv("HomeDir"))
 #you can tell you need to reset the working directory if you have trouble running BaseCodes or BaseTables.
 knitr::opts_knit$set(root.dir = Sys.getenv("HomeDir"))
@@ -69,7 +72,7 @@ options(scipen = 999)
 #step 1
 source(paste0(Sys.getenv('GitDir'),'BaseCodes.R'))
 start_year <- 2017
-end_year <- 2020
+end_year <- 2023
 counties <- seq.int(49001,49057,2)
 #step 2
 source(paste0(Sys.getenv('GitDir'),'BaseTables.R'))
@@ -294,8 +297,17 @@ rm(efs_table, total_kerosene, pt_kerosene, area_kerosene, temp_table, projected_
 scc <- 2103011000
 #efs for kerosene can be pulled from WW. Throughput is per KGal.
 efs_table <- pull_efs_from_ww(scc, throughput_unit = "E3GAL", all_primaries = TRUE)
-#convert SO2 EF to reflect Utah's sulfur content. See notes on SCC
-efs_table <- efs_table %>% mutate(TPUPY = ifelse(pollutant=="SO2",0.0213,TPUPY))
+#this SCC fails to put in SO2 efs in the ww, so we have to add them manually
+if(!"SO2" %in% efs_table$pollutant){
+  cat("SO2 is not in the efs table for",scc,", so we are adding it manually")
+  so2 <- make_simple_efs_table(scc,"SO2",0.0213)
+  efs_table <- rbind(efs_table, so2)
+  rm(so2)
+} else{
+  #convert SO2 EF to reflect Utah's sulfur content. See notes on SCC
+  efs_table <-
+    efs_table %>% mutate(TPUPY = ifelse(pollutant == "SO2", 0.0213, TPUPY))
+}
 
 #throughputs are in KBBL!!!
 total_kerosene <- projection_tables[["Kerosene_Commercial"]] %>% filter(year == start_year)
@@ -900,8 +912,12 @@ temp_table <- make_baseline(efs_table, area_wood)
 projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["WoodBTU_Industrial"]])
 #no controls
 #merge with final_table
-final_table <- rbind(final_table, temp_table)
+final_table <- rbind(final_table, projected_temp_table)
 rm(scc, efs_table, UtahWood, area_wood, temp_table, projected_temp_table)
+
+
+
+rm(man_emp, com_emp)
 
 ```
 
@@ -1067,7 +1083,7 @@ projected_temp_table <- project_baseline(temp_table, projection_table = projecti
 
 #merge with final_table, 
 final_table <- rbind(final_table, projected_temp_table)
-rm(scc, efefs_table, sewerFlow, ptSewer, areaSewer, temp_table, projected_temp_table)
+rm(scc, efs_table, sewerFlow, ptSewer, areaSewer, temp_table, projected_temp_table)
 
 
 #waste disposal, treatment, and recovery
@@ -1214,7 +1230,7 @@ pt_pols <- c('VOC')
 pt_table <- pull_pt_removal_table(pt_sccs,scc,raw_scc_pull_return = FALSE)
 #pt_table <- pull_pt_removal_table(pt_sccs,pt_pols,scc,raw_scc_pull_return = TRUE)
 pt_table <- project_baseline(pt_table,projection_tables[["Population"]],has_pt = TRUE)
-temp_table <- subtract_pt_sources(pt_table,temp_table)
+temp_table <- subtract_pt_sources(temp_table, pt_table)
 #no controls
 final_table <- rbind(final_table, temp_table)
 
@@ -1479,7 +1495,7 @@ controlled_projected <- add_controls(projected_temp_table)
 final_table <- rbind(final_table, controlled_projected)
 
 rm(utah_precipitation_evaporation_value, county_silt_percentages, apartments, apartments_table)
-rm(basement_pct, single_units, single_nobasement, single_basement, kcubic_yards, basement_dusts, basement_dirt, yesbasement, all_single_unit)
+rm(basement_pct, single_units, single_nobasement, single_basement, kcubic_yards, basement_dusts, basement_dirt, nobasement, yesbasement, all_single_unit)
 rm(two_family_units, two_family_units_table)
 rm(scc, pollutants, TPPPY, efs_table, projected_temp_table, controlled_projected, all_res_construction)
 
@@ -2069,7 +2085,7 @@ temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_control
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
 # remove the objects we created for this scc
-rm(scc, temp_table, ww_ef, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
+rm(scc, temp_table, ww_ef, graphic_arts_efs, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 
 # Solvent Utilization > Miscellaneous Non-industrial: Commercial > Cutback Asphalt > Total: All Processes
@@ -2488,7 +2504,7 @@ rm(scc, temp_table, temp_table_project, temp_table_final)
 
 
 
-
+rm(gasoline, govgas, all_gas)
 
 ```
 
@@ -2934,30 +2950,25 @@ test <- final_table %>% filter(year==2017) %>%
   filter(pollutant %in% c("CO", "VOC", "NH3", "SO2", "NOX", "PM10-PRI", "PM25-PRI"))
 write_csv(test, "CAP_2017SIP.csv")
 
-```
 
-```{r old sccs that I had to adjust HAPS for comparisons}
-raw_sccs_from_ww <- consolidate_xylenes(raw_sccs_from_ww, c(2104008210, 2104008230, 2104008310, 2104008330, 2810025000))
+all_2017 <- final_table %>% filter(year==2017)
+old_2017 <- old_model_data
+all_2023 <- final_table %>% filter(year==2023)
 
-```
-  5) Merge inventories.
-    Now that we have updated all of the SCCs that we can (for now), let's merge our new data into the most up-to-date complete inventory table.
-    5.1) Identify every SCC in our new table
-    5.2) remove those SCCs from the old inventory table. Keep all the old inventory sccs that weren't modified with this script.
-    5.3) Merge together the old, unmodified SCCs with the new SCCs. 
-    5.3X) OPTIONAL: Consolidate PM by removing PM10-FIL, PM-CON, PM25-FIL, and changing the names of PM10-PRI/PM25-PRI to PM10/PM25.
-    5.3Y) OPTIONAL: Consolidate Xylenes by removing O, P, and M-Xylenes and grouping them all as Xylenes-Total.
-    5.4) Save that final table
-    
-```{r merge inventories}
-advanced_sccs <- sort(unique(final_table$SCC))
-old_model_filtered_sccs <- old_model_data %>% filter(! SCC %in% advanced_sccs)
+#here we will compare my 2017 to the old 2017. first we need to filter them down to CAPs
+fil_new2017 <- all_2017 %>%
+  filter(pollutant %in% c("CO", "VOC", "NH3", "SO2", "NOX", "PM10-PRI", "PM25-PRI")) %>%
+  mutate(pollutant = ifelse(pollutant == "PM10-PRI","PM10", pollutant)) %>%
+  mutate(pollutant = ifelse(pollutant == "PM25-PRI","PM25", pollutant))
+fil_old2017 <- old_2017 %>%
+  filter(pollutant %in% c("CO", "VOC", "NH3", "SO2", "NOX", "PM10", "PM25"))
+  
+diff <- compare_inventories(fil_old2017, fil_new2017, hide_pct = FALSE)
+missing <- diff %>% filter(is.na(tpy_change))
+write_csv(missing, "missingFromOld2017.csv")
 
-final_table <- rbind(old_model_filtered_sccs,final_table)
-
-
-
-
+zz <- compare_inventories(all_2017,all_2023 %>% mutate(year=2017), hide_pct = FALSE)
+missing <- zz %>% filter(is.na(tpy_change))
 ```
 
 
