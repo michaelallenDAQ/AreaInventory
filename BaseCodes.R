@@ -1306,7 +1306,10 @@ project_baseline <-
       #now I have all the values I need in one table. Let's do some math
       intermediate_table <- 
         intermediate_table %>% 
-        mutate(TPY = TPY/base_unit*new_unit)
+        #if the base year unit is 0, we must have 0 as our projected number. We can not
+        #make something from nothing. This could be a problem. Like if we have 1 TON/EMPLOYEE,
+        #and one year we gain our first employee, we would still assume 0 TPY for that county.
+        mutate(TPY = ifelse(base_unit == 0, 0, TPY/base_unit*new_unit))
       
       #filter and rename columns
       if (has_pt) {
