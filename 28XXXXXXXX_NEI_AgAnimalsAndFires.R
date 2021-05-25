@@ -189,6 +189,7 @@ rm(scc, temp_table, temp_table_project, temp_table_final)
 
 # Miscellaneous Area Sources > Agriculture Production - Livestock > Poultry production - turkeys > Confinement
 # Get total emissions from NEI; project based on agricultural employment.
+#does not report any dust
 scc <- 2805010100
 
 # Total emissions come from a model
