@@ -1413,11 +1413,27 @@ pull_pt_removal_table <-
 #This takes in a base emissions table and a pt removal table. It subtracts the
 #point sources for any given scc/pollutant/county/year combo from the bulk 
 #emissions table. It doesn't look for any errors or anything though.
+#
+#this function first subtracts ALL values in the pt source table from the area source table.
+#but some of the pt source table values are NOT going to be counted in the pt source 
+#inventory, even though they are in SLEIS. We then re-add those TPY values to the area 
+#source inventory.
 subtract_pt_sources <- function(base_emission_table, pt_source_table){
   #format both tables to merge easily
   base_emission_table$year <- as.double(base_emission_table$year)
   pt_source_table$year <- as.double(pt_source_table$year)
-  merged_table <- left_join(base_emission_table,pt_source_table,by=c('FIPS','SCC','year','pollutant')) %>%
+  
+  #we are about to left_join the base table and the pt source table. IF there are
+  #several emission source in a county, and some are pt sources, some are not,
+  #the left_join will create duplicate rows for the TRUE and FALSE TPY values. 
+  #We don't want to create duplicate rows, so let's cluster all the TRUE/FALSE
+  #TPY values before we merge (this happened with 2401055000)
+  grouped_pt_table <- pt_source_table %>% 
+    group_by(FIPS, SCC, year, pollutant) %>%
+    summarise(TPY = sum(TPY), .groups="keep")
+  
+  
+  merged_table <- left_join(base_emission_table,grouped_pt_table,by=c('FIPS','SCC','year','pollutant')) %>%
     #subtract the pt value from the baseline
     mutate(TPY1 = ifelse(is.na(TPY.y),
                          TPY.x,
@@ -1435,13 +1451,29 @@ subtract_pt_sources <- function(base_emission_table, pt_source_table){
   
   #add back in the pt sources that technically don't count as pt sources
   #with our given inventory.
-  return_table <- merged_table %>% 
+  #first let's prep the merged table to add back all of the FALSE pt sources 
+  #(those are the ones we will add to the area inventory)
+  re_merged_table <- 
+    left_join(
+      #drop the old TPY cols 
+      merged_table %>% select(-c(TPY.x, TPY.y)),
+      #drop all the TRUE values from the pt source table.
+      pt_source_table %>% filter(is_point == FALSE),
+      by = c('FIPS', 'SCC', 'year', 'pollutant')
+    ) %>%
+    #rename columns for clarity
+    rename(base_TPY = TPY1, pt_TPY = TPY) %>%
+    #drop is_point, we already filtered it as much as we need
+    select(-is_point)
+  
+  #now add back all of the pt values that were FALSE
+  return_table <- re_merged_table %>% 
     #if you do '==FALSE' or something, it doesn't work with NAs. Use '%in% FALSE'
-    mutate(TPY = ifelse(is_point %in% FALSE,
-                        TPY1+TPY.y,
-                        TPY1)) %>%
+    mutate(TPY = ifelse(is.na(pt_TPY),
+                        base_TPY,
+                        base_TPY + pt_TPY)) %>%
     #drop the old TPY columns
-    select(-c(TPY.x,TPY.y,is_point,TPY1))
+    select(-c(base_TPY, pt_TPY))
   return(return_table)
 }
 

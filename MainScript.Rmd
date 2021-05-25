@@ -248,7 +248,7 @@ temp_table <- pull_baseline_from_ww(scc)
 if(!"SO2" %in% temp_table$pollutant){
   cat("SO2 is not in the WW table for",scc,", so we are adding it manually. It should be 0 according to the NEMO")
   so2 <- make_simple_efs_table(scc,"SO2",0.0)
-  so2 <- make_baseline(efs_table,projection_tables[["Steady"]])
+  so2 <- make_baseline(so2,projection_tables[["Steady"]])
   temp_table <- rbind(temp_table,so2)
   rm(so2)
 }
@@ -1126,6 +1126,7 @@ projected_temp_table <- project_baseline(temp_table, projection_table = projecti
 final_table <- rbind(final_table, projected_temp_table)
 rm(scc, pollutants, TPPPY, efs_table, yardWaste, temp_table, projected_temp_table)
 
+#done with 22-xx, 26-xx sccs
 ```
 
 ```{r 23-xx-xxx-xxx: food, construction, mining }
@@ -1238,13 +1239,13 @@ efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
 temp_table <- make_baseline(efs_table,projection_tables[["Population"]], project_to = end_year)
 #every SCC with 302032XX. Manually inputting this one
 pt_sccs <- seq.int(30203201,30203299)
-pt_pols <- c('VOC')
 pt_table <- pull_pt_removal_table(pt_sccs,scc,raw_scc_pull_return = FALSE)
 #pt_table <- pull_pt_removal_table(pt_sccs,pt_pols,scc,raw_scc_pull_return = TRUE)
 pt_table <- project_baseline(pt_table,projection_tables[["Population"]],has_pt = TRUE)
-temp_table <- subtract_pt_sources(temp_table, pt_table)
+temp_table_subtracted <- subtract_pt_sources(temp_table, pt_table)
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- rbind(final_table, temp_table_subtracted)
+rm(scc, pollutants, TPPPY, efs_table, temp_table, pt_sccs, pt_table, temp_table_subtracted)
 
 
 #ICI construction dust.
@@ -1521,6 +1522,9 @@ projected_temp_table <- project_baseline(temp_table, projection_table = projecti
 controlled_projected <- add_controls(projected_temp_table)
 final_table <- rbind(final_table, controlled_projected)
 rm(scc, temp_table, projected_temp_table, controlled_projected)
+
+
+#done with 23-xx sccs
 ```
 
 NOTE: For solvents, we always do pt source subtractions AFTER adding controls to the emissions estimates. We assume that our pt source emissions are already using the controls before they get phased in, so we want to subtract [controlled] vs. [controlled]
@@ -1725,9 +1729,9 @@ temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_control
 
 # add to final table
 final_table <- rbind(final_table, temp_table_final)
-
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
+
 
 # Solvent Utilization > Surface Coating > Large Appliances: SIC 363 > Total: All Solvent Types
 # Get ww emissions estimates; apply controls; there are no pt source subtractions.
@@ -2376,6 +2380,7 @@ temp_table <- project_baseline(temp_table, projection_tables[["AgJobs"]])
 #no controls
 final_table <- rbind(final_table, temp_table)
 
+#done with 24-xx sccs
 ```
 
 ```{r 25-xx-xxx-xxx: storage and transport of fuel}
@@ -2517,7 +2522,7 @@ rm(scc, temp_table, temp_table_project, temp_table_final)
 
 
 rm(gasoline, govgas, all_gas)
-
+#done with 25-xx sccs
 ```
 
 2810010000 - perspiration - report? find citation?
@@ -2952,6 +2957,7 @@ temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
 final_table <- rbind(final_table,temp_table)
 
+#done with 21-xx wood combustion sccs
 ```
 
 ```{r}
@@ -2965,6 +2971,7 @@ all_2017 <- final_table %>% filter(year==2017)
 old_2017 <- old_model_data
 all_2023 <- final_table %>% filter(year==2023)
 
+#####
 #here we will compare my 2017 to the old 2017. first we need to filter them down to CAPs
 fil_new2017 <- all_2017 %>%
   filter(pollutant %in% c("CO", "VOC", "NH3", "SO2", "NOX", "PM10-PRI", "PM25-PRI")) %>%
@@ -2977,8 +2984,16 @@ diff <- compare_inventories(fil_old2017, fil_new2017, hide_pct = FALSE)
 missing <- diff %>% filter(is.na(tpy_change))
 write_csv(missing, "missingFromOld2017.csv")
 
+#####
+#here we will compare 2017 to 2023
 zz <- compare_inventories(all_2017,all_2023 %>% mutate(year=2017), hide_pct = FALSE)
+#none are missing. nice
 missing <- zz %>% filter(is.na(tpy_change))
+greater_than1TPY <- zz %>% filter(abs(tpy_change)>1)
+greater_than10TPY <- zz %>% filter(abs(tpy_change)>10)
+large_changes <- greater_than10TPY %>% filter(abs(pct_change)>5)
+#write out every difference larger than 10 TPY AND larger than 5%
+write_csv(large_changes, "largeChangesTo2023.csv")
 ```
 
 
