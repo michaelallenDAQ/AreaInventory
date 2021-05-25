@@ -41,7 +41,7 @@ target_ids <- NULL
 ```
 
 
-
+set up working directories to run the script with
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 #this is supposed to globally set our working directory. Sometimes this chunk doesn't successfully set the working directory. You'll be able to tell because R will give you an error like "No such file or directory" when it tries to read a document. If you type in the console, the following lines should have the same output:
@@ -143,6 +143,8 @@ source(paste0(Sys.getenv('GitDir'),'28XXXXXXXX_NEI_AgAnimalsAndFires.R'))
 #merge the table with final and delete it.
 final_table <- rbind(final_table, NEI_28xx)
 rm(NEI_28xx)
+
+#done with NEI pulls
 ```
 
 ```{r 21-xxx-xxx-xxx: Stationary source fuel combustion}
@@ -241,10 +243,19 @@ rm(efs_table, total_coal, pt_coal, area_coal, temp_table, projected_temp_table)
 # WW says it's all zeros, too, so we're just gonna pull from WW.
 scc <- 2104002000
 temp_table <- pull_baseline_from_ww(scc)
-temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
+#NEMO says SO2 EF is 31*S, where S is sulfur content. NEMO also gives S of 0 for Utah.
+#If we want, we can add SO2 manually (below)
+if(!"SO2" %in% temp_table$pollutant){
+  cat("SO2 is not in the WW table for",scc,", so we are adding it manually. It should be 0 according to the NEMO")
+  so2 <- make_simple_efs_table(scc,"SO2",0.0)
+  so2 <- make_baseline(efs_table,projection_tables[["Steady"]])
+  temp_table <- rbind(temp_table,so2)
+  rm(so2)
+}
+temp_table_project <- project_baseline(temp_table, projection_tables[["Population"]])
 #no pt subs, no controls
-final_table <- rbind(final_table,temp_table)
-rm(scc, temp_table)
+final_table <- rbind(final_table,temp_table_project)
+rm(scc, temp_table, temp_table_project)
 
 
 ##### 
@@ -918,6 +929,7 @@ rm(scc, efs_table, UtahWood, area_wood, temp_table, projected_temp_table)
 
 
 rm(man_emp, com_emp)
+#done with 21-xx sccs
 
 ```
 
@@ -2741,7 +2753,7 @@ final_table <- rbind(final_table, temp_table)
 #Formaldehyde (50000) 1.023 lb/ton
 #  1.41E-6 TPPPY
 scc <- 2810030000
-pollutants <- c('VOC','PM10','PM25','CO','NOX','107028','74908','7647010','50000')
+pollutants <- c('VOC','PM10-PRI','PM25-PRI','CO','NOX','107028','74908','7647010','50000')
 TPPPY <-c(1.52E-5,1.49E-5,1.49E-5,8.28E-5,1.93E-6,6.09E-6,4.90E-5,2.09E-5,1.41E-6)
 efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
 temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
@@ -2777,7 +2789,7 @@ final_table <- rbind(final_table, temp_table)
 #NOx 4 lb/ton
 #  1.16E-7 TPPPY
 scc <- 2810050000
-pollutants <- c('PM10','PM25','VOC','CO','NOX')
+pollutants <- c('PM10-PRI','PM25-PRI','VOC','CO','NOX')
 TPPPY <- c(2.91E-6,2.91E-6,9.32E-7,3.64E-6,1.16E-7)
 efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
 temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
@@ -2795,9 +2807,7 @@ temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
 final_table <- rbind(final_table, temp_table)
 rm(scc, temp_table)
 
-
-
-
+#done with 28-xx sccs
 ```
 
 I put wood burning stuff in its own section - it has some complex control methods.
