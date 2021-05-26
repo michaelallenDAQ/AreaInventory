@@ -59,7 +59,8 @@ knitr::opts_knit$set(root.dir = Sys.getenv("HomeDir"))
 
 ```
 
-
+set libraries, pull base functions and tables
+set start/end year
 ```{r run this always}
 library(readxl)
 library(tidyverse)
@@ -72,7 +73,7 @@ options(scipen = 999)
 #step 1
 source(paste0(Sys.getenv('GitDir'),'BaseCodes.R'))
 start_year <- 2017
-end_year <- 2023
+end_year <- 2013
 counties <- seq.int(49001,49057,2)
 #step 2
 source(paste0(Sys.getenv('GitDir'),'BaseTables.R'))
@@ -85,6 +86,9 @@ final_table <- vector()
 TPY values will be calculated as follows:
   3.1) Identify an SCC
   
+I will also comment any relevant information
+scc <- 2401055000
+
   3.2) Produce baseline emissions data for the SCC. This is either done from directly pulling emissions data from EPAs wagon wheel (WW) or NEI, OR we pull emission factors and throughputs and manually combine the EF and throughput to get a baseline. IF we don't just pull the baseline from the wagon wheel or NEI:
 
    3.2.1) Make an emission factor table for the SCC
@@ -2327,9 +2331,10 @@ scc <- 2401001000
 efs_table <- pull_efs_from_ww(scc,'EACH',all_primaries = FALSE)
 temp_table <- make_baseline(efs_table, projection_tables[["Population"]], project_to = end_year)
 #controls are based on R307-361: "architectural coatings"
-temp_table <- add_controls(temp_table)
+controlled_temp_table <- add_controls(temp_table)
 #pt subs? Maybe used to be but is no longer supported in EPA crosswalk.
-final_table <- rbind(final_table,temp_table)
+final_table <- rbind(final_table,controlled_temp_table)
+rm(scc, efs_table, temp_table, controlled_temp_table)
 
 
 #solvent use - fuel tank/drum cleaning
@@ -2961,15 +2966,32 @@ final_table <- rbind(final_table,temp_table)
 ```
 
 ```{r}
+#there should be 139 sccs now
+sort(unique(final_table$SCC))
+
 #filter HAPS and write out file
 test <- final_table %>% filter(year==2017) %>% 
   filter(pollutant %in% c("CO", "VOC", "NH3", "SO2", "NOX", "PM10-PRI", "PM25-PRI"))
 write_csv(test, "CAP_2017SIP.csv")
 
 
+#pull out certain years
 all_2017 <- final_table %>% filter(year==2017)
 old_2017 <- old_model_data
 all_2023 <- final_table %>% filter(year==2023)
+
+
+#####
+#here we look at 2013 data. first compare the 2017 versions
+back_2017 <- final_table %>% filter(year==2017)
+#okay this matches perfectly
+test <- compare_inventories(all_2017, back_2017, hide_pct = FALSE)
+all_2013 <- final_table %>% filter(year==2013)
+all_2017 <- final_table %>% filter(year==2017)
+diff <- compare_inventories(all_2017, all_2013 %>% mutate(year=2017), hide_pct = FALSE)
+larger15tpy <- diff %>% filter(abs(tpy_change)>15)
+large <- larger15tpy %>% filter(abs(pct_change)>5)
+write_csv(large,"large2013vs2017changes.csv")
 
 #####
 #here we will compare my 2017 to the old 2017. first we need to filter them down to CAPs
@@ -2990,10 +3012,23 @@ zz <- compare_inventories(all_2017,all_2023 %>% mutate(year=2017), hide_pct = FA
 #none are missing. nice
 missing <- zz %>% filter(is.na(tpy_change))
 greater_than1TPY <- zz %>% filter(abs(tpy_change)>1)
-greater_than10TPY <- zz %>% filter(abs(tpy_change)>10)
-large_changes <- greater_than10TPY %>% filter(abs(pct_change)>5)
-#write out every difference larger than 10 TPY AND larger than 5%
+greater_than15TPY <- zz %>% filter(abs(tpy_change)>15)
+large_changes <- greater_than15TPY %>% filter(abs(pct_change)>5)
+#write out every difference larger than 15 TPY AND larger than 5%
 write_csv(large_changes, "largeChangesTo2023.csv")
+
+
+
+
+#####
+#filter out 2017 and save it
+all_2017 <- final_table %>% filter(year==2017)
+write_csv(all_2017, 'AreaOzoneSIP2017_20210526.csv')
+#filter out 2023 and save it
+all_2023 <- final_table %>% filter(year==2023)
+write_csv(all_2023, 'AreaOzoneSIP2023_20210526.csv')
+all_2013 <- final_table %>% filter(year==2013)
+write_csv(all_2013, 'AreaOzoneSIP2013_20210526.csv')
 ```
 
 

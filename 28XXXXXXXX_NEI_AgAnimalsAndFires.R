@@ -152,8 +152,10 @@ NEI_28xx <- rbind(NEI_28xx, temp_table_final)
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
 
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Poultry Waste Emissions > Not Elsewhere Classified (see also 28-05-007, -008, -009)
-## Note: This scc was in the workbook as 2805030000, but all that it was was the emissions from 2805007100, so we are going to stop using 2805030000 and replace it with 2805007100.
+# Miscellaneous Area Sources > Agriculture Production - Livestock > ...
+#...Poultry Waste Emissions > Not Elsewhere Classified (see also 28-05-007, -008, -009)
+## Note: This scc was in the workbook as 2805030000, but all that it was was the 
+#emissions from 2805007100, so we are going to stop using 2805030000 and replace it with 2805007100.
 
 # Get total emissions from NEI; project based on agricultural employment.
 scc <- 2805007100
@@ -166,6 +168,12 @@ NEI_28xx <- rbind(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
+
+# No controls & no pt source subtractions for agricultural livestock sccs
+temp_table_final <- temp_table_project
+NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+# remove the objects we created for this scc
+rm(scc, temp_table, temp_table_project, temp_table_final)
 
 # Miscellaneous Area Sources > Agriculture Production - Livestock > Poultry Production - broilers > Confinement
 # Get total emissions from the NEI; project based on agricultural employment
@@ -269,18 +277,6 @@ NEI_28xx <- rbind(NEI_28xx, temp_table_final)
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
 
-#ag livestock > poultry waste emissions > not elsewhere classified
-#used to be 2805030000!!! I checked and the TPY add up to this new SCC
-scc <- 2805007100
-# Total emissions come from a model
-temp_table <- pull_baseline_from_nei(scc = scc)
-temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
-
-# No controls & no pt source subtractions for agricultural livestock sccs
-temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
-# remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_final)
 
 
 #wild animals waste > Elk > total
