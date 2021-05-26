@@ -29,7 +29,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_25xx <- rbind(NEI_25xx, temp_table_final)
+NEI_25xx <- merge_with_final_table(NEI_25xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -44,7 +44,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_25xx <- rbind(NEI_25xx, temp_table_final)
+NEI_25xx <- merge_with_final_table(NEI_25xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -59,7 +59,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_25xx <- rbind(NEI_25xx, temp_table_final)
+NEI_25xx <- merge_with_final_table(NEI_25xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -74,7 +74,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_25xx <- rbind(NEI_25xx, temp_table_final)
+NEI_25xx <- merge_with_final_table(NEI_25xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -89,7 +89,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_25xx <- rbind(NEI_25xx, temp_table_final)
+NEI_25xx <- merge_with_final_table(NEI_25xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -104,7 +104,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_25xx <- rbind(NEI_25xx, temp_table_final)
+NEI_25xx <- merge_with_final_table(NEI_25xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -119,7 +119,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_25xx <- rbind(NEI_25xx, temp_table_final)
+NEI_25xx <- merge_with_final_table(NEI_25xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -134,7 +134,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_25xx <- rbind(NEI_25xx, temp_table_final)
+NEI_25xx <- merge_with_final_table(NEI_25xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -149,7 +149,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_25xx <- rbind(NEI_25xx, temp_table_final)
+NEI_25xx <- merge_with_final_table(NEI_25xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -164,7 +164,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_25xx <- rbind(NEI_25xx, temp_table_final)
+NEI_25xx <- merge_with_final_table(NEI_25xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
