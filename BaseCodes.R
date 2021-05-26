@@ -1670,12 +1670,47 @@ make_simple_efs_table <- function(scc, pollutants, TPUPY) {
 #every time we merge a new table into the final table, we want to make sure it
 #doesn't already exist, and also that it has all the correct years of projection
 #as the final_table
-merge_with_final_table <- function(final_table, new_table){
-  #first off, if final_table 
-  if(dim(final_table)[1] == 0){
+merge_with_final_table <- function(final_table, new_table, overwrite = FALSE){
+  
+  #first off, if final_table is empty, just add this as the first scc and return
+  if(is.null(dim(final_table))){
     final_table <- rbind(final_table, new_table)
+    final_table$year <- as.numeric(final_table$year)
     return(final_table)
   }
+  final_table$year <- as.numeric(final_table$year)
+  new_table$year <- as.numeric(new_table$year)
   
+  #okay. Now for the real details. First off: does the SCC already exist in
+  #final_table? If so, return a big error
+  new_scc <- unique(new_table$SCC)
+  if (length(new_scc) !=1){
+    cat("Number of SCCs you are merging to final_table !=1: ", new_scc," fix that\n")
+    Sys.sleep(1)
+    stop()
+  }
+  #if the sccs is already in final_table:
+  if (new_scc %in% final_table$SCC & !overwrite){
+    cat("The scc you are adding is already in final_table. use 'overwrite = TRUE' to replace it: ",scc,"\n")
+    Sys.sleep(1)
+    stop()
+  }
+  if (new_scc %in% final_table$SCC & overwrite){
+    cat("The scc you are adding is already in final_table, but we are overwriting it:",scc,"\n")
+    final_table <- final_table %>% filter(SCC != new_scc)
+    Sys.sleep(1)
+  }
+  #if we have made it this far, the new SCC is not already in the final_table, 
+  #or we are simply overwriting it.
+  #first, let's make sure the years of our current table match the years of final_table
+  if(! identical( sort(unique(new_table$year)), sort(unique(final_table$year)) )){
+    cat("The years of your merging SCC do not add up with the years of the final_table: ",scc,"\n")
+    Sys.sleep(1)
+    stop()
+  }
+  #okay now merge
+  final_table <- rbind(final_table, new_table)
+  final_table$year = as.numeric(final_table$year)
+  return(final_table)
 }
 

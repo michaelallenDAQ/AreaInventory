@@ -73,7 +73,7 @@ options(scipen = 999)
 #step 1
 source(paste0(Sys.getenv('GitDir'),'BaseCodes.R'))
 start_year <- 2017
-end_year <- 2013
+end_year <- 2023
 counties <- seq.int(49001,49057,2)
 #step 2
 source(paste0(Sys.getenv('GitDir'),'BaseTables.R'))
@@ -203,7 +203,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #control this to reduce to 0 lol. Assume all industrial coal combustion is on permits, assume EPA is overcounting
 projected_temp_table <- add_manual_controls(projected_temp_table, scc, counties, 1900, 1901, 0)
 #add to final_table
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(efs_table, total_coal, pt_coal, area_coal, temp_table, projected_temp_table)
 
 
@@ -237,7 +237,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 
 #no controls.
 #add to final_table
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(efs_table, total_coal, pt_coal, area_coal, temp_table, projected_temp_table)
 
 
@@ -258,7 +258,7 @@ if(!"SO2" %in% temp_table$pollutant){
 }
 temp_table_project <- project_baseline(temp_table, projection_tables[["Population"]])
 #no pt subs, no controls
-final_table <- rbind(final_table,temp_table_project)
+final_table <- merge_with_final_table(final_table,temp_table_project)
 rm(scc, temp_table, temp_table_project)
 
 
@@ -299,7 +299,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 
 #no controls.
 #add to final_table
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(efs_table, total_kerosene, pt_kerosene, area_kerosene, temp_table, projected_temp_table)
 
 
@@ -344,7 +344,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 
 #no controls.
 #add to final_table
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(efs_table, total_kerosene, pt_kerosene, area_kerosene, temp_table, projected_temp_table)
 
 
@@ -375,7 +375,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 
 #no controls.
 #add to final_table
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(efs_table, residential_kerosene, housingKero, temp_table, projected_temp_table)
 
 
@@ -406,7 +406,7 @@ area_lpg$unit <- area_lpg$unit * man_emp$fraction
 temp_table <- make_baseline(efs_table, area_lpg)
 projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["LPG_Industrial"]])
 #no controls
-final_table <- rbind(final_table,projected_temp_table)
+final_table <- merge_with_final_table(final_table,projected_temp_table)
 rm(scc, efs_table, all_lpg, pt_lpg, area_lpg, temp_table, projected_temp_table)
 
 
@@ -434,7 +434,7 @@ area_lpg$unit <- area_lpg$unit * com_emp$fraction
 temp_table <- make_baseline(efs_table, area_lpg)
 projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["LPG_Commercial"]])
 #no controls
-final_table <- rbind(final_table,projected_temp_table)
+final_table <- merge_with_final_table(final_table,projected_temp_table)
 rm(scc, efs_table, all_lpg, pt_lpg, area_lpg, temp_table, projected_temp_table)
 
 
@@ -460,7 +460,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 
 #no controls.
 #add to final_table
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, efs_table, residential_lpg, housingLPG, temp_table, projected_temp_table)
  
 ##### 
@@ -520,7 +520,7 @@ AreaindustrialNG <- AreaindustrialNG %>% mutate(unit = unit*nonresNGDecatherm$fr
 temp_table <- make_baseline(efs_table, AreaindustrialNG)
 projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["NonResNGMMCF_Utah"]])
 #add to final_table and delete residual variables
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, efs_table, nonresNG, industrialNG, PtindustrialNG, AreaindustrialNG, nonresNGDecatherm, temp_table, projected_temp_table)
 
 
@@ -578,7 +578,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #add controls
 controlled_projected <- add_controls(projected_temp_table)
 #add to final_table and delete residual variables
-final_table <- rbind(final_table, controlled_projected)
+final_table <- merge_with_final_table(final_table, controlled_projected)
 rm(scc, efs_table, nonresNG, commercialNG, PtcommercialNG, AreacommercialNG, nonresNGDecatherm, temp_table, projected_temp_table, controlled_projected)
 
 
@@ -605,7 +605,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #add controls
 controlled_projected <- add_controls(projected_temp_table)
 
-final_table <- rbind(final_table, controlled_projected)
+final_table <- merge_with_final_table(final_table, controlled_projected)
 rm(scc, efs_table, resNGMMCF, resNGDecatherm, temp_table, projected_temp_table, controlled_projected)
 
 
@@ -637,7 +637,7 @@ res_distillateOil$unit <- res_distillateOil$unit * housing_distillate$fraction
 temp_table <- make_baseline(efs_table, res_distillateOil)
 projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["DistillateOil_Residential"]])
 #no controls
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, efs_table, res_distillateOil, housing_distillate, temp_table, projected_temp_table)
 
 
@@ -677,7 +677,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #no controls
 
 #add to final table and remove old variables
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, efs_table, all_distoil, pt_distoil, area_distoil, temp_table, projected_temp_table)
 
 
@@ -716,7 +716,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #no controls
 
 #add to final table and remove old variables
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, efs_table, all_distoil, pt_distoil, area_distoil, temp_table, projected_temp_table)
 
 
@@ -753,7 +753,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #no controls
 
 #add to final table and remove old variables
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, efs_table, all_distoil, pt_distoil, area_distoil, temp_table, projected_temp_table)
 
 
@@ -790,7 +790,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #no controls
 
 #add to final table and remove old variables
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, efs_table, all_distoil, pt_distoil, area_distoil, temp_table, projected_temp_table)
 
 
@@ -836,7 +836,7 @@ temp_table <- make_baseline(efs_table, area_resoil)
 projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["ResidualOil_Industrial"]])
 #no controls
 #add to final table and remove old variables
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, efs_table, all_resoil, pt_resoil, area_resoil, temp_table, projected_temp_table)
 
 
@@ -878,7 +878,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #no controls
 
 #add to final table and remove old variables
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, efs_table, all_resoil, pt_resoil, area_resoil, temp_table, projected_temp_table)
 
 
@@ -906,7 +906,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #no controls
 
 #add to final table and remove old variables
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, efs_table, UtahWood, area_Wood, temp_table, projected_temp_table)
 
 
@@ -927,7 +927,7 @@ temp_table <- make_baseline(efs_table, area_wood)
 projected_temp_table <- project_baseline(base_table = temp_table, projection_table = projection_tables[["WoodBTU_Industrial"]])
 #no controls
 #merge with final_table
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, efs_table, UtahWood, area_wood, temp_table, projected_temp_table)
 
 
@@ -951,7 +951,7 @@ temp_table <- project_baseline(temp_table,projection_tables[["AgJobs"]])
 #no controls
 #there is probably some pt source subtraction I could do here, but none for now
 #prioritize pt subs for this because this is a large scc
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 #Opening burning of leafs in people's yards
@@ -976,7 +976,7 @@ temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #  and 9.24.150 banning open burning 
 temp_table  <- add_controls(temp_table)
 #no pt subs
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 
 #open burning - all categories
@@ -1002,7 +1002,7 @@ temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #  and 9.24.150 banning open burning 
 temp_table  <- add_controls(temp_table)
 #no pt subs
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 
 #Open burning land clearing
@@ -1016,7 +1016,7 @@ temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 counties <- seq.int(49001,49057,2)
 #here is where we turn everything into zeros
 temp_table <- add_manual_controls(temp_table,scc,counties,1900,1901,0)
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 #open burning of Residential Household Waste (RHW)
@@ -1032,7 +1032,7 @@ temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
 #  (It's not in the normal control TSD). I'll assume 2015 was fully implemented.
 temp_table  <- add_controls(temp_table)
 #no pt subs. This is like, burning residential stuff. Not in permits
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #LUST - Leaking Underground Storage Tanks
 #baseline based on number of remediation events in a given year from DERR
@@ -1051,7 +1051,7 @@ efs_table <- make_simple_efs_table(scc,pollutants,TPUPY)
 temp_table <- make_baseline(efs_table,projection_tables[["LUST"]],project_to = end_year)
 #no controls?
 #no pt subs?
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 
@@ -1071,7 +1071,7 @@ projected_temp_table <- project_baseline(base_table = temp_table, projection_tab
 #controls
 #Utah Rule R307-221 applied controls to waste disposal through flaring and gas capture requirements. The control is already accounted for in the above emission factor as the factor is an average of post-control emissions from landfills.										
 #merge with final table and delete old variables
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, pollutants, TPPPY, efs_table, temp_table, projected_temp_table)
 
 
@@ -1098,7 +1098,7 @@ projected_temp_table <- project_baseline(temp_table, projection_table = projecti
 #no controls
 
 #merge with final_table, 
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, efs_table, sewerFlow, ptSewer, areaSewer, temp_table, projected_temp_table)
 
 
@@ -1127,7 +1127,7 @@ temp_table <- make_baseline(efs_table, yardWaste)
 projected_temp_table <- project_baseline(temp_table, projection_table = projection_tables[["Population"]])
 #no controls
 #add to final_table
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, pollutants, TPPPY, efs_table, yardWaste, temp_table, projected_temp_table)
 
 #done with 22-xx, 26-xx sccs
@@ -1153,7 +1153,7 @@ temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 # suggests PM is being controlled.
 temp_table <- add_controls(temp_table)
 #no pt subs?
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 #industrial processes,
@@ -1169,7 +1169,7 @@ temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no controls?
 #no pt subs?
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 #industrial processes,
@@ -1185,7 +1185,7 @@ temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no controls?
 #no pt subs?
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 #industrial processes,
@@ -1201,7 +1201,7 @@ temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no controls?
 #no pt subs?
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 #industrial processes,
@@ -1217,7 +1217,7 @@ temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no controls
 #no pt subs?
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 #1) Emission factors are from EPA's "Emission Inventory Improvement Program (EIIP)," Vol. III, (6/21/99 ed), section "Area Source Category Method Abstract - Bakeries."										
@@ -1248,7 +1248,7 @@ pt_table <- pull_pt_removal_table(pt_sccs,scc,raw_scc_pull_return = FALSE)
 pt_table <- project_baseline(pt_table,projection_tables[["Population"]],has_pt = TRUE)
 temp_table_subtracted <- subtract_pt_sources(temp_table, pt_table)
 #no controls
-final_table <- rbind(final_table, temp_table_subtracted)
+final_table <- merge_with_final_table(final_table, temp_table_subtracted)
 rm(scc, pollutants, TPPPY, efs_table, temp_table, pt_sccs, pt_table, temp_table_subtracted)
 
 
@@ -1277,7 +1277,7 @@ temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #Controls: R307-309 is about fugitive dust control plans. Has an assumed 32% 
 #reduction that started in 2014.
 temp_table <- add_controls(temp_table)
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 
 #industrial processes > mining and quarrying: SIC 14 > all processes
@@ -1367,7 +1367,7 @@ temp_table <- project_baseline(temp_table, projection_tables[["Steady"]])
 temp_table <- add_controls(temp_table)
 
 # merge with final table
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 rm( scc, pt_sccs, real_table, pollutants, TPPPY, efs_table, zeros_table, temp_table)
 
 
@@ -1509,7 +1509,7 @@ all_res_construction <- apartments_table %>%
 projected_temp_table <- project_baseline(base_table = all_res_construction, projection_table = projection_tables[["Population"]])
 
 controlled_projected <- add_controls(projected_temp_table)
-final_table <- rbind(final_table, controlled_projected)
+final_table <- merge_with_final_table(final_table, controlled_projected)
 
 rm(utah_precipitation_evaporation_value, county_silt_percentages, apartments, apartments_table)
 rm(basement_pct, single_units, single_nobasement, single_basement, kcubic_yards, basement_dusts, basement_dirt, nobasement, yesbasement, all_single_unit)
@@ -1524,7 +1524,7 @@ temp_table <- pull_baseline_from_ww(scc)
 projected_temp_table <- project_baseline(temp_table, projection_table = projection_tables[["VMT"]])
 #add controls
 controlled_projected <- add_controls(projected_temp_table)
-final_table <- rbind(final_table, controlled_projected)
+final_table <- merge_with_final_table(final_table, controlled_projected)
 rm(scc, temp_table, projected_temp_table, controlled_projected)
 
 
@@ -1553,7 +1553,7 @@ temp_table <- pull_baseline_from_ww(scc)
 #projects with population
 temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
 #no controls, no pt subs
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 rm(scc, temp_table)
 
 
@@ -1574,7 +1574,7 @@ temp_table_controlled <- add_controls(temp_table_project)
 temp_table_final <- temp_table_controlled
 
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, temp_table_final)
 
@@ -1600,7 +1600,7 @@ pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
@@ -1627,7 +1627,7 @@ pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
 
@@ -1656,7 +1656,7 @@ if(dim(pt_subs)[1]!=0){
 #temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 temp_table_final <- temp_table_controlled
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
@@ -1681,7 +1681,7 @@ pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
@@ -1706,7 +1706,7 @@ pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
@@ -1732,7 +1732,7 @@ pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
@@ -1763,7 +1763,7 @@ if(dim(pt_subs)[1]!=0){
 #project pt subs in that case, probs with ManEmp
 
 temp_table_final <- temp_table_controlled
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
@@ -1794,7 +1794,7 @@ if(dim(pt_subs)[1]!=0){
 
 temp_table_final <- temp_table_controlled
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
@@ -1818,7 +1818,7 @@ pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
@@ -1848,7 +1848,7 @@ if(dim(pt_subs)[1]!=0){
 #project pt subs in that case, probs with ManEmp
 
 temp_table_final <- temp_table_controlled
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
@@ -1874,7 +1874,7 @@ if(dim(pt_subs)[1]!=0){
 #project pt subs in that case, probs with ManEmp
 
 temp_table_final <- temp_table_project
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, pt_sccs, pt_subs, temp_table_final)
 
@@ -1892,7 +1892,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 
 temp_table_final <- temp_table_project
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
@@ -1928,7 +1928,7 @@ pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
@@ -1947,7 +1947,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 #pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 temp_table_final <- temp_table_project
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -1970,7 +1970,7 @@ temp_table_controlled <- add_controls(raw_proj_data = temp_table_project)
 #pt_sccs <- pull_pt_scc_crosswalk(area_scc = scc)
 
 temp_table_final <- temp_table_controlled
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 rm(scc, temp_table, temp_table_project, temp_table_controlled, temp_table_final)
 
 
@@ -1996,7 +1996,7 @@ pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
@@ -2046,7 +2046,7 @@ pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_
 # Subtract uncontrolled point source emissions from our temp_table
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, ww_ef, ww_ef_VOC, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
@@ -2103,7 +2103,7 @@ pt_subs <- project_baseline(base_table = pt_subs, projection_table = projection_
 temp_table_final <- subtract_pt_sources(base_emission_table = temp_table_controlled, pt_source_table = pt_subs)
 
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, ww_ef, graphic_arts_efs, temp_table_project, temp_table_controlled, pt_sccs, pt_subs, temp_table_final)
 
@@ -2164,7 +2164,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 
 temp_table_final <- temp_table_project
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc, except vmt because we use it below
 rm(scc, throughput, efs_table, temp_table, temp_table_project, temp_table_final)
 
@@ -2214,7 +2214,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 
 temp_table_final <- temp_table_project
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, throughput, efs_table, temp_table, vmt, temp_table_project, temp_table_final)
 
@@ -2229,7 +2229,7 @@ temp_table <- make_baseline(efs_table,projection_tables[["Population"]])
 temp_table <- project_baseline(temp_table , projection_tables[["AgJobs"]])
 #no pt subtract
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 rm(scc, efs_table, temp_table)
 
 
@@ -2246,7 +2246,7 @@ temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_
 # it is not clear from rule 357 what the control efficiency is, you have to
 # look at our 2017 TSD. This applies for all 357-controlled SCCs
 temp_table <- add_controls(temp_table)
-final_table <- rbind(final_table, temp_table) 
+final_table <- merge_with_final_table(final_table, temp_table) 
 rm(scc, efs_table, temp_table)
 
 
@@ -2261,7 +2261,7 @@ temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # see 2460100000
 temp_table <- add_controls(temp_table)
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 rm(scc, efs_table, temp_table)
 
 
@@ -2277,7 +2277,7 @@ temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_
 # see 2460100000
 # add controls, but they don't do anything because the emissions factor is much smaller than what it was when the control was created
 temp_table <- add_controls(temp_table)
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 rm(scc, efs_table, temp_table)
 
 
@@ -2292,7 +2292,7 @@ temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # see 2460100000
 temp_table <- add_controls(temp_table)
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 rm(scc, efs_table, temp_table)
 
 
@@ -2307,7 +2307,7 @@ temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_
 # rule R307-357, https://rules.utah.gov/publicat/code/r307/r307-357.htm
 # see 2460100000
 temp_table <- add_controls(temp_table)
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 rm(scc, efs_table, temp_table)
 
 
@@ -2319,7 +2319,7 @@ efs_table <- pull_efs_from_ww(scc, throughput_unit = 'EACH', all_primaries = FAL
 temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt subtract
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 rm(scc, efs_table, temp_table)
 
 
@@ -2333,7 +2333,7 @@ temp_table <- make_baseline(efs_table, projection_tables[["Population"]], projec
 #controls are based on R307-361: "architectural coatings"
 controlled_temp_table <- add_controls(temp_table)
 #pt subs? Maybe used to be but is no longer supported in EPA crosswalk.
-final_table <- rbind(final_table,controlled_temp_table)
+final_table <- merge_with_final_table(final_table,controlled_temp_table)
 rm(scc, efs_table, temp_table, controlled_temp_table)
 
 
@@ -2368,7 +2368,7 @@ tank_efs <- data.frame(FIPS = unique(temp_table_project$FIPS),
 
 # now run the function. we supplied all the needed emissions factors for adding controls in the current_efs table. we'll just set use_ww = FALSE anyway since this SCC doesn't exist in the WW.
 temp_table_controlled <- add_controls(temp_table_project, current_efs = tank_efs, use_ww = FALSE)
-final_table <- rbind(final_table, temp_table_controlled)
+final_table <- merge_with_final_table(final_table, temp_table_controlled)
 
 # remove the objects we created from the environment
 rm(scc, pollutants, TPPPY, efs_table, temp_table_project, tank_efs, temp_table_controlled)
@@ -2383,7 +2383,7 @@ temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table, projection_tables[["AgJobs"]])
 #no pt subtraction
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 #done with 24-xx sccs
 ```
@@ -2421,7 +2421,7 @@ temp_table <- pull_baseline_from_nei(scc)
 #old VOC: 285 TPY
 #new VOC: 259 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, temp_table, projected_temp_table)
 
 
@@ -2434,7 +2434,7 @@ temp_table <- pull_baseline_from_nei(scc)
 #old VOC: 189 TPY
 #new VOC: 173 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, temp_table, projected_temp_table)
 
 
@@ -2446,7 +2446,7 @@ temp_table <- pull_baseline_from_nei(scc)
 #old VOC: 633 TPY
 #new VOC: 576 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, temp_table, projected_temp_table)
 
 
@@ -2459,7 +2459,7 @@ temp_table <- pull_baseline_from_nei(scc)
 #old VOC: 165 TPY
 #new VOC: 165 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, temp_table, projected_temp_table)
 
 
@@ -2471,7 +2471,7 @@ temp_table <- pull_baseline_from_nei(scc)
 #old VOC: 16 TPY
 #new VOC: 16 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, temp_table, projected_temp_table)
 
 
@@ -2483,7 +2483,7 @@ temp_table <- pull_baseline_from_nei(scc)
 #old VOC: 35 TPY
 #new VOC: 32 TPY
 projected_temp_table <- project_baseline(temp_table, all_gas)
-final_table <- rbind(final_table, projected_temp_table)
+final_table <- merge_with_final_table(final_table, projected_temp_table)
 rm(scc, temp_table, projected_temp_table)
 
 #####
@@ -2502,7 +2502,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -2520,7 +2520,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-final_table <- rbind(final_table, temp_table_final)
+final_table <- merge_with_final_table(final_table, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -2542,7 +2542,7 @@ temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table,projection_tables[["AgJobs"]])
 #no pt subs
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 #residential grilling (see 2302002XXX for commercial)
 #taken from WW
@@ -2552,7 +2552,7 @@ temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no pt subs
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 #human cremation
 #morbid. 
@@ -2566,7 +2566,7 @@ temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no pt subs
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 #pet cremation. 
 #also morbid
@@ -2576,7 +2576,7 @@ temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table,projection_tables[["Population"]])
 #no pt subs
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 #storage and transport of petroleum and petroleum products
@@ -2605,7 +2605,7 @@ if(dim(temp_table)[1]!=0) {
   temp_table <-
     project_baseline(temp_table, projection_tables[["Steady"]])
   #no controls
-  final_table <- rbind(final_table, temp_table)
+  final_table <- merge_with_final_table(final_table, temp_table)
 }
 rm(scc, temp_table)
 
@@ -2648,7 +2648,7 @@ temp_table <- hay_table
 #add together the 4 crops that produce dust when harvested.
 temp_table$TPY <- hay_table$TPY + wheat_table$TPY + corn_table$TPY + barley_table$TPY
 
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 rm(hay_table, wheat_table, corn_table, barley_table, temp_table, TPPPY, efs_table, pollutants, scc)
 
 
@@ -2679,7 +2679,7 @@ efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
 temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt source
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 #percent of households that own pets is from American Veterinary Medical 
@@ -2708,7 +2708,7 @@ efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
 temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt source
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 #human perspiration, respiration, cigarette smoking
@@ -2730,7 +2730,7 @@ efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
 temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt subtraction
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 #structure fires
@@ -2769,7 +2769,7 @@ efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
 temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt subtract
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 
 #vehicle fires
@@ -2805,7 +2805,7 @@ efs_table <- make_simple_efs_table(scc,pollutants,TPPPY)
 temp_table <- make_baseline(efs_table,projection_tables[["Population"]],project_to = end_year)
 #no pt subtract
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 
 #misc > health services > dental alloy production > overall process
 #previously not in our reporting. Only a very small amount of mercury, but let's add it.
@@ -2814,14 +2814,13 @@ temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table, projection_tables[["Population"]])
 #no pt sub
 #no controls
-final_table <- rbind(final_table, temp_table)
+final_table <- merge_with_final_table(final_table, temp_table)
 rm(scc, temp_table)
 
 #done with 28-xx sccs
 ```
 
 I put wood burning stuff in its own section - it has some complex control methods.
-THIS NEEDS TO SCALE WITH RESIDENTIAL WOOD FROM 'WOODBTU'. THE OLD WOOD TABLE IS NOT NEEDED.
 ```{r wood burning WW pulls. See 2104008XXX_woodstoves.xlsx in main_workbook folder for further notes}
 
 
@@ -2857,7 +2856,7 @@ temp_table <- add_manual_controls( temp_table, scc,counties = 49011, st_year = 2
 temp_table <- add_manual_controls( temp_table, scc,counties = 49035, st_year = 2017, e_year = 2018,end_val = 0.98781)
 temp_table <- add_manual_controls( temp_table, scc,counties = 49045, st_year = 2017, e_year = 2018,end_val = 0.99653)
 temp_table <- add_manual_controls( temp_table, scc,counties = 49057, st_year = 2017, e_year = 2018,end_val = 0.99264)
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #Woodstove, fireplace insert, non-EPA certified
 # 70 units at 0.1135 cords/unit/year
@@ -2870,21 +2869,21 @@ temp_table <- add_manual_controls( temp_table, scc,counties = 49011, st_year = 2
 temp_table <- add_manual_controls( temp_table, scc,counties = 49035, st_year = 2017, e_year = 2018,end_val = 0.98817)
 temp_table <- add_manual_controls( temp_table, scc,counties = 49045, st_year = 2017, e_year = 2018,end_val = 0.99498)
 temp_table <- add_manual_controls( temp_table, scc,counties = 49057, st_year = 2017, e_year = 2018,end_val = 0.99140)
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #woodstove, fireplace insert, EPA certified non-catalytic
 #no controls
 scc <- 2104008220
 temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #woodstove, fireplace insert, EPA certified, catalytic
 #no controls
 scc <- 2104008230
 temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #woodstove, freestanding, non-EPA certified
 #117 units at 0.2825 cords/unit/year
@@ -2897,7 +2896,7 @@ temp_table <- add_manual_controls( temp_table, scc,counties = 49011, st_year = 2
 temp_table <- add_manual_controls( temp_table, scc,counties = 49035, st_year = 2017, e_year = 2018,end_val = 0.98526)
 temp_table <- add_manual_controls( temp_table, scc,counties = 49045, st_year = 2017, e_year = 2018,end_val = 0.99653)
 temp_table <- add_manual_controls( temp_table, scc,counties = 49057, st_year = 2017, e_year = 2018,end_val = 0.99390)
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #woodstove, freestanding, EPA certified, non-catalytic
 #2 units at 0.2825 cords/unit/year
@@ -2910,14 +2909,14 @@ temp_table <- add_manual_controls( temp_table, scc,counties = 49011, st_year = 2
 temp_table <- add_manual_controls( temp_table, scc,counties = 49035, st_year = 2017, e_year = 2018,end_val = 0.99981)
 temp_table <- add_manual_controls( temp_table, scc,counties = 49045, st_year = 2017, e_year = 2018,end_val = 0.99996)
 temp_table <- add_manual_controls( temp_table, scc,counties = 49057, st_year = 2017, e_year = 2018,end_val = 0.99992)
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #woodstove, freestanding, EPA certified, catalytic
 #no controls
 scc <- 2104008330
 temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #woodstove, pellet-fired, general (freestanding or FP insert)
 #11 units at 0.1223 cords/unit/year
@@ -2930,14 +2929,14 @@ temp_table <- add_manual_controls( temp_table, scc,counties = 49011, st_year = 2
 temp_table <- add_manual_controls( temp_table, scc,counties = 49035, st_year = 2017, e_year = 2018,end_val = 0.99939)
 temp_table <- add_manual_controls( temp_table, scc,counties = 49045, st_year = 2017, e_year = 2018,end_val = 0.99954)
 temp_table <- add_manual_controls( temp_table, scc,counties = 49057, st_year = 2017, e_year = 2018,end_val = 0.99958)
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #furnace, indoor, cordwood-fired, non-EPA certified
 #no controls
 scc <- 2104008510
 temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #hydronic heater, outdoor
 #I don't understand the initial comment on this SCC about hydronic heaters, but this SCC is tiny.
@@ -2945,7 +2944,7 @@ final_table <- rbind(final_table,temp_table)
 scc <- 2104008610
 temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #outdoor wood burning device, NEC (fire-pits, chimeas, etc)
 #I think this one is like OG fires? Like for camping? And also Chimeas lol
@@ -2953,14 +2952,14 @@ final_table <- rbind(final_table,temp_table)
 scc <- 2104008700
 temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #firelog, total: all combustor types
 #no controls
 scc <- 2104009000
 temp_table <- pull_baseline_from_ww(scc)
 temp_table <- project_baseline(temp_table, projection_tables[["WoodBTU_Residential"]])
-final_table <- rbind(final_table,temp_table)
+final_table <- merge_with_final_table(final_table,temp_table)
 
 #done with 21-xx wood combustion sccs
 ```
@@ -2969,23 +2968,22 @@ final_table <- rbind(final_table,temp_table)
 #there should be 139 sccs now
 sort(unique(final_table$SCC))
 
+test <- distinct(final_table)
+if(dim(test)[1] != dim(final_table)[1]){
+  cat("There are duplicates in final_table somewhere. Maybe use 'duplicated' or something to find it\n")
+} else {
+  cat("We don't have any duplicates in final_table. Nice.\n")
+}
+
 #filter HAPS and write out file
 test <- final_table %>% filter(year==2017) %>% 
   filter(pollutant %in% c("CO", "VOC", "NH3", "SO2", "NOX", "PM10-PRI", "PM25-PRI"))
 write_csv(test, "CAP_2017SIP.csv")
 
 
-#pull out certain years
-all_2017 <- final_table %>% filter(year==2017)
-old_2017 <- old_model_data
-all_2023 <- final_table %>% filter(year==2023)
-
 
 #####
-#here we look at 2013 data. first compare the 2017 versions
-back_2017 <- final_table %>% filter(year==2017)
-#okay this matches perfectly
-test <- compare_inventories(all_2017, back_2017, hide_pct = FALSE)
+#2013 compare
 all_2013 <- final_table %>% filter(year==2013)
 all_2017 <- final_table %>% filter(year==2017)
 diff <- compare_inventories(all_2017, all_2013 %>% mutate(year=2017), hide_pct = FALSE)
@@ -2994,9 +2992,12 @@ large <- larger15tpy %>% filter(abs(pct_change)>5)
 write_csv(large,"large2013vs2017changes.csv")
 
 #####
-#here we will compare my 2017 to the old 2017. first we need to filter them down to CAPs
+#compare my 2017 to the old 2017. first we need to filter them down to CAPs
+old_2017 <- old_model_data
+all_2017 <- final_table %>% filter(year==2017)
+
 fil_new2017 <- all_2017 %>%
-  filter(pollutant %in% c("CO", "VOC", "NH3", "SO2", "NOX", "PM10-PRI", "PM25-PRI")) %>%
+  filter(pollutant %in% c("CO", "VOC", "NH3", "SO2", "NOX", "PM10-PRI", "PM25-PRI","PM10","PM25")) %>%
   mutate(pollutant = ifelse(pollutant == "PM10-PRI","PM10", pollutant)) %>%
   mutate(pollutant = ifelse(pollutant == "PM25-PRI","PM25", pollutant))
 fil_old2017 <- old_2017 %>%
@@ -3007,7 +3008,7 @@ missing <- diff %>% filter(is.na(tpy_change))
 write_csv(missing, "missingFromOld2017.csv")
 
 #####
-#here we will compare 2017 to 2023
+#2023 compare to 2017
 zz <- compare_inventories(all_2017,all_2023 %>% mutate(year=2017), hide_pct = FALSE)
 #none are missing. nice
 missing <- zz %>% filter(is.na(tpy_change))
@@ -3019,7 +3020,6 @@ write_csv(large_changes, "largeChangesTo2023.csv")
 
 
 
-
 #####
 #filter out 2017 and save it
 all_2017 <- final_table %>% filter(year==2017)
@@ -3027,6 +3027,7 @@ write_csv(all_2017, 'AreaOzoneSIP2017_20210526.csv')
 #filter out 2023 and save it
 all_2023 <- final_table %>% filter(year==2023)
 write_csv(all_2023, 'AreaOzoneSIP2023_20210526.csv')
+#filter out 2013 and save it
 all_2013 <- final_table %>% filter(year==2013)
 write_csv(all_2013, 'AreaOzoneSIP2013_20210526.csv')
 ```

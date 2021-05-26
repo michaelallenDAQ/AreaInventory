@@ -15,7 +15,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 temp_table_final <- temp_table_project
 
 # add to final table
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
@@ -34,7 +34,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 temp_table_final <- temp_table_project
 
 # add to final table
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
@@ -54,7 +54,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 temp_table_final <- temp_table_project
 
 # add to final table
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 
 # remove the objects we created for this SCC
 rm(scc, temp_table, temp_table_project, temp_table_final)
@@ -68,7 +68,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 
 # No controls & no pt source subtractions
 temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this SCC
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -81,7 +81,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 
 # No controls & no pt source subtractions
 temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this SCC
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -99,7 +99,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 temp_table_final <- temp_table_project
 
 # add to final table
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 
 # remove the objects we created for this SCC
 rm(scc, temp_table, temp_table_project, temp_table_final)
@@ -114,7 +114,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 # No controls & no pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this SCC
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -133,7 +133,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 temp_table_final <- temp_table_project
 
 # add to final table
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 
 # remove the objects we created for this SCC
 rm(scc, temp_table, temp_table_project, temp_table_final)
@@ -147,7 +147,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 
 # No controls & no pt source subtractions
 temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this SCC
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -164,7 +164,7 @@ temp_table <- pull_baseline_from_nei(scc = scc)
 temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
 # No controls & no pt source subtractions for agricultural livestock sccs
 temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -181,7 +181,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 temp_table_final <- temp_table_project
 
 # add to final table
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 
 # remove the objects we created for this SCC
 rm(scc, temp_table, temp_table_project, temp_table_final)
@@ -198,7 +198,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 
 # No controls & no pt source subtractions for agricultural livestock sccs
 temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -211,7 +211,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 
 # No controls & no pt source subtractions
 temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this SCC
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -224,7 +224,7 @@ temp_table <- pull_baseline_from_nei(scc = scc)
 temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
 # No controls & no pt source subtractions for agricultural livestock sccs
 temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -237,7 +237,7 @@ temp_table <- pull_baseline_from_nei(scc = scc)
 temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
 # No controls & no pt source subtractions for agricultural livestock sccs
 temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -250,7 +250,7 @@ temp_table <- pull_baseline_from_nei(scc = scc)
 temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
 # No controls & no pt source subtractions for agricultural livestock sccs
 temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -264,7 +264,7 @@ temp_table_project <- project_baseline(base_table = temp_table, projection_table
 
 # No controls & no pt source subtractions for agricultural livestock sccs
 temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -278,7 +278,7 @@ temp_table_project <-
 
 # No controls & no pt source subtractions for agricultural livestock sccs
 temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -292,7 +292,7 @@ temp_table_project <-
 
 # No controls & no pt source subtractions for agricultural livestock sccs
 temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -313,7 +313,7 @@ suppressMessages(temp_table <- read_csv("References/ForestFires/2810001001_WildS
 projected_temp_table <- project_baseline(temp_table, projection_tables[["Steady"]])
 # No controls & no pt source subtractions for fires
 temp_table_final <- projected_temp_table
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, projected_temp_table, temp_table_final)
 
@@ -324,7 +324,7 @@ suppressMessages(temp_table <- read_csv("References/ForestFires/2810001002_WildF
 projected_temp_table <- project_baseline(temp_table, projection_tables[["Steady"]])
 # No controls & no pt source subtractions for fires
 temp_table_final <- projected_temp_table
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, projected_temp_table, temp_table_final)
 
@@ -335,7 +335,7 @@ suppressMessages(temp_table <- read_csv("References/ForestFires/2811015001_Presc
 projected_temp_table <- project_baseline(temp_table, projection_tables[["Steady"]])
 # No controls & no pt source subtractions for fires
 temp_table_final <- projected_temp_table
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, projected_temp_table, temp_table_final)
 
@@ -346,7 +346,7 @@ suppressMessages(temp_table <- read_csv("References/ForestFires/2811015002_Presc
 projected_temp_table <- project_baseline(temp_table, projection_tables[["Steady"]])
 # No controls & no pt source subtractions for fires
 temp_table_final <- projected_temp_table
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
+NEI_28xx <- merge_with_final_table(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, projected_temp_table, temp_table_final)
 

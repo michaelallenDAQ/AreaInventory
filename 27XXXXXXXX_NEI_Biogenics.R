@@ -10,7 +10,7 @@ temp_table_project <-
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_27xx <- rbind(NEI_27xx, temp_table_final)
+NEI_27xx <- merge_with_final_table(NEI_27xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
@@ -29,6 +29,6 @@ temp_table_project <-
 # No pt source subtractions
 temp_table_final <- temp_table_project
 # add to final table
-NEI_27xx <- rbind(NEI_27xx, temp_table_final)
+NEI_27xx <- merge_with_final_table(NEI_27xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
