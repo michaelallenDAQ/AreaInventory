@@ -551,7 +551,7 @@ add_controls <- function(raw_proj_data,
                           controls_ws = controls,
                           use_ww = TRUE,
                           current_efs = NULL, 
-                          baseline_year = NULL){
+                          baseline_year = start_year){
   
   # adjust our controls_ws to have a row for each county
   controls_to_apply <- separate_rows(controls_ws, County, sep = ", ")
@@ -1482,7 +1482,7 @@ subtract_pt_sources <- function(base_emission_table, pt_source_table){
 #if we don't hide_pct, then we will display the percent change
 #between the two inventories too.
 compare_inventories <-
-  function(oinv, ninv, hide_pct = TRUE) {
+  function(oinv, ninv, hide_pct = FALSE) {
     oinv <- oinv %>% rename(old_tpy = TPY)
     ninv <- ninv %>% rename(new_tpy = TPY)
     
@@ -1666,3 +1666,16 @@ make_simple_efs_table <- function(scc, pollutants, TPUPY) {
     rename('pollutant' = pollutants)
   return(out_efs)
 }
+
+#every time we merge a new table into the final table, we want to make sure it
+#doesn't already exist, and also that it has all the correct years of projection
+#as the final_table
+merge_with_final_table <- function(final_table, new_table){
+  #first off, if final_table 
+  if(dim(final_table)[1] == 0){
+    final_table <- rbind(final_table, new_table)
+    return(final_table)
+  }
+  
+}
+
