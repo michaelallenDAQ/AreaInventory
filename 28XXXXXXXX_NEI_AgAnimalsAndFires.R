@@ -169,18 +169,10 @@ NEI_28xx <- rbind(NEI_28xx, temp_table_final)
 rm(scc, temp_table, temp_table_project, temp_table_final)
 
 
-# No controls & no pt source subtractions for agricultural livestock sccs
-temp_table_final <- temp_table_project
-NEI_28xx <- rbind(NEI_28xx, temp_table_final)
-# remove the objects we created for this scc
-rm(scc, temp_table, temp_table_project, temp_table_final)
-
-# Miscellaneous Area Sources > Agriculture Production - Livestock > Poultry Production - broilers > Confinement
-# Get total emissions from the NEI; project based on agricultural employment
+# miscellaneous area sources > agriculture production - livestock > poultry production - broilers > confinement
+# get total emissions from the nei; project based on agricultural employment
 scc <- 2805009100
-
 temp_table <- pull_baseline_from_nei(scc = scc)
-
 # project on ag employment
 temp_table_project <- project_baseline(base_table = temp_table, projection_table = projection_tables[["AgJobs"]])
 
@@ -275,8 +267,6 @@ temp_table_final <- temp_table_project
 NEI_28xx <- rbind(NEI_28xx, temp_table_final)
 # remove the objects we created for this scc
 rm(scc, temp_table, temp_table_project, temp_table_final)
-
-
 
 
 #wild animals waste > Elk > total
