@@ -2964,7 +2964,8 @@ final_table <- merge_with_final_table(final_table,temp_table)
 #done with 21-xx wood combustion sccs
 ```
 
-```{r}
+```{r tidy up stuff for submitting for ozone SIP}
+#also some QAQC
 #there should be 139 sccs now
 sort(unique(final_table$SCC))
 
