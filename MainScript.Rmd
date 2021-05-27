@@ -5,7 +5,7 @@ output: html_document
 editor_options:
   chunk_output_type: console
 ---
-
+Before you run this code, "git checkout main" in terminal, then "git pull" in terminal. This ensures you are working with the most up-to-date version of the code.
 ```{r optional SIP stuff, or Website/NEI filters}
 #for the ozone SIP. This is the list of all pt sources to filter for the 2017 inventory
 #I got this from a Cate Youatt email 2021/04/29. Then she messaged me May 18 and added
@@ -37,6 +37,7 @@ target_ids <- c(10007,10008,10009,10028,10034,10096,10107,10119,10120,10121,
                 14185,15438,15487)
 
 #Web IDs is just every single site.
+#Null means it there are no site ids, it will just look at everything
 target_ids <- NULL
 ```
 
@@ -44,7 +45,7 @@ target_ids <- NULL
 set up working directories to run the script with
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#this is supposed to globally set our working directory. Sometimes this chunk doesn't successfully set the working directory. You'll be able to tell because R will give you an error like "No such file or directory" when it tries to read a document. If you type in the console, the following lines should have the same output:
+#this is supposed to globally set our working directory. Sometimes this chunk doesn't successfully set the working directory. You'll be able to tell because R will give you an error like " Error: `path` does not exist: ‘20190502 NEI Workbook.xlsx’" when it tries to read a document. If you type in the console, the following two lines should have the same output:
     #Sys.getenv("HomeDir")
     #getwd()
 #If that isn't the case, you will need to manually set the working directory. Type in the console:
@@ -70,7 +71,7 @@ library(tidyr)
 #digits get cut off
 options(scipen = 999)
 
-#step 1
+#step 1 (For projections)
 source(paste0(Sys.getenv('GitDir'),'BaseCodes.R'))
 start_year <- 2017
 end_year <- 2023
